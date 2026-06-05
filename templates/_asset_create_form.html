@@ -1,0 +1,89 @@
+{% load i18n %}
+
+<div class="flex items-center justify-between mb-5">
+    <h2 class="font-semibold text-lg">{% trans "Add Resource" %}{% if environment %} <span class="text-slate-400 font-normal text-base">— {{ environment.name }}</span>{% endif %}</h2>
+    <button type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">
+        <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+</div>
+
+<form
+    hx-post="{% url 'asset-create' %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-on::after-request="if(event.detail.successful) document.getElementById('crudModal').close()"
+>
+    {% csrf_token %}
+    {% if environment %}
+        <input type="hidden" name="environment_id" value="{{ environment.id }}">
+    {% endif %}
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Resource Name" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="name" value="{{ values.name }}"
+                class="w-full rounded-xl border {% if errors.name %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="e.g. web-server-01"
+                required
+            >
+            {% if errors.name %}<p class="mt-1 text-xs text-red-500">{{ errors.name }}</p>{% endif %}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Resource Type" %}</label>
+                <select name="asset_type" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    {% for value, label in asset_types %}
+                        <option value="{{ value }}" {% if values.asset_type == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Provider" %}</label>
+                <select name="provider" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    {% for value, label in providers %}
+                        <option value="{{ value }}" {% if values.provider == value or value == 'AWS' and not values.provider %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Cloud ID</label>
+            <input
+                type="text" name="cloud_id" value="{{ values.cloud_id }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "e.g. i-0abc123def456789 (auto-generated if blank)" %}"
+            >
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Region" %}</label>
+            <input
+                type="text" name="region" value="{{ values.region }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="e.g. ap-northeast-1"
+            >
+        </div>
+        {% if not environment %}
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Environment" %}</label>
+            <select name="environment_id" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                <option value="">{% trans "(unassigned)" %}</option>
+                {% for env in environments %}
+                    <option value="{{ env.id }}" {% if values.environment_id == env.id|stringformat:"s" %}selected{% endif %}>{{ env.system.name }} / {{ env.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Notes" %}</label>
+            <textarea
+                name="memo" rows="2"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
+                placeholder="{% trans "Optional notes" %}"
+            >{{ values.memo }}</textarea>
+        </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">{% trans "Cancel" %}</button>
+        <button type="submit" class="px-4 py-2 text-sm rounded-xl bg-[#FF6B6B] hover:bg-[#e84040] text-white font-medium">{% trans "Add" %}</button>
+    </div>
+</form>

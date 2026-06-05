@@ -1,0 +1,249 @@
+# SyncVey
+
+English | **[日本語](README.ja.md)**
+
+**One-stop AWS asset ledger with Terraform drift detection — self-hosted, no SaaS fees.**
+
+SyncVey organizes your AWS resources into a **System → Environment → Asset** hierarchy,
+flags configuration drift between your tfstate and live AWS state, and tracks application
+metadata (language, framework, dependencies) per environment.
+Spin it up with a single `docker compose up`.
+
+> Live feature tour → **[https://mr-tabata.github.io/SyncVey/](https://mr-tabata.github.io/SyncVey/)**
+
+---
+
+## Screenshots
+
+**Dashboard** — Systems, Environments, and Assets at a glance
+
+![SyncVey Dashboard](docs/screenshots/dashboard-en.png)
+
+**Drift report** — attribute-level diff between tfstate and actual AWS state
+
+![SyncVey Drift report](docs/screenshots/drift-en.png)
+
+---
+
+## Why SyncVey?
+
+I'm 62, and I still write code. For years I watched infrastructure teams keep
+their AWS inventory in spreadsheets — and every single time, without exception,
+I watched those spreadsheets rot.
+
+One day I asked the obvious question: we have tfstate, we have boto3 — why are we
+still doing this by hand?
+
+The other thing nagging at me was middleware EOL. We had a list of things to watch,
+but no alerts, no dashboard, nothing that pointed to a next action —
+just another spreadsheet quietly going stale.
+
+So I built the tool I'd always wanted. Scheduled scans, drift detection, EOL alerts —
+in one place, self-hosted, with your data staying inside your own infrastructure.
+
+---
+
+## How is SyncVey different?
+
+Each tool in this space does one slice well. **driftctl** pioneered Terraform drift
+detection, but it's a stateless CLI — and is no longer maintained since Snyk archived it.
+**Steampipe** turns your cloud into queryable SQL, which is excellent for ad-hoc
+investigation, but it's a query engine you build dashboards on, not a turnkey ledger.
+**Cloud Custodian** shines at policy-as-code enforcement (tag, stop, remediate), yet it's
+about reacting to rules, not giving you a browsable inventory. SyncVey sits in the middle
+as a self-hosted **web app**: a persistent **asset ledger** with a UI, **attribute-level
+drift** between your tfstate and live AWS — including resources created by hand in the
+console that `terraform plan` never sees — plus a layer none of the others touch:
+**per-environment application & middleware tracking with EOL alerts**. One
+`docker compose up`, and your data stays in your own infrastructure.
+
+| | tfstate drift | Detects console-made resources | Ledger + UI | App/middleware + EOL | Form factor |
+|---|:---:|:---:|:---:|:---:|---|
+| driftctl | ✅ | ✅ | ❌ | ❌ | CLI |
+| Steampipe | ⚠️ DIY | ✅ (query) | ⚠️ build it | ❌ | CLI + SQL |
+| Cloud Custodian | ❌ | ⚠️ policy-dependent | ❌ | ❌ | Policy engine |
+| **SyncVey** | ✅ | ✅ | ✅ | ✅ | Self-hosted web app |
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, S3, ALB, VPC, and EBS resources — and more |
+| **AWS scan** | Auto-discover resources — including ECS and Lambda — in target accounts via AssumeRole |
+| **Terraform integration** | Import assets by uploading a tfstate file |
+| **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
+| **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
+| **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
+| **Architecture diagram** | Visualize resource relationships within an environment |
+| **Multi-account** | Register an IAM Role ARN per system to manage multiple AWS accounts |
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.12 / Django (server-rendered, no SPA) |
+| Frontend | htmx 1.9 + Tailwind CSS — Django templates, no build step, no Node toolchain |
+| Database | PostgreSQL 18.3 |
+| AWS SDK | boto3 (cross-account access via AssumeRole) |
+| Auth | TOTP two-factor authentication (pyotp) |
+| Scheduler | django-apscheduler (periodic scans) |
+| Infra | Docker Compose |
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- Docker and Docker Compose
+
+### 1. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```bash
+# Django
+SECRET_KEY=your-secret-key
+DEBUG=True
+
+# Database (match docker-compose.yml)
+DATABASE_URL=postgres://user:password@db:5432/asset_manager
+
+# AWS — IAM user credentials for the central account
+AWS_ACCOUNT_ID=123456789012
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_SCAN_REGIONS=ap-northeast-1,ap-northeast-3
+```
+
+> **Production note:** set `DEBUG=False` for any non-local deployment, and use a strong, unique `SECRET_KEY`.
+
+### 2. Start the app
+
+```bash
+docker compose up -d
+```
+
+> **Tip:** If you use VS Code, open the repo in Dev Containers — the environment is built automatically.
+
+### 3. Apply migrations and (optionally) seed sample data
+
+```bash
+docker compose exec app python manage.py migrate
+docker compose exec app python manage.py seed   # optional: loads sample data
+```
+
+### 4. Open in your browser
+
+| Service | URL |
+|---------|-----|
+| App | http://localhost:8000/ |
+| Django Admin | http://localhost:8000/admin/ |
+
+---
+
+## Setting up AWS scan
+
+Create a read-only IAM Role in each target AWS account and register its ARN in SyncVey.
+
+Full instructions → [docs/aws-setup.md](docs/aws-setup.md)
+
+**Quick overview:**
+1. Add your central account's IAM credentials to `.env`
+2. Deploy the `SyncVeyReadOnly` role to each target account via the provided CloudFormation template
+3. Register the Role ARN using the 🛡 button on the system card
+4. Click **ScanLine** to run the first scan
+
+---
+
+## External network calls
+
+SyncVey is fully self-hosted. The only outbound connections it makes are listed below —
+there is no telemetry or usage analytics.
+
+| Destination | When | Direction | How to control |
+|-------------|------|-----------|----------------|
+| AWS APIs (boto3 / AssumeRole) | On-demand or scheduled scan | Outbound HTTPS | Only when a Role ARN is configured |
+| `hooks.slack.com` | Drift detected + webhook configured | Outbound HTTPS | Per-system Slack Webhook URL (opt-in) |
+| `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
+
+**EOL refresh detail.** End-of-life detection works offline using built-in data.
+Set `EOL_REFRESH_ENABLED=true` to enable a daily job that pulls fresh data from
+[endoflife.date](https://endoflife.date/) (falls back to built-in data on failure).
+By default, only dependencies you actually track are refreshed; set
+`EOL_REFRESH_DYNAMIC=false` to pin it to a fixed known set.
+You can also trigger a refresh manually:
+
+```bash
+docker compose exec app python manage.py refresh_eol --force
+```
+
+---
+
+## Routes
+
+SyncVey is a server-rendered htmx app, not a JSON REST API.
+All views return rendered HTML (full pages or partials).
+
+```
+/                                      Dashboard
+/systems/                              Systems
+/systems/<id>/environments/            Environments under a system
+/systems/<id>/applications/            Applications under a system
+/environments/<id>/scan/               Run an AWS scan
+/environments/<id>/drift/              Drift report
+/environments/<id>/diagram/            Architecture diagram
+/environments/<id>/sync-s3/            Sync remote tfstate from S3
+/assets/                               Asset list
+/assets/<id>/                          Asset detail
+/upload-tfstate/                       Import assets from tfstate
+/samples/                              Sample library
+/audit-log/                            Audit log
+/profile/                              Profile / 2FA settings
+/admin/                                Django Admin
+```
+
+Full route list: [asset_manager/urls.py](asset_manager/urls.py)
+
+---
+
+## Data model
+
+```
+System
+  └── Environment  (PROD / STG / DEV / QA)
+        └── Asset  (asset_type + category; raw attributes stored in a JSON field)
+  └── Application
+        └── AppEnvConfig  (per-environment settings)
+              └── AppDependency
+```
+
+---
+
+## Development
+
+```bash
+# Open a shell inside the app container
+docker compose exec app bash
+
+# Generate migrations after model changes
+docker compose exec app python manage.py makemigrations
+
+# Tail logs
+docker compose logs -f app
+docker compose logs -f db
+```
+
+---
+
+## License
+
+[MIT](LICENSE)

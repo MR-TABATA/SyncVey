@@ -1,0 +1,125 @@
+{% load i18n %}
+
+{% if error %}
+<div class="mb-4 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm flex items-start gap-2">
+    <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 shrink-0"></i>
+    <span>{{ error }}</span>
+</div>
+{% endif %}
+
+<form hx-post="{% url 'upload-tfstate' %}"
+      hx-encoding="multipart/form-data"
+      hx-target="#tfstateUploadModalBody"
+      hx-swap="innerHTML"
+      hx-indicator="#uploadIndicator">
+    {% csrf_token %}
+
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+                {% trans "tfstate File" %} <span class="text-red-500">*</span>
+            </label>
+            <div id="tfDropzone"
+                 class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50/40">
+                <input
+                    type="file"
+                    id="tfstate_file"
+                    name="tfstate_file"
+                    accept=".tfstate"
+                    required
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    aria-label="{% trans 'tfstate File' %}"
+                >
+                <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 pointer-events-none"></i>
+                <p id="tfDzPrompt" class="text-sm text-slate-600 pointer-events-none">
+                    <span class="font-semibold text-indigo-600">{% trans "Click to choose" %}</span>
+                    {% trans "or drag & drop your .tfstate file" %}
+                </p>
+                <p id="tfDzFile" class="hidden text-sm font-medium text-slate-800 break-all pointer-events-none"></p>
+            </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">
+                {% trans "System / Environment" %}
+                <span class="ml-1 font-normal normal-case text-slate-400">({% trans "auto-detected from tfstate; fill in manually if not detected" %})</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "System Name" %}</label>
+                    <input
+                        type="text"
+                        name="system_name"
+                        value="{{ values.system_name }}"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        placeholder="{% trans "e.g. my-service (auto-detected)" %}"
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Environment Name" %}</label>
+                    <input
+                        type="text"
+                        name="env_name"
+                        value="{{ values.env_name }}"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        placeholder="{% trans "e.g. production (auto-detected)" %}"
+                    >
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Environment Type" %}</label>
+                <select
+                    name="env_type"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                >
+                    <option value="">{% trans "Auto-detect" %}</option>
+                    <option value="PROD" {% if values.env_type == 'PROD' %}selected{% endif %}>PROD — {% trans "Production" %}</option>
+                    <option value="STG"  {% if values.env_type == 'STG' %}selected{% endif %}>STG — {% trans "Staging" %}</option>
+                    <option value="DEV"  {% if values.env_type == 'DEV' %}selected{% endif %}>DEV — {% trans "Development" %}</option>
+                    <option value="QA"   {% if values.env_type == 'QA' %}selected{% endif %}>QA — {% trans "Testing" %}</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-end gap-2">
+        <button
+            type="button"
+            class="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
+            onclick="document.getElementById('tfstateUploadModal').close()"
+        >
+            {% trans "Cancel" %}
+        </button>
+        <button type="submit" class="relative px-4 py-2 text-sm rounded-lg bg-[#FF6B6B] hover:bg-[#e84040] text-white font-medium">
+            <span id="uploadIndicator" class="htmx-indicator absolute inset-0 flex items-center justify-center bg-[#FF6B6B] rounded-lg">
+                <svg class="svy-loader w-5 h-5 text-white" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line class="svy-pier" x1="26" y1="22" x2="26" y2="82" stroke-width="8"/><line class="svy-pier" x1="74" y1="22" x2="74" y2="82" stroke-width="8"/><line class="svy-pier" x1="10" y1="82" x2="90" y2="82" stroke-width="7"/><path class="svy-cable" d="M 10 68 L 26 22 Q 50 90 74 22 L 90 68" stroke-width="7"/></svg>
+            </span>
+            {% trans "Upload & Register" %}
+        </button>
+    </div>
+</form>
+
+<script>
+(function () {
+    var dz = document.getElementById('tfDropzone');
+    var input = document.getElementById('tfstate_file');
+    if (!dz || !input || dz.dataset.wired) return;
+    dz.dataset.wired = '1';
+    var fileLbl = document.getElementById('tfDzFile');
+    var prompt  = document.getElementById('tfDzPrompt');
+    input.addEventListener('change', function () {
+        if (input.files && input.files.length) {
+            fileLbl.textContent = input.files[0].name;
+            fileLbl.classList.remove('hidden');
+            prompt.classList.add('hidden');
+            dz.classList.add('border-indigo-400', 'bg-indigo-50/40');
+        }
+    });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+        input.addEventListener(ev, function () { dz.classList.add('border-indigo-500', 'bg-indigo-50'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+        input.addEventListener(ev, function () { dz.classList.remove('border-indigo-500', 'bg-indigo-50'); });
+    });
+})();
+</script>

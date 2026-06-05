@@ -1,0 +1,166 @@
+{% load i18n static dep_tags %}
+
+<div id="asset-list-container">
+
+    <!-- Breadcrumb -->
+    {% if selected_system or active_asset_type %}
+    <div class="mb-4 flex items-center gap-2 text-sm">
+        {% if active_asset_type %}
+            <span class="font-semibold text-slate-700">{{ active_asset_type }} {% trans "Resources" %}</span>
+        {% else %}
+            <button
+                class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+                hx-get="{% url 'system-list' %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="setSidebarActive('systems')"
+            >{% trans "Systems" %}</button>
+            <span class="text-slate-300">/</span>
+            <button
+                class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+                hx-get="{% url 'environment-list' selected_system.id %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="setSidebarActive('systems')"
+            >{{ selected_system.name }}</button>
+            {% if selected_environment %}
+                <span class="text-slate-300">/</span>
+                <span class="font-medium text-slate-700">{{ selected_environment.name }}</span>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if message %}
+    <div class="mb-4 px-4 py-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-sm">{{ message }}</div>
+    {% endif %}
+
+    <!-- Search / Filter bar -->
+    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-4">
+        <form
+            class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3"
+            hx-get="{% url 'asset-list' %}"
+            hx-target="#asset-list-container"
+            hx-swap="outerHTML"
+        >
+            {% if selected_system %}<input type="hidden" name="system_id" value="{{ selected_system.id }}">{% endif %}
+            {% if selected_environment %}<input type="hidden" name="environment_id" value="{{ selected_environment.id }}">{% endif %}
+            {% if active_asset_type %}<input type="hidden" name="asset_type" value="{{ active_asset_type }}">{% endif %}
+            <input
+                type="text" name="q"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                placeholder="{% trans "Search by name or Cloud ID..." %}"
+                value="{{ request.GET.q }}"
+            >
+            <select
+                name="provider"
+                class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+            >
+                <option value="">{% trans "All Providers" %}</option>
+                {% for choice_value, choice_label in provider_choices %}
+                    <option value="{{ choice_value }}" {% if request.GET.provider == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+                {% endfor %}
+            </select>
+            <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium transition-colors" type="submit">
+                {% trans "Search" %}
+            </button>
+        </form>
+    </div>
+
+    {% if assets %}
+    <!-- Add button -->
+    <div class="mb-3 flex justify-end">
+        <button
+            type="button"
+            hx-get="{% url 'asset-create-form' %}{% if selected_environment %}?environment_id={{ selected_environment.id }}{% endif %}"
+            hx-target="#crudModalBody"
+            hx-on::after-request="document.getElementById('crudModal').showModal()"
+            class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors"
+        >
+            <i data-lucide="plus" class="w-4 h-4"></i> {% trans "Add Resource" %}
+        </button>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+                <tr class="border-b border-slate-200">
+                    <th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{% trans "Name" %}</th>
+                    <th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{% trans "Type" %}</th>
+                    <th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Cloud ID</th>
+                    <th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{% trans "Region" %}</th>
+                    <th class="px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{% trans "Environment" %}</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for asset in assets %}
+                {% blocktrans with name=asset.name asvar del_confirm %}Delete "{{ name }}"?{% endblocktrans %}
+                <tr class="hover:bg-slate-50 transition-colors cursor-pointer group"
+                    hx-get="{% url 'asset-detail' asset.id %}"
+                    hx-target="#detailModalBody"
+                    hx-on::after-request="document.getElementById('detailModal').showModal()">
+                    <td class="px-5 py-4">
+                        <p class="text-sm font-semibold text-slate-800">{{ asset.name }}</p>
+                        <p class="text-xs text-slate-400 mt-0.5">{{ asset.environment.system.name|default:"-" }}</p>
+                    </td>
+                    <td class="px-5 py-4">
+                        {% asset_icon_url asset.provider asset.asset_type as icon_path %}
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">
+                            {% if icon_path %}
+                                <img src="{% static icon_path %}" class="w-4 h-4" alt="{{ asset.asset_type }}">
+                            {% else %}
+                                <i data-lucide="cloud" class="w-4 h-4 text-slate-400"></i>
+                            {% endif %}
+                            {{ asset.asset_type }}
+                        </span>
+                        {% with rd=asset.raw_data %}{% if rd %}
+                            {% if rd.instance_type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_type }}</p>
+                            {% elif rd.instance_class %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_class }}</p>
+                            {% elif rd.engine %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.engine }}{% if rd.engine_version %} {{ rd.engine_version }}{% endif %}</p>
+                            {% elif rd.type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.type }}{% if rd.size %} {{ rd.size }} GB{% endif %}</p>
+                            {% elif rd.cidr_block %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.cidr_block }}</p>
+                            {% elif rd.scheme %}<p class="text-xs text-slate-400 mt-1">{{ rd.scheme }}</p>
+                            {% elif rd.launch_type %}<p class="text-xs text-slate-400 mt-1">{{ rd.launch_type }}{% if rd.desired_count %} ×{{ rd.desired_count }}{% endif %}</p>
+                            {% elif rd|dict_get:'_resource_type' %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd|dict_get:'_resource_type' }}</p>
+                            {% endif %}
+                        {% endif %}{% endwith %}
+                    </td>
+                    <td class="px-5 py-4 font-mono text-xs text-slate-500 max-w-[200px] truncate">{{ asset.cloud_id }}</td>
+                    <td class="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{{ asset.region|default:"—" }}</td>
+                    <td class="px-5 py-4 text-sm text-slate-600">{{ asset.environment.name|default:"—" }}</td>
+                    <td class="px-5 py-4">
+                        <button
+                            class="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 transition-all"
+                            hx-post="{% url 'asset-delete' asset.id %}"
+                            hx-target="#asset-list-container"
+                            hx-swap="outerHTML"
+                            hx-confirm="{{ del_confirm }}"
+                            title="{% trans "Delete" %}"
+                            onclick="event.stopPropagation()"
+                        ><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
+        <svg viewBox="0 0 100 100" class="w-10 h-10 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+        <p class="text-sm font-medium text-slate-500 mb-1">{% trans "No resources found." %}</p>
+        <button
+            type="button"
+            hx-get="{% url 'asset-create-form' %}{% if selected_environment %}?environment_id={{ selected_environment.id }}{% endif %}"
+            hx-target="#crudModalBody"
+            hx-on::after-request="document.getElementById('crudModal').showModal()"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors mt-4"
+        >
+            <i data-lucide="plus" class="w-4 h-4"></i> {% trans "Add Resource" %}
+        </button>
+    </div>
+    {% endif %}
+
+</div>

@@ -1,0 +1,14 @@
+{% load i18n %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Volume Type" %}</span><span class="font-mono font-semibold text-slate-800">{{ d.volume_type }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "State" %}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if d.state == 'in-use' %}bg-green-100 text-green-700{% elif d.state == 'available' %}bg-blue-100 text-blue-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ d.state }}</span>
+</div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Size" %}</span><span class="text-slate-700">{{ d.size_gb }} GB</span></div>
+{% if d.iops %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">IOPS</span><span class="font-mono text-slate-700">{{ d.iops }}</span></div>{% endif %}
+{% if d.throughput_mbps %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Throughput" %}</span><span class="text-slate-700">{{ d.throughput_mbps }} MiB/s</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">AZ</span><span class="font-mono text-slate-700">{{ d.availability_zone }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Encryption" %}</span><span class="text-slate-700">{% if d.encrypted %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.kms_key_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "KMS Key" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.kms_key_id }}</span></div>{% endif %}
+{% if d.snapshot_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Snapshot" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.snapshot_id }}</span></div>{% endif %}
+{% if d.attached_instance_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Attached Instance" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.attached_instance_id }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Delete on Termination" %}</span><span class="text-slate-700">{% if d.delete_on_termination %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</span></div>

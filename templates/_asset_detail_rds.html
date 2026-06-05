@@ -1,0 +1,16 @@
+{% load i18n %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Engine" %}</span><span class="font-mono font-semibold text-slate-800">{{ d.engine }} {{ d.engine_version }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Instance Class" %}</span><span class="font-mono text-slate-700">{{ d.instance_class }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "State" %}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if d.state == 'available' %}bg-green-100 text-green-700{% elif d.state == 'stopped' %}bg-slate-100 text-slate-600{% else %}bg-amber-100 text-amber-700{% endif %}">{{ d.state }}</span>
+</div>
+{% if d.db_name %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "DB Name" %}</span><span class="font-mono text-slate-700">{{ d.db_name }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Master User" %}</span><span class="font-mono text-slate-700">{{ d.master_username }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Port" %}</span><span class="font-mono text-slate-700">{{ d.port }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Multi-AZ" %}</span><span class="text-slate-700">{% if d.multi_az %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Public Access" %}</span><span class="text-slate-700">{% if d.publicly_accessible %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Storage" %}</span><span class="text-slate-700">{{ d.storage_type }} / {{ d.allocated_storage_gb }} GB{% if d.max_allocated_storage_gb %} ({% trans "max" %} {{ d.max_allocated_storage_gb }} GB){% endif %}</span></div>
+{% if d.iops %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">IOPS</span><span class="font-mono text-slate-700">{{ d.iops }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Backup Retention" %}</span><span class="text-slate-700">{{ d.backup_retention_days }} {% trans "days" %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Deletion Protection" %}</span><span class="text-slate-700">{% if d.deletion_protection %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.vpc_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">VPC ID</span><span class="font-mono text-slate-700 text-xs">{{ d.vpc_id }}</span></div>{% endif %}

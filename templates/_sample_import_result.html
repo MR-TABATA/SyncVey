@@ -1,0 +1,12 @@
+{% load i18n %}
+<div class="flex items-center gap-2 text-xs font-medium mt-1">
+  <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-600 shrink-0"></i>
+  <span class="text-slate-600">{% trans "Imported" %}</span>
+  <span class="px-1.5 py-0.5 rounded bg-green-100 text-green-700">{{ processed }} resources</span>
+  <button
+    class="text-indigo-600 hover:text-indigo-800 underline transition-colors"
+    hx-get="{% url 'environment-list' system_id %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+  >{% trans "View →" %}</button>
+</div>

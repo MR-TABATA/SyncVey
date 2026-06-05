@@ -1,0 +1,341 @@
+{% load i18n static %}{% get_current_language as CURRENT_LANG %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANG }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncVey</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}?v=2">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.min.js" integrity="sha384-bdZtphetAEBgkGZvhZXOFDWc55tHGLqaSo1f4qZtgvEiolEBqlJ9u6FTk+CoLfj0" crossorigin="anonymous"></script>
+<style>
+        .htmx-indicator { opacity: 0; transition: opacity 200ms; }
+        .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+        @keyframes svy-draw { 0% { stroke-dashoffset: 210; opacity: .4; } 50% { opacity: 1; } 72% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: .4; } }
+        .svy-loader .svy-cable { stroke-dasharray: 210; animation: svy-draw 1.3s ease-in-out infinite; }
+        .svy-loader .svy-pier { opacity: .45; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r border-slate-200 min-h-screen flex flex-col fixed top-0 left-0 z-20">
+            <div class="px-6 h-[72px] flex items-center border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow shadow-indigo-500/30">
+                        <svg viewBox="0 0 100 100" class="w-5 h-5" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="font-serif font-bold text-[22px] tracking-[0.005em] leading-none"><span class="text-[#FF6B6B]">Sync</span><span class="text-[#5641C4]">Vey</span></h1>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+
+                <!-- Systems -->
+                <button
+                    id="sidebar-systems-btn" data-title="{% trans 'Systems' %}"
+                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    hx-get="{% url 'system-list' %}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="setSidebarActive('systems')"
+                >
+                    <span class="flex items-center gap-3">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-sm">{% trans "Systems" %}</span>
+                    </span>
+                    {% if stats.total_systems %}<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ stats.total_systems }}</span>{% endif %}
+                </button>
+
+                <!-- All Assets -->
+                <button
+                    id="sidebar-assets-btn" data-title="{% trans 'All Resources' %}"
+                    class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    hx-get="{% url 'asset-list' %}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="setSidebarActive('assets')"
+                >
+                    <span class="flex items-center gap-3">
+                        <i data-lucide="package" class="w-5 h-5 shrink-0"></i>
+                        <span class="text-sm">{% trans "All Resources" %}</span>
+                    </span>
+                    {% if stats.total_assets %}<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{{ stats.total_assets }}</span>{% endif %}
+                </button>
+
+                <!-- Per-provider (indented) -->
+                {% for row in stats.provider_rows %}
+                <button
+                    class="sidebar-provider-btn w-full flex items-center justify-between gap-3 pl-10 pr-3 py-2 rounded-xl transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    data-provider="{{ row.key }}" data-title="{{ row.label }}"
+                    hx-get="{% url 'asset-list' %}?provider={{ row.key }}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="setSidebarActive('provider-{{ row.key }}')"
+                >
+                    <span class="text-xs font-medium">{{ row.label }}</span>
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{{ row.count }}</span>
+                </button>
+                {% endfor %}
+
+                <div class="pt-3 border-t border-slate-100 mt-3 space-y-1">
+                    <!-- Apps / Middleware -->
+                    <button
+                        id="sidebar-apps-btn" data-title="{% trans 'Apps / Middleware' %}"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        hx-get="{% url 'application-list-all' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="setSidebarActive('apps')"
+                    >
+                        <i data-lucide="code-2" class="w-5 h-5 shrink-0"></i>
+                        {% trans "Apps / Middleware" %}
+                    </button>
+
+                    <!-- Change History -->
+                    <button
+                        id="sidebar-audit-btn" data-title="{% trans 'Change History' %}"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        hx-get="{% url 'audit-log' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="setSidebarActive('audit')"
+                    >
+                        <i data-lucide="history" class="w-5 h-5 shrink-0"></i>
+                        {% trans "Change History" %}
+                    </button>
+
+                    <!-- Sample Library -->
+                    <button
+                        id="sidebar-samples-btn" data-title="{% trans 'Sample Library' %}"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        hx-get="{% url 'sample-list' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="setSidebarActive('samples')"
+                    >
+                        <i data-lucide="flask-conical" class="w-5 h-5 shrink-0"></i>
+                        {% trans "Sample Library" %}
+                    </button>
+                </div>
+
+            </nav>
+
+            <div class="px-4 py-4 border-t border-slate-200">
+                <div class="flex items-center gap-3 px-2 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                        <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-800 truncate">{{ request.user.username }}</p>
+                        {% if user_org %}
+                        <p class="text-xs text-slate-500 truncate">{{ user_org.name }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <button
+                    hx-get="{% url 'profile' %}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors mb-1">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    {% trans "Profile Settings" %}
+                </button>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        {% trans "Log out" %}
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main area -->
+        <div class="ml-72">
+            <header class="bg-white border-b border-slate-200 px-6 h-[72px] flex items-center justify-between gap-4 sticky top-0 z-10">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-xl leading-tight" id="page-title">{% trans "Systems" %}</h2>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button
+                        type="button"
+                        hx-get="{% url 'system-create-form' %}"
+                        hx-target="#crudModalBody"
+                        hx-on::after-request="document.getElementById('crudModal').showModal()"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl transition-colors"
+                    >
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        {% trans "Add System" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-red-200"
+                        onclick="document.getElementById('tfstateUploadModal').showModal()"
+                    >
+                        <i data-lucide="file-json" class="w-4 h-4"></i>
+                        {% trans "Import tfstate" %}
+                    </button>
+                </div>
+            </header>
+
+            <main id="main-content" class="p-6">
+                {% include '_system_list.html' %}
+            </main>
+        </div>
+
+    <!-- tfstate upload modal -->
+    <dialog id="tfstateUploadModal" class="p-0 w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl backdrop:bg-slate-900/40">
+        <div class="bg-white">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="font-semibold text-lg">{% trans "Upload tfstate File" %}</h2>
+                <button
+                    type="button"
+                    class="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+                    onclick="document.getElementById('tfstateUploadModal').close()"
+                    aria-label="{% trans "Close" %}"
+                >
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="tfstateUploadModalBody" class="p-6">
+                {% include '_upload_tfstate_form.html' %}
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Generic CRUD modal -->
+    <dialog id="crudModal" class="p-0 w-full max-w-lg rounded-2xl border border-slate-200 shadow-xl backdrop:bg-slate-900/40">
+        <div class="bg-white">
+            <div id="crudModalBody" class="p-6">
+                <!-- content loaded by htmx -->
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Confirm modal (hx-confirm の代替) -->
+    <dialog id="confirmModal" class="p-0 w-full max-w-sm rounded-2xl border border-slate-200 shadow-xl backdrop:bg-slate-900/50">
+        <div class="bg-white p-6">
+            <div class="flex items-start gap-4 mb-5">
+                <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-slate-800 mb-1">{% trans "Confirm deletion" %}</p>
+                    <p id="confirmMessage" class="text-sm text-slate-500"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button id="confirmCancelBtn" type="button"
+                    class="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors">
+                    {% trans "Cancel" %}
+                </button>
+                <button id="confirmOkBtn" type="button"
+                    class="px-4 py-2 text-sm rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors">
+                    {% trans "Delete" %}
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Detail panel modal -->
+    <dialog id="detailModal" class="p-0 w-full max-w-2xl rounded-2xl border border-slate-200 shadow-xl backdrop:bg-slate-900/40">
+        <div class="bg-white max-h-[85vh] overflow-y-auto">
+            <div id="detailModalBody" class="p-6">
+                <!-- content loaded by htmx -->
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        lucide.createIcons();
+        document.body.addEventListener('htmx:afterSwap', function () {
+            lucide.createIcons();
+        });
+        document.body.addEventListener('htmx:configRequest', function (e) {
+            e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+        document.querySelectorAll('dialog').forEach(function (d) {
+            d.addEventListener('click', function (e) {
+                if (e.target === d) d.close();
+            });
+        });
+
+        // hx-confirm をブラウザ標準ダイアログではなくカスタムモーダルで処理
+        document.body.addEventListener('htmx:confirm', function (evt) {
+            if (!evt.detail.question) return; // hx-confirm なし → 通常通り処理
+            evt.preventDefault();
+            var modal = document.getElementById('confirmModal');
+            document.getElementById('confirmMessage').textContent = evt.detail.question;
+            modal.showModal();
+            document.getElementById('confirmOkBtn').onclick = function () {
+                modal.close();
+                evt.detail.issueRequest(true);
+            };
+            document.getElementById('confirmCancelBtn').onclick = function () {
+                modal.close();
+            };
+        });
+
+        // tfstate upload: close modal on server success signal
+        document.body.addEventListener('closeUploadModal', function () {
+            document.getElementById('tfstateUploadModal').close();
+        });
+
+        // Show server-side errors (4xx/5xx) that HTMX would otherwise ignore
+        document.body.addEventListener('htmx:responseError', function (e) {
+            var body = document.getElementById('tfstateUploadModalBody');
+            if (body && document.getElementById('tfstateUploadModal').open) {
+                body.innerHTML = '<p class="text-sm text-red-600 flex items-center gap-2"><svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{% trans "A server error occurred (HTTP" %} ' + e.detail.xhr.status + '). {% trans "Check the console for details." %}</p><div class="mt-4 flex justify-end"><button type="button" class="px-4 py-2 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100" onclick="document.getElementById(\'tfstateUploadModal\').close()">{% trans "Close" %}</button></div>';
+            }
+        });
+
+        function setSidebarActive(key) {
+            var inactive = {
+                'systems': 'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                'assets':  'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                'apps':    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                'audit':   'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+            };
+            var active = {
+                'systems': 'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors bg-indigo-600 text-white',
+                'assets':  'w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors bg-indigo-600 text-white',
+                'apps':    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-indigo-600 text-white',
+                'audit':   'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-indigo-600 text-white',
+            };
+            // 全ボタンをリセット
+            ['systems','assets','apps','audit'].forEach(function(k) {
+                var el = document.getElementById('sidebar-' + k + '-btn');
+                if (el) el.className = inactive[k];
+            });
+            document.querySelectorAll('.sidebar-provider-btn').forEach(function(btn) {
+                btn.className = 'sidebar-provider-btn w-full flex items-center justify-between gap-3 pl-10 pr-3 py-2 rounded-xl transition-colors text-slate-500 hover:bg-slate-100 hover:text-slate-800';
+            });
+
+            // アクティブ化
+            if (key.startsWith('provider-')) {
+                var providerKey = key.replace('provider-', '');
+                var btn = document.querySelector('.sidebar-provider-btn[data-provider="' + providerKey + '"]');
+                if (btn) btn.className = 'sidebar-provider-btn w-full flex items-center justify-between gap-3 pl-10 pr-3 py-2 rounded-xl transition-colors bg-indigo-50 text-indigo-700 font-semibold';
+            } else {
+                var el = document.getElementById('sidebar-' + key + '-btn');
+                if (el && active[key]) el.className = active[key];
+            }
+
+            // ページ見出しを現在のセクション名に更新
+            var titleEl = document.getElementById('page-title');
+            if (titleEl) {
+                var src = key.indexOf('provider-') === 0
+                    ? document.querySelector('.sidebar-provider-btn[data-provider="' + key.replace('provider-','') + '"]')
+                    : document.getElementById('sidebar-' + key + '-btn');
+                if (src && src.dataset.title) titleEl.textContent = src.dataset.title;
+            }
+        }
+    </script>
+</body>
+</html>

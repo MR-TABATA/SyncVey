@@ -1,0 +1,103 @@
+{% load i18n %}
+
+<div class="flex items-center justify-between mb-5">
+    <h2 class="font-semibold text-lg">{% trans "Edit System" %}</h2>
+    <button type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">
+        <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+</div>
+
+<form
+    hx-post="{% url 'system-update' system.id %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-on::after-request="if(event.detail.successful) document.getElementById('crudModal').close()"
+>
+    {% csrf_token %}
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "System Name" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="name" value="{{ system.name }}"
+                class="w-full rounded-xl border {% if errors.name %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                required
+            >
+            {% if errors.name %}<p class="mt-1 text-xs text-red-500">{{ errors.name }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Code (slug)" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="code" value="{{ system.code }}"
+                class="w-full rounded-xl border {% if errors.code %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                required
+            >
+            {% if errors.code %}<p class="mt-1 text-xs text-red-500">{{ errors.code }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">AWS Role ARN</label>
+            <input
+                type="text" name="aws_role_arn" value="{{ system.aws_role_arn|default:'' }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="arn:aws:iam::123456789012:role/AssetManagerReadOnly"
+            >
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Scan Regions" %}</label>
+            <input
+                type="text" name="aws_scan_regions" value="{{ system.aws_scan_regions|join:', ' }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "ap-northeast-1, us-east-1 (comma-separated)" %}"
+            >
+        </div>
+
+        <!-- Slack -->
+        <div class="pt-3 border-t border-slate-100">
+            <p class="text-sm font-medium text-slate-700 mb-2">{% trans "Notifications" %}</p>
+            <label class="block text-xs font-medium text-slate-500 mb-1">Slack Webhook URL</label>
+            <input
+                type="url" name="slack_webhook_url"
+                value="{{ system.slack_webhook_url|default:'' }}"
+                class="w-full rounded-xl border {% if errors.slack_webhook_url %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="https://hooks.slack.com/services/..."
+            >
+            {% if errors.slack_webhook_url %}<p class="mt-1 text-xs text-red-500">{{ errors.slack_webhook_url }}</p>{% endif %}
+            <p class="mt-1 text-xs text-slate-400">{% trans "Notified when drift is detected. Leave blank to disable." %}</p>
+
+            <label class="block text-xs font-medium text-slate-500 mb-1 mt-3">{% trans "Notification Language" %}</label>
+            <select name="slack_language"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                <option value="en" {% if system.slack_language == 'en' %}selected{% endif %}>English</option>
+                <option value="ja" {% if system.slack_language == 'ja' %}selected{% endif %}>日本語</option>
+            </select>
+        </div>
+
+        <!-- Scheduler -->
+        <div class="pt-3 border-t border-slate-100">
+            <p class="text-sm font-medium text-slate-700 mb-3">{% trans "Scheduled Scan" %}</p>
+            <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="relative">
+                        <input type="checkbox" name="scan_enabled" id="scan_enabled"
+                               class="sr-only peer" {% if system.scan_enabled %}checked{% endif %}>
+                        <div class="w-10 h-6 bg-slate-200 peer-checked:bg-indigo-600 rounded-full transition-colors"></div>
+                        <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                    </div>
+                    <span class="text-sm text-slate-600">{% trans "Enable auto scan" %}</span>
+                </label>
+            </div>
+            <div class="mt-3">
+                <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Interval" %}</label>
+                <select name="scan_interval_minutes"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    {% for minutes, label in scan_interval_choices %}
+                    <option value="{{ minutes }}" {% if system.scan_interval_minutes == minutes %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">{% trans "Cancel" %}</button>
+        <button type="submit" class="px-4 py-2 text-sm rounded-xl bg-[#FF6B6B] hover:bg-[#e84040] text-white font-medium">{% trans "Save" %}</button>
+    </div>
+</form>

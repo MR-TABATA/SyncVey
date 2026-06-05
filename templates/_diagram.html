@@ -1,0 +1,28 @@
+{% load i18n %}
+<div class="mb-4 text-sm text-slate-600 flex items-center gap-2">
+    <button class="text-indigo-600 hover:text-indigo-700 font-medium"
+        hx-get="{% url 'system-list' %}"
+        hx-target="#main-content"
+        hx-swap="innerHTML"
+        hx-on::after-request="setSidebarActive('systems')"
+    >{% trans "Systems" %}</button>
+    <span class="text-slate-300">/</span>
+    <button class="text-indigo-600 hover:text-indigo-700 font-medium"
+        hx-get="{% url 'environment-list' env.system.id %}"
+        hx-target="#main-content"
+        hx-swap="innerHTML"
+        hx-on::after-request="setSidebarActive('systems')"
+    >{{ env.system.name }}</button>
+    <span class="text-slate-300">/</span>
+    <span class="font-medium text-slate-700">{{ env.name }}</span>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">{% trans "Architecture Diagram" %}</span>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-x-auto">
+    {% if png_b64 %}
+        <img src="data:image/png;base64,{{ png_b64 }}" style="max-width:100%;height:auto;" alt="Architecture Diagram">
+    {% else %}
+        <p class="text-slate-400 text-center py-20">{% trans "No resources to diagram." %}</p>
+    {% endif %}
+</div>

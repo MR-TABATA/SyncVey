@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# テスト
+moto[all]
+pytest
+pytest-django
+pytest-playwright

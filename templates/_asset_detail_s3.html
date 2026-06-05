@@ -1,0 +1,9 @@
+{% load i18n %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Versioning" %}</span><span class="text-slate-700">{% if d.versioning_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Public Access Block" %}</span><span class="text-slate-700">{% if d.public_access_blocked %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Encryption" %}</span><span class="font-mono text-slate-700">{{ d.encryption_type }}</span></div>
+{% if d.kms_key_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "KMS Key" %}</span><span class="font-mono text-slate-700 text-xs break-all">{{ d.kms_key_id }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Access Logs" %}</span><span class="text-slate-700">{% if d.logging_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.logging_target_bucket %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Log Target Bucket" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.logging_target_bucket }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Replication" %}</span><span class="text-slate-700">{% if d.replication_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Object Lock" %}</span><span class="text-slate-700">{% if d.object_lock_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>

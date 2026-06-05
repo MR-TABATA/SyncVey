@@ -1,0 +1,21 @@
+{% load i18n %}
+{% if result.errors %}
+  <div class="flex items-center gap-1.5 text-xs text-red-600 font-medium">
+    <i data-lucide="x-circle" class="w-3.5 h-3.5 shrink-0"></i>
+    <span>{{ result.errors.0 }}</span>
+  </div>
+{% else %}
+  <div class="flex items-center gap-2 text-xs font-medium">
+    <i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-600 shrink-0"></i>
+    <span class="text-slate-600">{% trans "Scan complete" %}</span>
+    {% if result.created %}
+      <span class="px-1.5 py-0.5 rounded bg-green-100 text-green-700">{% blocktrans with n=result.created %}+{{ n }} new{% endblocktrans %}</span>
+    {% endif %}
+    {% if result.updated %}
+      <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">{% blocktrans with n=result.updated %}{{ n }} updated{% endblocktrans %}</span>
+    {% endif %}
+    {% if not result.created and not result.updated %}
+      <span class="text-slate-400">{% trans "No changes" %}</span>
+    {% endif %}
+  </div>
+{% endif %}

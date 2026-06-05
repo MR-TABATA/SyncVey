@@ -1,0 +1,9 @@
+Django
+dj-database-url
+psycopg[binary]
+django-debug-toolbar
+diagrams
+pyotp
+qrcode[pil]
+boto3
+django-apscheduler

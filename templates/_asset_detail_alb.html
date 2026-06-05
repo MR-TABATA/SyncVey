@@ -1,0 +1,29 @@
+{% load i18n %}
+{% if d.dns_name %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "DNS Name" %}</span><span class="font-mono text-slate-700 text-xs break-all">{{ d.dns_name }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Scheme" %}</span><span class="text-slate-700">{{ d.scheme }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "State" %}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if d.state == 'active' %}bg-green-100 text-green-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ d.state }}</span>
+</div>
+{% if d.vpc_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">VPC ID</span><span class="font-mono text-slate-700 text-xs">{{ d.vpc_id }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Idle Timeout" %}</span><span class="text-slate-700">{{ d.idle_timeout_seconds }} {% trans "sec" %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Deletion Protection" %}</span><span class="text-slate-700">{% if d.deletion_protection %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Access Logs" %}</span><span class="text-slate-700">{% if d.access_logs_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.waf_web_acl_arn %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">WAF Web ACL</span><span class="font-mono text-slate-700 text-xs break-all">{{ d.waf_web_acl_arn }}</span></div>{% endif %}
+{% if d.subnets %}
+<div class="px-4 py-3 text-sm"><p class="text-slate-500 mb-1.5">{% trans "Subnets" %}</p>
+    <div class="flex flex-wrap gap-1">{% for s in d.subnets %}<span class="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono text-slate-700">{{ s }}</span>{% endfor %}</div>
+</div>
+{% endif %}
+{% if d.target_groups.exists %}
+<div class="px-4 py-3 text-sm">
+    <p class="text-slate-500 mb-1.5">{% trans "Target Groups" %}</p>
+    <div class="space-y-1">
+        {% for tg in d.target_groups.all %}
+        <div class="flex justify-between bg-white border border-slate-200 rounded px-3 py-1.5">
+            <span class="font-mono text-slate-700 text-xs">{{ tg.name }}</span>
+            <span class="text-slate-500 text-xs">{{ tg.protocol }}:{{ tg.port }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

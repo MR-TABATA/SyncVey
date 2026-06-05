@@ -1,0 +1,25 @@
+{% load i18n static %}
+{% with state_class=d.state %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Instance Type" %}</span><span class="font-mono font-semibold text-slate-800">{{ d.instance_type }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "State" %}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-bold
+        {% if d.state == 'running' %}bg-green-100 text-green-700{% elif d.state == 'stopped' %}bg-slate-100 text-slate-600{% else %}bg-amber-100 text-amber-700{% endif %}">
+        {{ d.state }}
+    </span>
+</div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">AMI ID</span><span class="font-mono text-slate-700">{{ d.ami_id }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Platform" %}</span><span class="text-slate-700">{{ d.platform }}</span></div>
+{% if d.private_ip %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Private IP" %}</span><span class="font-mono text-slate-700">{{ d.private_ip }}</span></div>{% endif %}
+{% if d.public_ip %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Public IP" %}</span><span class="font-mono text-slate-700">{{ d.public_ip }}</span></div>{% endif %}
+{% if d.vpc_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">VPC ID</span><span class="font-mono text-slate-700 text-xs">{{ d.vpc_id }}</span></div>{% endif %}
+{% if d.subnet_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Subnet ID" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.subnet_id }}</span></div>{% endif %}
+{% if d.availability_zone %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">AZ</span><span class="font-mono text-slate-700">{{ d.availability_zone }}</span></div>{% endif %}
+{% if d.key_name %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Key Pair" %}</span><span class="text-slate-700">{{ d.key_name }}</span></div>{% endif %}
+{% if d.iam_instance_profile %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "IAM Profile" %}</span><span class="text-slate-700 text-xs">{{ d.iam_instance_profile }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Detailed Monitoring" %}</span><span class="text-slate-700">{% if d.monitoring_enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.security_groups %}
+<div class="px-4 py-3 text-sm"><p class="text-slate-500 mb-1.5">{% trans "Security Groups" %}</p>
+    <div class="flex flex-wrap gap-1">{% for sg in d.security_groups %}<span class="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono text-slate-700">{{ sg }}</span>{% endfor %}</div>
+</div>
+{% endif %}
+{% endwith %}

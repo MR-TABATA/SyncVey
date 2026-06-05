@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SyncVey — Brand Assets</title>
+<style>
+  body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 28px; font-family: system-ui; }
+  h1 { font-size: 18px; color: #333; font-weight: 700; }
+  h2 { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+  .card { border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); padding: 36px 48px; display: flex; flex-direction: column; gap: 18px; align-items: center; }
+  .light { background: #fff; }
+  .dark  { background: #221848; }
+  .dark h2 { color: #6a5db0; }
+  .row { display: flex; align-items: center; gap: 40px; }
+  .sizes { display: flex; align-items: flex-end; gap: 24px; }
+  .sizes .s { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .sizes .lbl { font-size: 9px; color: #bbb; }
+  .palette { display:flex; gap:14px; }
+  .sw { display:flex; flex-direction:column; align-items:center; gap:6px; font-size:10px; color:#888; }
+  .chip { width:56px; height:56px; border-radius:10px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+</style>
+</head>
+<body>
+  <h1>SyncVey — Brand Assets</h1>
+
+  <!-- Light logo -->
+  <div class="card light">
+    <h2>Logo — Light</h2>
+    <img src="syncvey-logo.svg" height="64">
+  </div>
+
+  <!-- Dark logo -->
+  <div class="card dark">
+    <h2>Logo — Dark</h2>
+    <img src="syncvey-logo-dark.svg" height="64">
+  </div>
+
+  <!-- Icon sizes -->
+  <div class="card light">
+    <h2>Icon / Favicon</h2>
+    <div class="sizes">
+      <div class="s"><img src="syncvey-icon.svg" height="96"><span class="lbl">96</span></div>
+      <div class="s"><img src="syncvey-icon.svg" height="48"><span class="lbl">48</span></div>
+      <div class="s"><img src="syncvey-icon.svg" height="32"><span class="lbl">32</span></div>
+      <div class="s"><img src="syncvey-icon.svg" height="16"><span class="lbl">16</span></div>
+    </div>
+  </div>
+
+  <!-- Palette -->
+  <div class="card light">
+    <h2>Palette</h2>
+    <div class="palette">
+      <div class="sw"><div class="chip" style="background:#FF6B6B"></div>Coral<br>#FF6B6B</div>
+      <div class="sw"><div class="chip" style="background:#5641C4"></div>Indigo<br>#5641C4</div>
+      <div class="sw"><div class="chip" style="background:#221848"></div>Dark<br>#221848</div>
+    </div>
+  </div>
+
+</body>
+</html>

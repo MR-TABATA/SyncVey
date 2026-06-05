@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:18.3-alpine
+    restart: always
+    env_file: .env
+    container_name: syncvey-db
+    volumes:
+      - db-data:/var/lib/postgresql
+    environment:
+      # .env から読み込み
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT_EXTERNAL}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: syncvey-app
+    env_file: .env
+    volumes:
+      - .:/app
+      - /app/.venv # 仮想環境をコンテナ内に閉じ込める
+    ports:
+      - "${APP_PORT_EXTERNAL:-8000}:8000"
+    environment:
+      # .env の DATABASE_URL を利用
+      PYTHONPATH: /app
+      DATABASE_URL: ${DATABASE_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py createsuperuser --noinput || true &&
+             python manage.py seed &&
+             python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

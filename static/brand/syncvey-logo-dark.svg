@@ -1,0 +1,19 @@
+<svg width="300" height="80" viewBox="0 0 300 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- bridge icon (white) -->
+  <g transform="translate(8, 17) scale(0.45)">
+    <line x1="10" y1="86" x2="90" y2="86" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <line x1="26" y1="16" x2="26" y2="86" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+    <line x1="74" y1="16" x2="74" y2="86" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+    <line x1="10" y1="64" x2="90" y2="64" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="38" y1="64" x2="38" y2="44" stroke="#ffffff" stroke-width="3.5"/>
+    <line x1="50" y1="64" x2="50" y2="52" stroke="#ffffff" stroke-width="3.5"/>
+    <line x1="62" y1="64" x2="62" y2="44" stroke="#ffffff" stroke-width="3.5"/>
+  </g>
+  <!-- wordmark -->
+  <text x="66" y="54"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="40" font-weight="700">
+    <tspan fill="#FF6B6B">Sync</tspan><tspan fill="#ffffff">Vey</tspan>
+  </text>
+</svg>

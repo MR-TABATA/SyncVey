@@ -1,0 +1,109 @@
+{% load i18n %}
+
+<!-- Stats Strip -->
+{% if stats.category_cards %}
+<div class="bg-white border border-slate-200 rounded-xl px-5 py-3 mb-5 flex flex-wrap gap-x-8 gap-y-2">
+    {% for card in stats.category_cards %}
+    <div class="flex items-center gap-2">
+        <i data-lucide="{{ card.icon }}" class="w-4 h-4 text-slate-400 shrink-0"></i>
+        <span class="text-xs text-slate-500">{{ card.label }}</span>
+        <span class="text-sm font-bold text-slate-800">{{ card.count }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Section header -->
+<div class="flex items-center justify-between mb-3">
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest">{% trans "Systems" %}</p>
+    <span class="text-xs text-slate-400">{{ systems|length }} {% trans "items" %}</span>
+</div>
+
+{% if systems %}
+<div class="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100">
+    {% for system in systems %}
+    <div class="group flex items-center gap-4 px-4 py-3.5 hover:bg-slate-50 transition-colors">
+
+        <!-- Icon -->
+        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+            <i data-lucide="layers" class="w-4 h-4 text-slate-500"></i>
+        </div>
+
+        <!-- Name + code -->
+        <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-800 truncate">{{ system.name }}</p>
+            <p class="text-xs font-mono text-slate-400 truncate">{{ system.code }}</p>
+        </div>
+
+        <!-- Provider badges -->
+        {% if system.providers %}
+        <div class="flex items-center gap-1 shrink-0">
+            {% for badge in system.providers %}
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ badge.color }}">{{ badge.label }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Counts -->
+        <div class="hidden sm:flex items-center gap-3 text-xs shrink-0">
+            <span class="text-slate-400">{{ system.environments.count }} {% trans "envs" %}</span>
+            <span class="font-semibold text-slate-600">{{ system.asset_count|default:"0" }} {% trans "resources" %}</span>
+        </div>
+
+        <!-- Hover actions -->
+        <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <button class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                hx-get="{% url 'system-edit-form' system.id %}"
+                hx-target="#crudModalBody"
+                hx-on::after-request="document.getElementById('crudModal').showModal()"
+                title="{% trans "Edit" %}">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+            </button>
+            {% blocktrans with name=system.name asvar del_confirm %}Delete "{{ name }}"? All environments and resources under it will also be deleted.{% endblocktrans %}
+            <button class="p-1.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                hx-post="{% url 'system-delete' system.id %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-confirm="{{ del_confirm }}"
+                title="{% trans "Delete" %}">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                hx-get="{% url 'application-list' system.id %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                title="{% trans "Apps / Middleware" %}">
+                <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+
+        <!-- Navigate chevron (always visible) -->
+        <button class="p-1.5 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0"
+            hx-get="{% url 'environment-list' system.id %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML"
+            hx-on::after-request="setSidebarActive('systems')"
+            title="{% trans "Environments" %}">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
+    <svg viewBox="0 0 100 100" class="w-10 h-10 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+    <p class="text-sm font-medium text-slate-500 mb-1">{% trans "No systems found" %}</p>
+    <p class="text-xs text-slate-400 mb-5">{% trans "Upload a tfstate file or add a system to get started" %}</p>
+    <button
+        type="button"
+        hx-get="{% url 'system-create-form' %}"
+        hx-target="#crudModalBody"
+        hx-on::after-request="document.getElementById('crudModal').showModal()"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors"
+    >
+        <i data-lucide="plus" class="w-4 h-4"></i> {% trans "Add First System" %}
+    </button>
+</div>
+{% endif %}

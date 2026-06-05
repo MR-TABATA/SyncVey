@@ -1,0 +1,18 @@
+{% load i18n %}
+{% if d.cluster_name %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Cluster" %}</span><span class="font-mono text-slate-700">{{ d.cluster_name }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Launch Type" %}</span><span class="font-mono text-slate-700">{{ d.launch_type }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "State" %}</span>
+    <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if d.status == 'ACTIVE' %}bg-green-100 text-green-700{% elif d.status == 'DRAINING' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ d.status }}</span>
+</div>
+{% if d.task_definition %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Task Definition" %}</span><span class="font-mono text-slate-700 text-xs break-all">{{ d.task_definition }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Task Count" %}</span>
+    <span class="text-slate-700">{% trans "Running" %} <strong>{{ d.running_count }}</strong> / {% trans "Desired" %} <strong>{{ d.desired_count }}</strong>{% if d.pending_count %} ({% trans "Pending" %} {{ d.pending_count }}){% endif %}</span>
+</div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Scheduling" %}</span><span class="text-slate-700">{{ d.scheduling_strategy }}</span></div>
+{% if d.vpc_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">VPC ID</span><span class="font-mono text-slate-700 text-xs">{{ d.vpc_id }}</span></div>{% endif %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Public IP" %}</span><span class="text-slate-700">{% if d.assign_public_ip %}{% trans "Auto-assigned" %}{% else %}{% trans "None" %}{% endif %}</span></div>
+{% if d.subnets %}
+<div class="px-4 py-3 text-sm"><p class="text-slate-500 mb-1.5">{% trans "Subnets" %}</p>
+    <div class="flex flex-wrap gap-1">{% for s in d.subnets %}<span class="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono text-slate-700">{{ s }}</span>{% endfor %}</div>
+</div>
+{% endif %}

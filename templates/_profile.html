@@ -1,0 +1,215 @@
+{% load i18n %}
+
+<div class="mb-4 text-sm text-slate-600 flex items-center gap-2">
+    <span class="font-medium text-slate-700">{% trans "Profile" %}</span>
+</div>
+
+<div class="max-w-2xl mx-auto space-y-6">
+
+    {# ── ユーザー情報 ──────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-800 text-base mb-4 flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4 text-slate-500"></i>
+            {% trans "User Information" %}
+        </h3>
+        <form hx-post="{% url 'profile-update' %}"
+              hx-target="#profile-info-result"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="space-y-4">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Last Name" %}</label>
+                        <input type="text" name="last_name" value="{{ request.user.last_name }}"
+                               class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "First Name" %}</label>
+                        <input type="text" name="first_name" value="{{ request.user.first_name }}"
+                               class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Username" %}</label>
+                    <input type="text" value="{{ request.user.username }}" disabled
+                           class="w-full px-3 py-2 text-sm border border-slate-100 rounded-lg bg-slate-50 text-slate-400 cursor-not-allowed">
+                    <p class="text-xs text-slate-400 mt-1">{% trans "Username cannot be changed." %}</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Email" %}</label>
+                    <input type="email" name="email" value="{{ request.user.email }}"
+                           class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+                <div id="profile-info-result"></div>
+                <button type="submit"
+                        class="ml-auto px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors">
+                    {% trans "Save" %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# ── 組織・ロール ──────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-800 text-base mb-4 flex items-center gap-2">
+            <i data-lucide="building-2" class="w-4 h-4 text-slate-500"></i>
+            {% trans "Organizations & Roles" %}
+        </h3>
+        {% if memberships %}
+            <div class="space-y-3">
+            {% for m in memberships %}
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div>
+                        <p class="text-sm font-medium text-slate-800">{{ m.organization.name }}</p>
+                        <p class="text-xs text-slate-400">{{ m.organization.slug }}</p>
+                    </div>
+                    <div class="flex items-center gap-3" id="role-result-{{ m.pk }}">
+                        {% if is_owner and m.role != 'OWNER' %}
+                            <form hx-post="{% url 'membership-update' m.pk %}"
+                                  hx-target="#role-result-{{ m.pk }}"
+                                  hx-swap="innerHTML"
+                                  class="flex items-center gap-2">
+                                {% csrf_token %}
+                                <select name="role"
+                                        class="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    {% for val, label in role_choices %}
+                                        <option value="{{ val }}" {% if val == m.role %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit"
+                                        class="text-xs px-2 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                    {% trans "Change" %}
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                                {% if m.role == 'OWNER' %}bg-amber-100 text-amber-700
+                                {% elif m.role == 'INFRA_ADMIN' %}bg-blue-100 text-blue-700
+                                {% elif m.role == 'APP_ADMIN' %}bg-purple-100 text-purple-700
+                                {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ m.get_role_display }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-sm text-slate-400">{% trans "No organization memberships." %}</p>
+        {% endif %}
+    </div>
+
+    {# ── パスワード変更 ────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-800 text-base mb-4 flex items-center gap-2">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-500"></i>
+            {% trans "Change Password" %}
+        </h3>
+        <form hx-post="{% url 'profile-password' %}"
+              hx-target="#profile-pw-result"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Current Password" %}</label>
+                    <input type="password" name="current_password" autocomplete="current-password"
+                           class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "New Password" %}</label>
+                    <input type="password" name="new_password" autocomplete="new-password"
+                           class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Confirm New Password" %}</label>
+                    <input type="password" name="confirm_password" autocomplete="new-password"
+                           class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+                <div id="profile-pw-result"></div>
+                <button type="submit"
+                        class="ml-auto px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors">
+                    {% trans "Change Password" %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# ── 2段階認証 ─────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-800 text-base mb-4 flex items-center gap-2">
+            <i data-lucide="shield" class="w-4 h-4 text-slate-500"></i>
+            {% trans "Two-Factor Authentication" %}
+        </h3>
+        <div id="profile-2fa-section">
+            {% include '_profile_2fa_status.html' %}
+        </div>
+    </div>
+
+    {# ── 危険ゾーン ────────────────────────────────────────── #}
+    <div class="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
+        <h3 class="font-semibold text-red-700 text-base mb-1 flex items-center gap-2">
+            <i data-lucide="triangle-alert" class="w-4 h-4"></i>
+            {% trans "Danger Zone" %}
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">{% trans "This action is irreversible." %}</p>
+
+        <div x-data="{ open: false }">
+            <button type="button"
+                    onclick="document.getElementById('deleteAccountSection').classList.toggle('hidden')"
+                    class="px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium rounded-xl transition-colors">
+                {% trans "Delete Account" %}
+            </button>
+
+            <div id="deleteAccountSection" class="hidden mt-4 p-4 bg-red-50 rounded-xl border border-red-200 space-y-3">
+                <p class="text-sm text-red-700 font-medium">{% trans "Enter your password to confirm account deletion." %}</p>
+
+                {% if is_owner %}
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="deleteAssetsCheck" name="delete_assets" value="1"
+                           class="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                    <span class="text-sm text-red-700">{% trans "Also delete all assets in my organizations (OWNER only)" %}</span>
+                </label>
+                {% endif %}
+
+                <form hx-post="{% url 'profile-delete' %}"
+                      hx-target="#profile-delete-result"
+                      hx-swap="innerHTML">
+                    {% csrf_token %}
+                    {% if is_owner %}
+                    <input type="hidden" name="delete_assets" id="deleteAssetsHidden" value="0">
+                    {% endif %}
+                    <div class="flex items-center gap-2">
+                        <input type="password" name="password" placeholder="{% trans "Password" %}"
+                               autocomplete="current-password"
+                               class="flex-1 px-3 py-2 text-sm border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 bg-white">
+                        <button type="submit"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors">
+                            {% trans "Delete" %}
+                        </button>
+                    </div>
+                    <div id="profile-delete-result" class="mt-2"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Sync checkbox state to hidden field for delete_assets
+(function () {
+    var cb = document.getElementById('deleteAssetsCheck');
+    var hd = document.getElementById('deleteAssetsHidden');
+    if (cb && hd) {
+        cb.addEventListener('change', function () { hd.value = cb.checked ? '1' : '0'; });
+    }
+})();
+</script>

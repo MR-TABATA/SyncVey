@@ -1,0 +1,65 @@
+{% load i18n %}
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h2 class="text-lg font-bold text-slate-800">{% trans "Sample tfstate Library" %}</h2>
+    <p class="text-xs text-slate-400 mt-0.5">{% trans "Import a sample to see SyncVey in action, or view the raw file." %}</p>
+  </div>
+</div>
+
+<div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))">
+  {% for s in samples %}
+  <div class="bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition-colors p-4">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-semibold text-slate-800">{{ s.name }}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ s.env_color }}">{{ s.env_type }}</span>
+      </div>
+      <span class="text-xs text-slate-400">{{ s.total }} resources</span>
+    </div>
+
+    <!-- Resource chips -->
+    <div class="flex flex-wrap gap-1.5 mb-4">
+      {% for atype, cnt in s.summary.items %}
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600">
+        {{ atype }}<span class="text-slate-400">×{{ cnt }}</span>
+      </span>
+      {% endfor %}
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+      <button
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-xs font-semibold rounded-lg transition-colors"
+        hx-post="{% url 'sample-import' s.filename %}"
+        hx-target="#sample-result-{{ forloop.counter }}"
+        hx-swap="innerHTML"
+        hx-indicator="#import-spinner-{{ forloop.counter }}"
+        onclick="event.stopPropagation()"
+      >
+        <i data-lucide="download" class="w-3.5 h-3.5 htmx-hide-on-request"></i>
+        <i id="import-spinner-{{ forloop.counter }}" data-lucide="loader" class="w-3.5 h-3.5 animate-spin htmx-indicator hidden"></i>
+        {% trans "Import Sample" %}
+      </button>
+      <button
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-lg transition-colors"
+        hx-get="{% url 'sample-view' s.filename %}"
+        hx-target="#main-content"
+        hx-swap="innerHTML"
+      >
+        <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
+        {% trans "View File" %}
+      </button>
+    </div>
+
+    <div id="sample-result-{{ forloop.counter }}" class="mt-2"></div>
+
+  </div>
+  {% empty %}
+  <div class="col-span-full text-center py-16 text-slate-400">
+    <svg viewBox="0 0 100 100" class="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+    <p class="text-sm">{% trans "No sample files found." %}</p>
+  </div>
+  {% endfor %}
+</div>

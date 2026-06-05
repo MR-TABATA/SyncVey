@@ -1,0 +1,6 @@
+{% load i18n %}
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "CIDR Block" %}</span><span class="font-mono font-semibold text-slate-800">{{ d.cidr_block }}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "Default VPC" %}</span><span class="text-slate-700">{% if d.is_default %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "DNS Support" %}</span><span class="text-slate-700">{% if d.dns_support %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "DNS Hostnames" %}</span><span class="text-slate-700">{% if d.dns_hostnames %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span></div>
+{% if d.dhcp_options_id %}<div class="px-4 py-3 flex justify-between text-sm"><span class="text-slate-500">{% trans "DHCP Options ID" %}</span><span class="font-mono text-slate-700 text-xs">{{ d.dhcp_options_id }}</span></div>{% endif %}

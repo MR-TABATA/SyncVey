@@ -1,0 +1,58 @@
+{% load i18n %}
+
+<div class="flex items-center justify-between mb-5">
+    <h2 class="font-semibold text-lg">{% trans "Add System" %}</h2>
+    <button type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">
+        <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+</div>
+
+<form
+    hx-post="{% url 'system-create' %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-on::after-request="if(event.detail.successful) document.getElementById('crudModal').close()"
+>
+    {% csrf_token %}
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "System Name" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="name" value="{{ values.name }}"
+                class="w-full rounded-xl border {% if errors.name %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "e.g. E-commerce" %}"
+                required
+            >
+            {% if errors.name %}<p class="mt-1 text-xs text-red-500">{{ errors.name }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Code (slug)" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="code" value="{{ values.code }}"
+                class="w-full rounded-xl border {% if errors.code %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "e.g. ec-site (auto-generated if blank)" %}"
+            >
+            {% if errors.code %}<p class="mt-1 text-xs text-red-500">{{ errors.code }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">AWS Role ARN</label>
+            <input
+                type="text" name="aws_role_arn" value="{{ values.aws_role_arn }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="arn:aws:iam::123456789012:role/AssetManagerReadOnly"
+            >
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Scan Regions" %}</label>
+            <input
+                type="text" name="aws_scan_regions" value="{{ values.aws_scan_regions }}"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "ap-northeast-1, us-east-1 (comma-separated)" %}"
+            >
+        </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">{% trans "Cancel" %}</button>
+        <button type="submit" class="px-4 py-2 text-sm rounded-xl bg-[#FF6B6B] hover:bg-[#e84040] text-white font-medium">{% trans "Add" %}</button>
+    </div>
+</form>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SyncVey — Quick Survey</title>
+  <meta name="description" content="Sync tfstate against AWS reality and visualize it — a self-hosted infrastructure ledger and drift detector that catches even console-made resources. One Docker command, fully free.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SyncVey">
+  <meta property="og:title" content="SyncVey — Quick Survey">
+  <meta property="og:description" content="Sync tfstate against AWS reality and visualize it — a self-hosted infrastructure ledger and drift detector that catches even console-made resources. One Docker command, fully free.">
+  <meta property="og:image" content="https://mr-tabata.github.io/SyncVey/og-image.png">
+  <meta property="og:url" content="https://mr-tabata.github.io/SyncVey/survey.en.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SyncVey — Quick Survey">
+  <meta name="twitter:description" content="Sync tfstate against AWS reality and visualize it — a self-hosted infrastructure ledger and drift detector that catches even console-made resources. One Docker command, fully free.">
+  <meta name="twitter:image" content="https://mr-tabata.github.io/SyncVey/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f8f9fb; --surface: #ffffff; --border: rgba(0,0,0,0.08);
+      --text: #1E2030; --muted: #6b7280;
+      --coral: #FF6B6B; --slate: #1E2030;
+      --gradient: linear-gradient(135deg, #FF6B6B, #e84040);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    nav { background: rgba(30,32,48,0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+    .nav-logo-text { display: flex; align-items: baseline; }
+    .nav-logo-text .n1 { color: #fff; }
+    .nav-logo-text .n2 { color: var(--coral); font-weight: 400; }
+    .nav-back { font-size: 13px; color: rgba(255,255,255,0.6); }
+    .nav-back:hover { color: #fff; }
+
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 60px 24px; }
+    .card { background: #fff; border-radius: 20px; border: 1px solid var(--border); padding: 48px; max-width: 520px; width: 100%; box-shadow: 0 4px 32px rgba(0,0,0,0.06); }
+    .card-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(255,107,107,0.12); color: var(--coral); border: 1px solid rgba(255,107,107,0.3); letter-spacing: 0.05em; margin-bottom: 20px; }
+    .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .card p { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    .privacy-note { font-size: 12px; color: var(--muted); background: var(--bg); border-radius: 8px; padding: 10px 14px; margin-bottom: 28px; }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    select, input[type="text"] {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 14px; background: #fff; color: var(--text); appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+    }
+    input[type="text"] { background-image: none; }
+    select:focus, input:focus { outline: none; border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,107,0.12); }
+
+    .btn-submit {
+      width: 100%; padding: 14px; background: var(--gradient); border: none; border-radius: 10px;
+      color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(255,107,107,0.3); margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
+    footer { border-top: 1px solid rgba(255,255,255,0.08); padding: 24px 0; text-align: center; font-size: 13px; color: rgba(255,255,255,0.4); background: var(--slate); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="index.en.html" class="nav-logo">
+      <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+      <div class="nav-logo-text"><span class="n1">Sync</span><span class="n2">Vey</span></div>
+    </a>
+    <a href="index.en.html" class="nav-back">← Back to top</a>
+  </div>
+</nav>
+
+<main>
+  <div class="card">
+    <span class="card-badge">SETUP</span>
+    <h1>One quick question</h1>
+    <p>Tell us where you're deploying SyncVey. You'll be taken to the download instructions right after.</p>
+    <p class="privacy-note">🔒 No personal information collected — country and region only.</p>
+
+    <form id="survey-form">
+      <div class="form-group">
+        <label for="country">Country <span style="color:var(--coral)">*</span></label>
+        <select id="country" name="country" required onchange="updateState()">
+          <option value="">Select your country</option>
+          <option value="United States">🇺🇸 United States</option>
+          <option value="Japan">🇯🇵 Japan</option>
+          <option value="Canada">🇨🇦 Canada</option>
+          <option value="United Kingdom">🇬🇧 United Kingdom</option>
+          <option value="Australia">🇦🇺 Australia</option>
+          <option value="Germany">🇩🇪 Germany</option>
+          <option value="France">🇫🇷 France</option>
+          <option value="India">🇮🇳 India</option>
+          <option value="Singapore">🇸🇬 Singapore</option>
+          <option value="South Korea">🇰🇷 South Korea</option>
+          <option value="China">🇨🇳 China</option>
+          <option value="Brazil">🇧🇷 Brazil</option>
+          <option value="Netherlands">🇳🇱 Netherlands</option>
+          <option value="Sweden">🇸🇪 Sweden</option>
+          <option value="Other">Other</option>
+        </select>
+        <p class="error" id="country-error">Please select a country</p>
+      </div>
+
+      <div class="form-group" id="state-group" style="display:none;">
+        <label for="state" id="state-label">State / Province</label>
+        <select id="state-select" name="state" style="display:none;"></select>
+        <input type="text" id="state-text" name="state-text" placeholder="State / Province / Region" style="display:none;" />
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">
+        Go to download instructions →
+      </button>
+    </form>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>© 2026 SyncVey</p>
+  </div>
+</footer>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEcGE9hZ2X-NhabjyIcT369-X5lJOVGYNaYM721yu2YU_yZr1j96QnLvzMD4Bv5g7G/exec';
+
+  const JP_PREFECTURES = [
+    'Hokkaido','Aomori','Iwate','Miyagi','Akita','Yamagata','Fukushima',
+    'Ibaraki','Tochigi','Gunma','Saitama','Chiba','Tokyo','Kanagawa',
+    'Niigata','Toyama','Ishikawa','Fukui','Yamanashi','Nagano','Gifu',
+    'Shizuoka','Aichi','Mie','Shiga','Kyoto','Osaka','Hyogo',
+    'Nara','Wakayama','Tottori','Shimane','Okayama','Hiroshima','Yamaguchi',
+    'Tokushima','Kagawa','Ehime','Kochi','Fukuoka','Saga','Nagasaki',
+    'Kumamoto','Oita','Miyazaki','Kagoshima','Okinawa'
+  ];
+
+  const US_STATES = [
+    'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
+    'Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa',
+    'Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan',
+    'Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada',
+    'New Hampshire','New Jersey','New Mexico','New York','North Carolina',
+    'North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island',
+    'South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont',
+    'Virginia','Washington','West Virginia','Wisconsin','Wyoming','Washington D.C.'
+  ];
+
+  const CA_PROVINCES = [
+    'Alberta','British Columbia','Manitoba','New Brunswick',
+    'Newfoundland and Labrador','Nova Scotia','Ontario',
+    'Prince Edward Island','Quebec','Saskatchewan',
+    'Northwest Territories','Nunavut','Yukon'
+  ];
+
+  function updateState() {
+    const country = document.getElementById('country').value;
+    const group = document.getElementById('state-group');
+    const sel = document.getElementById('state-select');
+    const txt = document.getElementById('state-text');
+    const lbl = document.getElementById('state-label');
+
+    sel.innerHTML = '';
+    sel.style.display = 'none';
+    txt.style.display = 'none';
+    group.style.display = 'none';
+
+    if (!country) return;
+
+    group.style.display = 'block';
+
+    if (country === 'Japan') {
+      lbl.textContent = 'Prefecture';
+      buildSelect(sel, JP_PREFECTURES, 'Select prefecture');
+      sel.style.display = 'block';
+    } else if (country === 'United States') {
+      lbl.textContent = 'State';
+      buildSelect(sel, US_STATES, 'Select state');
+      sel.style.display = 'block';
+    } else if (country === 'Canada') {
+      lbl.textContent = 'Province / Territory';
+      buildSelect(sel, CA_PROVINCES, 'Select province');
+      sel.style.display = 'block';
+    } else {
+      lbl.textContent = 'State / Province / Region (optional)';
+      txt.style.display = 'block';
+    }
+  }
+
+  function buildSelect(sel, items, placeholder) {
+    sel.innerHTML = `<option value="">${placeholder}</option>`;
+    items.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item;
+      opt.textContent = item;
+      sel.appendChild(opt);
+    });
+  }
+
+  document.getElementById('survey-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const country = document.getElementById('country').value;
+    if (!country) {
+      document.getElementById('country-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('country-error').style.display = 'none';
+
+    const sel = document.getElementById('state-select');
+    const txt = document.getElementById('state-text');
+    const state = sel.style.display !== 'none' ? sel.value : txt.value;
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({ country, state, lang: 'en' }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (_) {}
+
+    setTimeout(() => {
+      window.location.href = 'download.en.html';
+    }, 300);
+  });
+</script>
+
+</body>
+</html>

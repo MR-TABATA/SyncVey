@@ -1,0 +1,40 @@
+{% load i18n %}
+{% if profile.two_factor_enabled %}
+    <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl border border-green-200 mb-4">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+            <span class="text-sm font-medium text-green-700">{% trans "Two-factor authentication is enabled" %}</span>
+        </div>
+    </div>
+    <div id="totp-disable-form">
+        <p class="text-xs text-slate-500 mb-3">{% trans "Enter your password to disable two-factor authentication." %}</p>
+        <form hx-post="{% url 'profile-totp-disable' %}"
+              hx-target="#profile-2fa-section"
+              hx-swap="innerHTML">
+            {% csrf_token %}
+            <div class="flex items-center gap-2">
+                <input type="password" name="password" placeholder="{% trans "Password" %}"
+                       autocomplete="current-password"
+                       class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="submit"
+                        class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-50 text-sm font-medium rounded-xl transition-colors">
+                    {% trans "Disable" %}
+                </button>
+            </div>
+        </form>
+    </div>
+{% else %}
+    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
+            <span class="text-sm text-slate-500">{% trans "Two-factor authentication is disabled" %}</span>
+        </div>
+    </div>
+    <button type="button"
+            hx-get="{% url 'profile-totp-setup' %}"
+            hx-target="#profile-2fa-section"
+            hx-swap="innerHTML"
+            class="px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors">
+        {% trans "Set Up Two-Factor Authentication" %}
+    </button>
+{% endif %}

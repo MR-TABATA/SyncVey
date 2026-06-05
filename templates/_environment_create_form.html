@@ -1,0 +1,84 @@
+{% load i18n %}
+
+<div class="flex items-center justify-between mb-5">
+    <h2 class="font-semibold text-lg">{% trans "Add Environment" %} <span class="text-slate-400 font-normal text-base">— {{ system.name }}</span></h2>
+    <button type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">
+        <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+</div>
+
+<form
+    hx-post="{% url 'environment-create' system.id %}"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-on::after-request="if(event.detail.successful) document.getElementById('crudModal').close()"
+>
+    {% csrf_token %}
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Environment Name" %} <span class="text-red-500">*</span></label>
+            <input
+                type="text" name="name" value="{{ values.name }}"
+                class="w-full rounded-xl border {% if errors.name %}border-red-400{% else %}border-slate-200{% endif %} px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                placeholder="{% trans "e.g. Production, Staging" %}"
+                required
+            >
+            {% if errors.name %}<p class="mt-1 text-xs text-red-500">{{ errors.name }}</p>{% endif %}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "Environment Type" %}</label>
+            <select
+                name="env_type"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+                {% for value, label in env_types %}
+                    <option value="{{ value }}" {% if values.env_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{% trans "State Backend" %}</label>
+            <select
+                name="backend_type"
+                id="backend_type_new"
+                onchange="toggleS3FieldsNew(this.value)"
+                class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            >
+                <option value="manual">{% trans "Manual Upload" %}</option>
+                <option value="s3">S3 Remote State</option>
+            </select>
+        </div>
+        <div id="s3_fields_new" style="display:none" class="space-y-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <p class="text-xs text-slate-500">{% trans "SyncVey will pull tfstate directly from S3 on each sync." %}</p>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">{% trans "S3 Bucket" %} <span class="text-red-500">*</span></label>
+                <input type="text" name="s3_bucket" value="{{ values.s3_bucket|default:'' }}" placeholder="my-terraform-state-bucket"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">{% trans "S3 Key" %} <span class="text-red-500">*</span></label>
+                <input type="text" name="s3_key" value="{{ values.s3_key|default:'' }}" placeholder="envs/prod/terraform.tfstate"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">{% trans "S3 Region" %}</label>
+                <input type="text" name="s3_region" value="{{ values.s3_region|default:'' }}" placeholder="ap-northeast-1"
+                    class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer pt-1">
+                <input type="checkbox" name="s3_auto_sync" value="1" {% if values.s3_auto_sync == '1' %}checked{% endif %}
+                    class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-xs text-slate-600">{% trans "Auto-sync on schedule" %}</span>
+            </label>
+        </div>
+    </div>
+    <script>
+    function toggleS3FieldsNew(val) {
+        document.getElementById('s3_fields_new').style.display = val === 's3' ? '' : 'none';
+    }
+    </script>
+    <div class="mt-6 flex justify-end gap-2">
+        <button type="button" class="px-4 py-2 text-sm rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100" onclick="document.getElementById('crudModal').close()">{% trans "Cancel" %}</button>
+        <button type="submit" class="px-4 py-2 text-sm rounded-xl bg-[#FF6B6B] hover:bg-[#e84040] text-white font-medium">{% trans "Add" %}</button>
+    </div>
+</form>

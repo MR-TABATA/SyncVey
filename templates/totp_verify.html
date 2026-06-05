@@ -1,0 +1,78 @@
+{% load i18n static %}{% get_current_language as CURRENT_LANG %}
+<!DOCTYPE html>
+<html lang="{{ CURRENT_LANG }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Two-Factor Authentication" %} — SyncVey</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}?v=2">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.min.js" integrity="sha384-bdZtphetAEBgkGZvhZXOFDWc55tHGLqaSo1f4qZtgvEiolEBqlJ9u6FTk+CoLfj0" crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+
+    <div class="w-full max-w-sm">
+        <div class="text-center mb-8">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-4">
+                <svg viewBox="0 0 100 100" class="w-7 h-7" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line x1="10" y1="86" x2="90" y2="86" stroke-width="6"/><line x1="26" y1="16" x2="26" y2="86" stroke-width="7"/><line x1="74" y1="16" x2="74" y2="86" stroke-width="7"/><line x1="10" y1="64" x2="90" y2="64" stroke-width="6"/><path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" stroke-width="6"/><line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/><line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/><line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Synchronized Survey</p>
+            <h1 class="text-white font-bold text-2xl mt-1">{% trans "Two-Factor Auth" %}</h1>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <h2 class="text-lg font-bold text-slate-800 mb-2">{% trans "Enter Verification Code" %}</h2>
+            <p class="text-sm text-slate-500 mb-6">
+                {% trans "Open your authenticator app and enter the 6-digit code." %}
+            </p>
+
+            {% if error %}
+            <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 mb-5">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'totp-verify' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5" for="id_code">
+                        {% trans "6-digit code" %}
+                    </label>
+                    <input
+                        id="id_code"
+                        name="code"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9 ]*"
+                        maxlength="7"
+                        autofocus
+                        placeholder="000 000"
+                        class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-slate-800 text-xl font-mono text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                    >
+                </div>
+
+                <button
+                    type="submit"
+                    class="w-full py-2.5 bg-[#FF6B6B] hover:bg-[#e84040] text-white font-semibold text-sm rounded-xl transition-colors"
+                >
+                    {% trans "Verify" %}
+                </button>
+            </form>
+
+            <div class="mt-4 text-center">
+                <a href="{% url 'login' %}" class="text-xs text-slate-400 hover:text-slate-600">
+                    ← {% trans "Back to Sign In" %}
+                </a>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-slate-500 mt-6">
+            Django + HTMX — Synchronized Survey
+        </p>
+    </div>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

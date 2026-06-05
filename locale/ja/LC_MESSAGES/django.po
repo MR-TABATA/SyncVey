@@ -1,0 +1,1872 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-05 05:36+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: asset_manager/admin.py:128
+msgid "Raw data (JSON)"
+msgstr "RAWデータ (JSON)"
+
+#: asset_manager/admin.py:235
+msgid "Products"
+msgstr "プロダクト数"
+
+#: asset_manager/models/application.py:9
+msgid "PHP"
+msgstr "PHP"
+
+#: asset_manager/models/application.py:10
+msgid "Ruby"
+msgstr "Ruby"
+
+#: asset_manager/models/application.py:11
+msgid "Python"
+msgstr "Python"
+
+#: asset_manager/models/application.py:12
+msgid "JavaScript"
+msgstr "JavaScript"
+
+#: asset_manager/models/application.py:13
+msgid "TypeScript"
+msgstr "TypeScript"
+
+#: asset_manager/models/application.py:14
+msgid "Go"
+msgstr "Go"
+
+#: asset_manager/models/application.py:15
+msgid "Java"
+msgstr "Java"
+
+#: asset_manager/models/application.py:16
+msgid "Kotlin"
+msgstr "Kotlin"
+
+#: asset_manager/models/application.py:17
+msgid "Rust"
+msgstr "Rust"
+
+#: asset_manager/models/application.py:18
+#: asset_manager/models/application.py:75 asset_manager/resource_registry.py:45
+msgid "Other"
+msgstr "その他"
+
+#: asset_manager/models/application.py:21
+msgid "Laravel"
+msgstr "Laravel"
+
+#: asset_manager/models/application.py:22
+msgid "Ruby on Rails"
+msgstr "Ruby on Rails"
+
+#: asset_manager/models/application.py:23
+msgid "Django"
+msgstr "Django"
+
+#: asset_manager/models/application.py:24
+msgid "FastAPI"
+msgstr "FastAPI"
+
+#: asset_manager/models/application.py:25
+msgid "Flask"
+msgstr "Flask"
+
+#: asset_manager/models/application.py:26
+msgid "Next.js"
+msgstr "Next.js"
+
+#: asset_manager/models/application.py:27
+msgid "Nuxt.js"
+msgstr "Nuxt.js"
+
+#: asset_manager/models/application.py:28
+msgid "React"
+msgstr "React"
+
+#: asset_manager/models/application.py:29
+msgid "Vue.js"
+msgstr "Vue.js"
+
+#: asset_manager/models/application.py:30
+msgid "Angular"
+msgstr "Angular"
+
+#: asset_manager/models/application.py:31
+msgid "Spring Boot"
+msgstr "Spring Boot"
+
+#: asset_manager/models/application.py:32
+msgid "Express"
+msgstr "Express"
+
+#: asset_manager/models/application.py:33
+msgid "NestJS"
+msgstr "NestJS"
+
+#: asset_manager/models/application.py:34
+#: asset_manager/models/application.py:67
+msgid "None / Other"
+msgstr "なし / その他"
+
+#: asset_manager/models/application.py:40 asset_manager/models/scan.py:18
+#: asset_manager/models/system.py:34 asset_manager/models/system.py:61
+#: asset_manager/notifications.py:88
+msgid "System"
+msgstr "システム"
+
+#: asset_manager/models/application.py:42
+msgid "App Name"
+msgstr "アプリ名"
+
+#: asset_manager/models/application.py:43
+msgid "Language"
+msgstr "言語"
+
+#: asset_manager/models/application.py:44
+msgid "Framework"
+msgstr "フレームワーク"
+
+#: asset_manager/models/application.py:45
+msgid "Repository URL"
+msgstr "リポジトリURL"
+
+#: asset_manager/models/application.py:46
+msgid "Description"
+msgstr "説明"
+
+#: asset_manager/models/application.py:49
+#: asset_manager/models/application.py:81
+msgid "Application"
+msgstr "アプリケーション"
+
+#: asset_manager/models/application.py:50
+msgid "Applications"
+msgstr "アプリケーション一覧"
+
+#: asset_manager/models/application.py:60
+msgid "Apache"
+msgstr "Apache"
+
+#: asset_manager/models/application.py:61
+msgid "Nginx"
+msgstr "Nginx"
+
+#: asset_manager/models/application.py:62
+msgid "Puma"
+msgstr "Puma"
+
+#: asset_manager/models/application.py:63
+msgid "Unicorn"
+msgstr "Unicorn"
+
+#: asset_manager/models/application.py:64
+msgid "uWSGI"
+msgstr "uWSGI"
+
+#: asset_manager/models/application.py:65
+msgid "Gunicorn"
+msgstr "Gunicorn"
+
+#: asset_manager/models/application.py:66
+msgid "Node.js"
+msgstr "Node.js"
+
+#: asset_manager/models/application.py:70
+msgid "EC2"
+msgstr "EC2"
+
+#: asset_manager/models/application.py:71
+msgid "ECS (Fargate/EC2)"
+msgstr "ECS (Fargate/EC2)"
+
+#: asset_manager/models/application.py:72
+msgid "Lambda"
+msgstr "Lambda"
+
+#: asset_manager/models/application.py:73
+msgid "Kubernetes"
+msgstr "Kubernetes"
+
+#: asset_manager/models/application.py:74
+msgid "Elastic Beanstalk"
+msgstr "Elastic Beanstalk"
+
+#: asset_manager/models/application.py:87 asset_manager/models/asset.py:20
+#: asset_manager/models/system.py:87 asset_manager/notifications.py:89
+#: templates/_all_applications.html:49 templates/_application_list.html:49
+#: templates/_asset_card.html:40 templates/_asset_create_form.html:67
+#: templates/_asset_list.html:93
+msgid "Environment"
+msgstr "環境"
+
+#: asset_manager/models/application.py:89
+msgid "Language Version"
+msgstr "言語バージョン"
+
+#: asset_manager/models/application.py:90
+msgid "Framework Version"
+msgstr "FWバージョン"
+
+#: asset_manager/models/application.py:91 templates/_all_applications.html:52
+#: templates/_application_list.html:52
+msgid "Runtime"
+msgstr "ランタイム"
+
+#: asset_manager/models/application.py:92
+msgid "Runtime Version"
+msgstr "ランタイムバージョン"
+
+#: asset_manager/models/application.py:98
+msgid "Database Asset"
+msgstr "接続DB (Asset)"
+
+#: asset_manager/models/application.py:105
+msgid "Deploy Target"
+msgstr "デプロイ先 (Asset)"
+
+#: asset_manager/models/application.py:107 templates/_application_list.html:53
+msgid "Branch"
+msgstr "ブランチ"
+
+#: asset_manager/models/application.py:108
+msgid "Deploy Method"
+msgstr "デプロイ方式"
+
+#: asset_manager/models/application.py:111
+msgid "App Environment Config"
+msgstr "アプリ環境設定"
+
+#: asset_manager/models/application.py:112
+msgid "App Environment Configs"
+msgstr "アプリ環境設定一覧"
+
+#: asset_manager/models/application.py:122
+msgid "Library"
+msgstr "ライブラリ"
+
+#: asset_manager/models/application.py:123 templates/_all_applications.html:86
+#: templates/_application_list.html:87
+msgid "Middleware"
+msgstr "ミドルウェア"
+
+#: asset_manager/models/application.py:124
+msgid "Tool"
+msgstr "ツール"
+
+#: asset_manager/models/application.py:130
+msgid "App Env Config"
+msgstr "アプリ環境設定"
+
+#: asset_manager/models/application.py:132
+msgid "Package Name"
+msgstr "パッケージ名"
+
+#: asset_manager/models/application.py:133 templates/_all_applications.html:50
+#: templates/_application_list.html:50
+msgid "Version"
+msgstr "バージョン"
+
+#: asset_manager/models/application.py:134 templates/_asset_card.html:32
+#: templates/_asset_list.html:90 templates/_audit_log.html:24
+#: templates/_audit_log.html:61
+msgid "Type"
+msgstr "種別"
+
+#: asset_manager/models/application.py:137
+msgid "Dependency"
+msgstr "依存パッケージ"
+
+#: asset_manager/models/application.py:138
+msgid "Dependencies"
+msgstr "依存パッケージ一覧"
+
+#: asset_manager/models/asset.py:22
+msgid "Asset Name"
+msgstr "資産名"
+
+#: asset_manager/models/asset.py:26 templates/_asset_create_form.html:41
+msgid "Provider"
+msgstr "プロバイダー"
+
+#: asset_manager/models/asset.py:30
+msgid "Asset Type"
+msgstr "資産タイプ"
+
+#: asset_manager/models/asset.py:36
+msgid "Asset Category"
+msgstr "資産カテゴリ"
+
+#: asset_manager/models/asset.py:38
+msgid "Cloud ID"
+msgstr "クラウドID"
+
+#: asset_manager/models/asset.py:39 templates/_asset_card.html:36
+#: templates/_asset_create_form.html:58 templates/_asset_list.html:92
+msgid "Region"
+msgstr "リージョン"
+
+#: asset_manager/models/asset.py:40
+msgid "Endpoint"
+msgstr "エンドポイント"
+
+#: asset_manager/models/asset.py:41
+msgid "Raw Data"
+msgstr "RAWデータ"
+
+#: asset_manager/models/asset.py:42
+msgid "Previous Raw Data"
+msgstr "前回RAWデータ"
+
+#: asset_manager/models/asset.py:43
+msgid "Last Imported At"
+msgstr "最終インポート日時"
+
+#: asset_manager/models/asset.py:44
+msgid "Memo"
+msgstr "メモ"
+
+#: asset_manager/models/asset.py:47
+msgid "Asset"
+msgstr "資産"
+
+#: asset_manager/models/asset.py:48
+msgid "Assets"
+msgstr "資産一覧"
+
+#: asset_manager/models/audit.py:25
+msgid "Audit log"
+msgstr "監査ログ"
+
+#: asset_manager/models/audit.py:26
+msgid "Audit logs"
+msgstr "監査ログ一覧"
+
+#: asset_manager/models/eol.py:15
+msgid "EOL Data"
+msgstr "EOLデータ"
+
+#: asset_manager/models/eol.py:16
+msgid "Fetched At"
+msgstr "取得日時"
+
+#: asset_manager/models/eol.py:17
+msgid "Source"
+msgstr "取得元"
+
+#: asset_manager/models/eol.py:21
+msgid "EOL Snapshot"
+msgstr "EOLスナップショット"
+
+#: asset_manager/models/eol.py:22
+msgid "EOL Snapshots"
+msgstr "EOLスナップショット一覧"
+
+#: asset_manager/models/org.py:9
+msgid "Organization Name"
+msgstr "組織名"
+
+#: asset_manager/models/org.py:10
+msgid "Slug"
+msgstr "スラッグ"
+
+#: asset_manager/models/org.py:13 asset_manager/models/org.py:38
+#: asset_manager/models/system.py:30
+msgid "Organization"
+msgstr "組織"
+
+#: asset_manager/models/org.py:14
+msgid "Organizations"
+msgstr "組織一覧"
+
+#: asset_manager/models/org.py:23
+msgid "Owner"
+msgstr "オーナー"
+
+#: asset_manager/models/org.py:24
+msgid "Infra Admin"
+msgstr "インフラ管理者"
+
+#: asset_manager/models/org.py:25
+msgid "App Admin"
+msgstr "アプリ管理者"
+
+#: asset_manager/models/org.py:26
+msgid "Viewer"
+msgstr "閲覧者"
+
+#: asset_manager/models/org.py:32 asset_manager/models/org.py:61
+#: templates/_audit_log.html:33 templates/_audit_log.html:59
+msgid "User"
+msgstr "ユーザー"
+
+#: asset_manager/models/org.py:44
+msgid "Role"
+msgstr "ロール"
+
+#: asset_manager/models/org.py:48
+msgid "Membership"
+msgstr "メンバーシップ"
+
+#: asset_manager/models/org.py:49
+msgid "Memberships"
+msgstr "メンバーシップ一覧"
+
+#: asset_manager/models/org.py:63 templates/totp_verify.html:21
+msgid "Two-Factor Auth"
+msgstr "2段階認証"
+
+#: asset_manager/models/org.py:64
+msgid "TOTP Secret"
+msgstr "TOTPシークレット"
+
+#: asset_manager/models/org.py:67
+msgid "User Profile"
+msgstr "ユーザープロフィール"
+
+#: asset_manager/models/org.py:68
+msgid "User Profiles"
+msgstr "ユーザープロフィール一覧"
+
+#: asset_manager/models/scan.py:9 templates/_asset_detail_ecs.html:9
+msgid "Pending"
+msgstr "保留中"
+
+#: asset_manager/models/scan.py:10 templates/_asset_detail_ecs.html:9
+msgid "Running"
+msgstr "実行中"
+
+#: asset_manager/models/scan.py:11
+msgid "Done"
+msgstr "完了"
+
+#: asset_manager/models/scan.py:12
+msgid "Failed"
+msgstr "失敗"
+
+#: asset_manager/models/scan.py:20
+msgid "Status"
+msgstr "ステータス"
+
+#: asset_manager/models/scan.py:21 asset_manager/models/system.py:16
+#: templates/_system_create_form.html:46 templates/_system_edit_form.html:45
+msgid "Scan Regions"
+msgstr "スキャン対象リージョン"
+
+#: asset_manager/models/scan.py:22
+msgid "Started At"
+msgstr "開始日時"
+
+#: asset_manager/models/scan.py:23
+msgid "Finished At"
+msgstr "終了日時"
+
+#: asset_manager/models/scan.py:24
+msgid "New Assets"
+msgstr "新規資産数"
+
+#: asset_manager/models/scan.py:25
+msgid "Updated Assets"
+msgstr "更新資産数"
+
+#: asset_manager/models/scan.py:26
+msgid "Error Message"
+msgstr "エラーメッセージ"
+
+#: asset_manager/models/scan.py:29
+msgid "Scan Job"
+msgstr "スキャンジョブ"
+
+#: asset_manager/models/scan.py:30
+msgid "Scan Jobs"
+msgstr "スキャンジョブ一覧"
+
+#: asset_manager/models/system.py:12 templates/_system_create_form.html:19
+#: templates/_system_edit_form.html:19 templates/_upload_tfstate_form.html:49
+msgid "System Name"
+msgstr "システム名"
+
+#: asset_manager/models/system.py:13
+msgid "System Code"
+msgstr "システムコード"
+
+#: asset_manager/models/system.py:15
+msgid "AWS Role ARN"
+msgstr "AWS Role ARN"
+
+#: asset_manager/models/system.py:17
+msgid "Auto Scan"
+msgstr "自動スキャン"
+
+#: asset_manager/models/system.py:18
+msgid "Scan Interval (min)"
+msgstr "スキャン間隔(分)"
+
+#: asset_manager/models/system.py:19
+msgid "Slack Webhook URL"
+msgstr "Slack Webhook URL"
+
+#: asset_manager/models/system.py:22
+msgid "Slack Notification Language"
+msgstr "Slack 通知言語"
+
+#: asset_manager/models/system.py:23
+msgid "Language used for Slack drift notifications."
+msgstr "Slack ドリフト通知に使う言語。"
+
+#: asset_manager/models/system.py:35 templates/_application_list.html:13
+#: templates/_asset_list.html:17 templates/_diagram.html:8
+#: templates/_drift_report.html:10 templates/_environment_list.html:13
+#: templates/_environment_list.html:208 templates/_system_list.html:18
+#: templates/dashboard.html:40 templates/dashboard.html:49
+#: templates/dashboard.html:163
+msgid "Systems"
+msgstr "システム一覧"
+
+#: asset_manager/models/system.py:48 templates/_upload_tfstate_form.html:76
+msgid "Production"
+msgstr "本番"
+
+#: asset_manager/models/system.py:49 templates/_upload_tfstate_form.html:77
+msgid "Staging"
+msgstr "ステージング"
+
+#: asset_manager/models/system.py:50 templates/_upload_tfstate_form.html:78
+msgid "Development"
+msgstr "開発"
+
+#: asset_manager/models/system.py:51
+msgid "QA"
+msgstr "QA"
+
+#: asset_manager/models/system.py:54 templates/_environment_create_form.html:47
+#: templates/_environment_edit_form.html:46
+msgid "Manual Upload"
+msgstr "手動アップロード"
+
+#: asset_manager/models/system.py:55
+msgid "S3 Remote State"
+msgstr "S3 リモートステート"
+
+#: asset_manager/models/system.py:63 templates/_environment_create_form.html:19
+#: templates/_environment_edit_form.html:19
+#: templates/_upload_tfstate_form.html:59
+msgid "Environment Name"
+msgstr "環境名"
+
+#: asset_manager/models/system.py:66
+msgid "tfstate Filename"
+msgstr "tfstate ファイル名"
+
+#: asset_manager/models/system.py:67
+msgid "Corresponding tfstate filename (e.g. ecsite-prod.tfstate)"
+msgstr "対応する tfstate ファイル名（例: ecsite-prod.tfstate）"
+
+#: asset_manager/models/system.py:73 templates/_environment_create_form.html:29
+#: templates/_environment_edit_form.html:28
+#: templates/_upload_tfstate_form.html:70
+msgid "Environment Type"
+msgstr "環境タイプ"
+
+#: asset_manager/models/system.py:79 templates/_environment_create_form.html:40
+#: templates/_environment_edit_form.html:39
+msgid "State Backend"
+msgstr "ステートバックエンド"
+
+#: asset_manager/models/system.py:81 templates/_environment_create_form.html:54
+#: templates/_environment_edit_form.html:53
+msgid "S3 Bucket"
+msgstr "S3 バケット"
+
+#: asset_manager/models/system.py:82 templates/_environment_create_form.html:59
+#: templates/_environment_edit_form.html:58
+msgid "S3 Key"
+msgstr "S3 キー"
+
+#: asset_manager/models/system.py:82
+msgid "e.g. envs/prod/terraform.tfstate"
+msgstr "例: envs/prod/terraform.tfstate"
+
+#: asset_manager/models/system.py:83 templates/_environment_create_form.html:64
+#: templates/_environment_edit_form.html:63
+msgid "S3 Region"
+msgstr "S3 リージョン"
+
+#: asset_manager/models/system.py:83
+msgid "e.g. ap-northeast-1"
+msgstr "例: ap-northeast-1"
+
+#: asset_manager/models/system.py:84
+msgid "Auto Sync on Schedule"
+msgstr "スケジュールで自動同期"
+
+#: asset_manager/models/system.py:88 templates/_system_list.html:86
+msgid "Environments"
+msgstr "環境一覧"
+
+#: asset_manager/notifications.py:72
+#, python-format
+msgid "• *%(n)s changed* — drift detected between definition and actual state"
+msgstr "• *%(n)s 件変更* — 定義と実態にズレが検出されました"
+
+#: asset_manager/notifications.py:74
+#, python-format
+msgid "• *%(n)s added* — resources found outside Terraform management"
+msgstr "• *%(n)s 件追加* — Terraform 管理外のリソースが見つかりました"
+
+#: asset_manager/notifications.py:82
+msgid "Drift Detected"
+msgstr "ドリフト検出"
+
+#: asset_manager/resource_registry.py:38
+msgid "Compute"
+msgstr "コンピューティング"
+
+#: asset_manager/resource_registry.py:39 templates/_asset_detail_rds.html:12
+msgid "Storage"
+msgstr "ストレージ"
+
+#: asset_manager/resource_registry.py:40
+msgid "Network"
+msgstr "ネットワーク"
+
+#: asset_manager/resource_registry.py:41
+msgid "Database"
+msgstr "データベース"
+
+#: asset_manager/resource_registry.py:42
+msgid "Analytics"
+msgstr "アナリティクス"
+
+#: asset_manager/resource_registry.py:43
+msgid "AI / ML"
+msgstr "AI / ML"
+
+#: asset_manager/resource_registry.py:44
+msgid "Security"
+msgstr "セキュリティ"
+
+#: asset_manager/views.py:454
+msgid "DB tables not created. Run `python manage.py migrate`."
+msgstr ""
+"DBテーブルが作成されていません。`python manage.py migrate` を実行してくださ"
+"い。"
+
+#: asset_manager/views.py:672
+msgid "No file selected."
+msgstr "ファイルが選択されていません。"
+
+#: asset_manager/views.py:676
+msgid "Only .tfstate or .json files are accepted."
+msgstr ".tfstate または .json ファイルのみ受け付けます。"
+
+#: asset_manager/views.py:682
+msgid "Failed to parse JSON. Please verify the file is a valid .tfstate."
+msgstr ""
+"JSONの解析に失敗しました。ファイルが有効な .tfstate であることを確認してくだ"
+"さい。"
+
+#: asset_manager/views.py:684
+#, python-format
+msgid "File read error: %(err)s"
+msgstr "ファイル読み込みエラー: %(err)s"
+
+#: asset_manager/views.py:704
+msgid ""
+"Could not auto-detect system or environment name. Please fill in System Name "
+"and Environment Name manually."
+msgstr ""
+"システム名または環境名を自動判定できませんでした。システム名と環境名を手動で"
+"入力してください。システム名または環境名を自動判定できませんでした。システム"
+"名と環境名を手動で入力してください。"
+
+#: asset_manager/views.py:730
+msgid "Session expired. Please upload the file again."
+msgstr "セッションが切れました。ファイルを再度アップロードしてください。"
+
+#: asset_manager/views.py:750
+#, python-format
+msgid "An error occurred during processing: %(err)s"
+msgstr "処理中にエラーが発生しました: %(err)s"
+
+#: asset_manager/views.py:760
+#, python-format
+msgid "%(count)d asset(s) registered/updated from %(filename)s."
+msgstr "%(filename)s から %(count)d 件の資産を登録/更新しました。"
+
+#: asset_manager/views.py:799 asset_manager/views.py:849
+msgid "System name is required."
+msgstr "システム名は必須です。"
+
+#: asset_manager/views.py:801 asset_manager/views.py:853
+msgid "This system name is already in use."
+msgstr "このシステム名はすでに使用されています。"
+
+#: asset_manager/views.py:803 asset_manager/views.py:855
+msgid "This code is already in use."
+msgstr "このコードはすでに使用されています。"
+
+#: asset_manager/views.py:818
+msgid "15 min"
+msgstr "15分"
+
+#: asset_manager/views.py:819
+msgid "30 min"
+msgstr "30分"
+
+#: asset_manager/views.py:820
+msgid "1 hour"
+msgstr "1時間"
+
+#: asset_manager/views.py:821
+msgid "6 hours"
+msgstr "6時間"
+
+#: asset_manager/views.py:822
+msgid "24 hours"
+msgstr "24時間"
+
+#: asset_manager/views.py:851
+msgid "Code is required."
+msgstr "コードは必須です。"
+
+#: asset_manager/views.py:860
+msgid "Webhook URL must be an https://hooks.slack.com/… address."
+msgstr ""
+"Webhook URL は https://hooks.slack.com/… のアドレスである必要があります。"
+
+#: asset_manager/views.py:927 asset_manager/views.py:970
+msgid "Environment name is required."
+msgstr "環境名は必須です。"
+
+#: asset_manager/views.py:929 asset_manager/views.py:972
+msgid "This environment name already exists."
+msgstr "この環境名はすでに存在します。"
+
+#: asset_manager/views.py:1040
+msgid "Asset name is required."
+msgstr "資産名は必須です。"
+
+#: asset_manager/views.py:1046
+msgid "The specified environment does not exist."
+msgstr "指定された環境が存在しません。"
+
+#: asset_manager/views.py:1075
+#, python-format
+msgid "Asset \"%(name)s\" has been registered."
+msgstr "資産「%(name)s」を登録しました。"
+
+#: asset_manager/views.py:1447
+msgid "Incorrect username or password."
+msgstr "ユーザー名またはパスワードが正しくありません。"
+
+#: asset_manager/views.py:1470
+msgid "認証コードが正しくありません"
+msgstr "認証コードが正しくありません"
+
+#: asset_manager/views.py:1520
+msgid "Saved"
+msgstr "保存しました"
+
+#: asset_manager/views.py:1536
+msgid "Current password is incorrect"
+msgstr "現在のパスワードが正しくありません"
+
+#: asset_manager/views.py:1538
+msgid "New password must be at least 8 characters"
+msgstr "新しいパスワードは8文字以上にしてください"
+
+#: asset_manager/views.py:1540
+msgid "New passwords do not match"
+msgstr "新しいパスワードが一致しません"
+
+#: asset_manager/views.py:1550
+msgid "Password changed"
+msgstr "パスワードを変更しました"
+
+#: asset_manager/views.py:1578
+msgid "Your session has expired. Please try again."
+msgstr "セッションが切れました。再度やり直してください。"
+
+#: asset_manager/views.py:1584
+msgid "The verification code is incorrect"
+msgstr "認証コードが正しくありません"
+
+#: asset_manager/views.py:1595
+msgid "Two-factor authentication enabled"
+msgstr "2段階認証が有効になりました"
+
+#: asset_manager/views.py:1606 asset_manager/views.py:1623
+msgid "Password is incorrect"
+msgstr "パスワードが正しくありません"
+
+#: asset_manager/views.py:1662
+msgid "Cannot change the role of the last owner"
+msgstr "最後のオーナーのロールは変更できません"
+
+#: asset_manager/views.py:1669
+msgid "Updated"
+msgstr "変更しました"
+
+#: asset_manager/views.py:1744
+msgid ""
+"AWS credentials are not configured. Enter a Role ARN in the System settings."
+msgstr ""
+"AWS認証情報が設定されていません。System設定で Role ARN を入力してください。"
+
+#: asset_manager/views.py:1793
+msgid "This environment is not configured with an S3 backend."
+msgstr "この環境はS3バックエンドに設定されていません。"
+
+#: asset_manager/views.py:1795
+msgid "Please set the S3 bucket and key."
+msgstr "S3 BucketとKeyを設定してください。"
+
+#: asset_manager/views.py:1800
+msgid "Failed to fetch from S3"
+msgstr "S3からの取得に失敗しました"
+
+#: asset_manager/views.py:1804
+msgid "tfstate contains sensitive information"
+msgstr "tfstateに機密情報が含まれています"
+
+#: asset_manager/views.py:1811
+msgid "Import error"
+msgstr "インポートエラー"
+
+#: templates/404.html:18
+msgid "Bridge out"
+msgstr "通行止め"
+
+#: templates/404.html:19
+msgid "The page you're looking for doesn't exist or has moved."
+msgstr "お探しのページは存在しないか、移動しました。"
+
+#: templates/404.html:21
+msgid "Back to SyncVey"
+msgstr "SyncVey に戻る"
+
+#: templates/_all_applications.html:4
+msgid "Applications & Middleware"
+msgstr "アプリ / ミドルウェア"
+
+#: templates/_all_applications.html:22
+msgid "System view"
+msgstr "システム表示"
+
+#: templates/_all_applications.html:51 templates/_application_list.html:51
+msgid "Deploy"
+msgstr "デプロイ方式"
+
+#: templates/_all_applications.html:97 templates/_application_list.html:98
+msgid "EOL Soon"
+msgstr "EOL間近"
+
+#: templates/_all_applications.html:104 templates/_application_list.html:105
+msgid "Libraries"
+msgstr "ライブラリ"
+
+#: templates/_all_applications.html:113 templates/_application_list.html:114
+msgid "Tools"
+msgstr "ツール"
+
+#: templates/_all_applications.html:133 templates/_application_list.html:133
+msgid "No env config"
+msgstr "環境設定なし"
+
+#: templates/_all_applications.html:144 templates/_application_list.html:141
+msgid "No applications found."
+msgstr "アプリケーションデータがありません。"
+
+#: templates/_application_list.html:15
+#, python-format
+msgid "%(name)s — Applications"
+msgstr "%(name)s — アプリケーション"
+
+#: templates/_application_list.html:17 templates/_system_list.html:19
+msgid "items"
+msgstr "件"
+
+#: templates/_application_list.html:38
+msgid "Repository"
+msgstr "リポジトリ"
+
+#: templates/_asset_card.html:48 templates/_asset_detail.html:79
+msgid "Updated:"
+msgstr "更新:"
+
+#: templates/_asset_create_form.html:4 templates/_asset_list.html:80
+#: templates/_asset_list.html:161
+msgid "Add Resource"
+msgstr "リソースを追加"
+
+#: templates/_asset_create_form.html:22
+msgid "Resource Name"
+msgstr "リソース名"
+
+#: templates/_asset_create_form.html:33
+msgid "Resource Type"
+msgstr "リソースタイプ"
+
+#: templates/_asset_create_form.html:54
+msgid "e.g. i-0abc123def456789 (auto-generated if blank)"
+msgstr "例: i-0abc123def456789（空白時は自動生成）"
+
+#: templates/_asset_create_form.html:69
+msgid "(unassigned)"
+msgstr "（未割り当て）"
+
+#: templates/_asset_create_form.html:77 templates/_asset_detail.html:72
+msgid "Notes"
+msgstr "メモ"
+
+#: templates/_asset_create_form.html:81
+msgid "Optional notes"
+msgstr "任意のメモ"
+
+#: templates/_asset_create_form.html:86
+#: templates/_environment_create_form.html:81
+#: templates/_environment_edit_form.html:80
+#: templates/_profile_totp_setup.html:41 templates/_system_create_form.html:55
+#: templates/_system_edit_form.html:100
+#: templates/_upload_secret_warning.html:59
+#: templates/_upload_tfstate_form.html:91 templates/dashboard.html:236
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: templates/_asset_create_form.html:87
+#: templates/_environment_create_form.html:82
+#: templates/_system_create_form.html:56
+msgid "Add"
+msgstr "追加"
+
+#: templates/_asset_detail.html:78
+msgid "Created:"
+msgstr "作成:"
+
+#: templates/_asset_detail_alb.html:2
+msgid "DNS Name"
+msgstr "DNS 名"
+
+#: templates/_asset_detail_alb.html:3
+msgid "Scheme"
+msgstr "スキーム"
+
+#: templates/_asset_detail_alb.html:4 templates/_asset_detail_ebs.html:3
+#: templates/_asset_detail_ec2.html:4 templates/_asset_detail_ecs.html:4
+#: templates/_asset_detail_rds.html:4
+msgid "State"
+msgstr "状態"
+
+#: templates/_asset_detail_alb.html:8
+msgid "Idle Timeout"
+msgstr "アイドルタイムアウト"
+
+#: templates/_asset_detail_alb.html:8
+msgid "sec"
+msgstr "秒"
+
+#: templates/_asset_detail_alb.html:9 templates/_asset_detail_rds.html:15
+msgid "Deletion Protection"
+msgstr "削除保護"
+
+#: templates/_asset_detail_alb.html:9 templates/_asset_detail_alb.html:10
+#: templates/_asset_detail_ebs.html:10 templates/_asset_detail_ec2.html:19
+#: templates/_asset_detail_rds.html:10 templates/_asset_detail_rds.html:15
+#: templates/_asset_detail_s3.html:2 templates/_asset_detail_s3.html:3
+#: templates/_asset_detail_s3.html:6 templates/_asset_detail_s3.html:8
+#: templates/_asset_detail_s3.html:9 templates/_asset_detail_vpc.html:4
+#: templates/_asset_detail_vpc.html:5
+msgid "Enabled"
+msgstr "有効"
+
+#: templates/_asset_detail_alb.html:9 templates/_asset_detail_alb.html:10
+#: templates/_asset_detail_ebs.html:10 templates/_asset_detail_ec2.html:19
+#: templates/_asset_detail_rds.html:10 templates/_asset_detail_rds.html:15
+#: templates/_asset_detail_s3.html:2 templates/_asset_detail_s3.html:3
+#: templates/_asset_detail_s3.html:6 templates/_asset_detail_s3.html:8
+#: templates/_asset_detail_s3.html:9 templates/_asset_detail_vpc.html:4
+#: templates/_asset_detail_vpc.html:5
+msgid "Disabled"
+msgstr "無効"
+
+#: templates/_asset_detail_alb.html:10 templates/_asset_detail_s3.html:6
+msgid "Access Logs"
+msgstr "アクセスログ"
+
+#: templates/_asset_detail_alb.html:13 templates/_asset_detail_ecs.html:15
+msgid "Subnets"
+msgstr "サブネット"
+
+#: templates/_asset_detail_alb.html:19
+msgid "Target Groups"
+msgstr "ターゲットグループ"
+
+#: templates/_asset_detail_ebs.html:2
+msgid "Volume Type"
+msgstr "ボリュームタイプ"
+
+#: templates/_asset_detail_ebs.html:6
+msgid "Size"
+msgstr "サイズ"
+
+#: templates/_asset_detail_ebs.html:8
+msgid "Throughput"
+msgstr "スループット"
+
+#: templates/_asset_detail_ebs.html:10 templates/_asset_detail_s3.html:4
+msgid "Encryption"
+msgstr "暗号化"
+
+#: templates/_asset_detail_ebs.html:11 templates/_asset_detail_s3.html:5
+msgid "KMS Key"
+msgstr "KMS キー"
+
+#: templates/_asset_detail_ebs.html:12
+msgid "Snapshot"
+msgstr "スナップショット"
+
+#: templates/_asset_detail_ebs.html:13
+msgid "Attached Instance"
+msgstr "アタッチされたインスタンス"
+
+#: templates/_asset_detail_ebs.html:14
+msgid "Delete on Termination"
+msgstr "終了時に削除"
+
+#: templates/_asset_detail_ebs.html:14 templates/_asset_detail_rds.html:11
+#: templates/_asset_detail_vpc.html:3
+msgid "Yes"
+msgstr "はい"
+
+#: templates/_asset_detail_ebs.html:14 templates/_asset_detail_rds.html:11
+#: templates/_asset_detail_vpc.html:3
+msgid "No"
+msgstr "いいえ"
+
+#: templates/_asset_detail_ec2.html:3
+msgid "Instance Type"
+msgstr "インスタンスタイプ"
+
+#: templates/_asset_detail_ec2.html:11
+msgid "Platform"
+msgstr "プラットフォーム"
+
+#: templates/_asset_detail_ec2.html:12
+msgid "Private IP"
+msgstr "プライベート IP"
+
+#: templates/_asset_detail_ec2.html:13 templates/_asset_detail_ecs.html:13
+msgid "Public IP"
+msgstr "パブリック IP"
+
+#: templates/_asset_detail_ec2.html:15
+msgid "Subnet ID"
+msgstr "サブネット ID"
+
+#: templates/_asset_detail_ec2.html:17
+msgid "Key Pair"
+msgstr "キーペア"
+
+#: templates/_asset_detail_ec2.html:18
+msgid "IAM Profile"
+msgstr "IAM プロファイル"
+
+#: templates/_asset_detail_ec2.html:19
+msgid "Detailed Monitoring"
+msgstr "詳細モニタリング"
+
+#: templates/_asset_detail_ec2.html:21
+msgid "Security Groups"
+msgstr "セキュリティグループ"
+
+#: templates/_asset_detail_ecs.html:2
+msgid "Cluster"
+msgstr "クラスター"
+
+#: templates/_asset_detail_ecs.html:3
+msgid "Launch Type"
+msgstr "起動タイプ"
+
+#: templates/_asset_detail_ecs.html:7
+msgid "Task Definition"
+msgstr "タスク定義"
+
+#: templates/_asset_detail_ecs.html:8
+msgid "Task Count"
+msgstr "タスク数"
+
+#: templates/_asset_detail_ecs.html:9
+msgid "Desired"
+msgstr "希望"
+
+#: templates/_asset_detail_ecs.html:11
+msgid "Scheduling"
+msgstr "スケジューリング"
+
+#: templates/_asset_detail_ecs.html:13
+msgid "Auto-assigned"
+msgstr "自動割り当て"
+
+#: templates/_asset_detail_ecs.html:13
+msgid "None"
+msgstr "なし"
+
+#: templates/_asset_detail_rds.html:2
+msgid "Engine"
+msgstr "エンジン"
+
+#: templates/_asset_detail_rds.html:3
+msgid "Instance Class"
+msgstr "インスタンスクラス"
+
+#: templates/_asset_detail_rds.html:7
+msgid "DB Name"
+msgstr "DB 名"
+
+#: templates/_asset_detail_rds.html:8
+msgid "Master User"
+msgstr "マスターユーザー"
+
+#: templates/_asset_detail_rds.html:9
+msgid "Port"
+msgstr "ポート"
+
+#: templates/_asset_detail_rds.html:10
+msgid "Multi-AZ"
+msgstr "マルチ AZ"
+
+#: templates/_asset_detail_rds.html:11
+msgid "Public Access"
+msgstr "パブリックアクセス"
+
+#: templates/_asset_detail_rds.html:12
+msgid "max"
+msgstr "最大"
+
+#: templates/_asset_detail_rds.html:14
+msgid "Backup Retention"
+msgstr "バックアップ保持"
+
+#: templates/_asset_detail_rds.html:14
+msgid "days"
+msgstr "日"
+
+#: templates/_asset_detail_s3.html:2
+msgid "Versioning"
+msgstr "バージョニング"
+
+#: templates/_asset_detail_s3.html:3
+msgid "Public Access Block"
+msgstr "パブリックアクセスブロック"
+
+#: templates/_asset_detail_s3.html:7
+msgid "Log Target Bucket"
+msgstr "ログ出力先"
+
+#: templates/_asset_detail_s3.html:8
+msgid "Replication"
+msgstr "レプリケーション"
+
+#: templates/_asset_detail_s3.html:9
+msgid "Object Lock"
+msgstr "オブジェクトロック"
+
+#: templates/_asset_detail_vpc.html:2
+msgid "CIDR Block"
+msgstr "CIDR ブロック"
+
+#: templates/_asset_detail_vpc.html:3
+msgid "Default VPC"
+msgstr "デフォルト VPC"
+
+#: templates/_asset_detail_vpc.html:4
+msgid "DNS Support"
+msgstr "DNS サポート"
+
+#: templates/_asset_detail_vpc.html:5
+msgid "DNS Hostnames"
+msgstr "DNS ホスト名"
+
+#: templates/_asset_detail_vpc.html:6
+msgid "DHCP Options ID"
+msgstr "DHCP オプション ID"
+
+#: templates/_asset_list.html:9
+msgid "Resources"
+msgstr "リソース"
+
+#: templates/_asset_list.html:52
+msgid "Search by name or Cloud ID..."
+msgstr "資産名またはクラウドIDで検索..."
+
+#: templates/_asset_list.html:59
+msgid "All Providers"
+msgstr "全てのプロバイダー"
+
+#: templates/_asset_list.html:65 templates/_audit_log.html:40
+msgid "Search"
+msgstr "検索"
+
+#: templates/_asset_list.html:89
+msgid "Name"
+msgstr "資産名"
+
+#: templates/_asset_list.html:99
+#, python-format
+msgid "Delete \"%(name)s\"?"
+msgstr "「%(name)s」を削除しますか？"
+
+#: templates/_asset_list.html:140 templates/_environment_list.html:104
+#: templates/_profile.html:195 templates/_system_list.html:68
+#: templates/dashboard.html:240
+msgid "Delete"
+msgstr "削除"
+
+#: templates/_asset_list.html:153
+msgid "No resources found."
+msgstr "リソースが見つかりません。"
+
+#: templates/_audit_log.html:4 templates/dashboard.html:101
+#: templates/dashboard.html:109
+msgid "Change History"
+msgstr "変更履歴"
+
+#: templates/_audit_log.html:5
+msgid "records"
+msgstr "件"
+
+#: templates/_audit_log.html:15 templates/_audit_log.html:60
+msgid "Action"
+msgstr "アクション"
+
+#: templates/_audit_log.html:17 templates/_audit_log.html:26
+msgid "All"
+msgstr "すべて"
+
+#: templates/_audit_log.html:47
+msgid "Clear"
+msgstr "クリア"
+
+#: templates/_audit_log.html:58
+msgid "Date/Time"
+msgstr "日時"
+
+#: templates/_audit_log.html:62
+msgid "Object"
+msgstr "オブジェクト"
+
+#: templates/_audit_log.html:63
+msgid "Changes"
+msgstr "変更内容"
+
+#: templates/_audit_log.html:141
+#, python-format
+msgid ""
+"\n"
+"        %(start)s–%(end)s of %(total)s\n"
+"        "
+msgstr ""
+"\n"
+"        %(total)s 件中 %(start)s–%(end)s\n"
+"        "
+
+#: templates/_audit_log.html:150
+msgid "Prev"
+msgstr "前"
+
+#: templates/_audit_log.html:157
+msgid "Next"
+msgstr "次"
+
+#: templates/_audit_log.html:167
+msgid "No history records."
+msgstr "変更履歴はありません。"
+
+#: templates/_diagram.html:19 templates/_environment_list.html:111
+msgid "Architecture Diagram"
+msgstr "構成図"
+
+#: templates/_diagram.html:26
+msgid "No resources to diagram."
+msgstr "図示するリソースがありません。"
+
+#: templates/_drift_report.html:22
+msgid "Drift Report"
+msgstr "ドリフトレポート"
+
+#: templates/_drift_report.html:30 templates/_environment_list.html:183
+msgid "changed"
+msgstr "変更"
+
+#: templates/_drift_report.html:35 templates/_environment_list.html:186
+msgid "added"
+msgstr "追加"
+
+#: templates/_drift_report.html:40
+msgid "unchanged"
+msgstr "変更なし"
+
+#: templates/_drift_report.html:45
+msgid "No drift detected"
+msgstr "ドリフトは検出されませんでした"
+
+#: templates/_drift_report.html:55
+msgid "Changed"
+msgstr "変更"
+
+#: templates/_drift_report.html:71
+msgid "fields"
+msgstr "フィールド"
+
+#: templates/_drift_report.html:102
+msgid "Added"
+msgstr "追加"
+
+#: templates/_drift_report.html:116
+msgid "New resource"
+msgstr "新規リソース"
+
+#: templates/_drift_report.html:129
+msgid "Unchanged"
+msgstr "変更なし"
+
+#: templates/_drift_report.html:131
+msgid "click to expand"
+msgstr "クリックで展開"
+
+#: templates/_drift_report.html:144 templates/_scan_result.html:18
+msgid "No changes"
+msgstr "変更なし"
+
+#: templates/_drift_report.html:155
+msgid "No resources in this environment."
+msgstr "この環境にはリソースがありません。"
+
+#: templates/_drift_report.html:156
+msgid "Import a tfstate file to get started."
+msgstr "tfstate ファイルをインポートして始めましょう。"
+
+#: templates/_environment_create_form.html:4
+#: templates/_environment_list.html:26 templates/_environment_list.html:222
+msgid "Add Environment"
+msgstr "環境を追加"
+
+#: templates/_environment_create_form.html:23
+msgid "e.g. Production, Staging"
+msgstr "例: 本番、Staging"
+
+#: templates/_environment_create_form.html:52
+#: templates/_environment_edit_form.html:51
+msgid "SyncVey will pull tfstate directly from S3 on each sync."
+msgstr "SyncVey は同期のたびに S3 から tfstate を直接取得します。"
+
+#: templates/_environment_create_form.html:71
+#: templates/_environment_edit_form.html:70
+msgid "Auto-sync on schedule"
+msgstr "スケジュールで自動同期"
+
+#: templates/_environment_edit_form.html:4 templates/_environment_list.html:66
+msgid "Edit Environment"
+msgstr "環境を編集"
+
+#: templates/_environment_edit_form.html:81 templates/_profile.html:52
+#: templates/_system_edit_form.html:101
+msgid "Save"
+msgstr "保存"
+
+#: templates/_environment_list.html:73
+msgid "Add Resource Manually"
+msgstr "リソースを手動追加"
+
+#: templates/_environment_list.html:97
+#, python-format
+msgid "Delete \"%(name)s\"? All resources under it will also be deleted."
+msgstr ""
+"「%(name)s」を削除します。配下のリソースもすべて削除されます。よろしいです"
+"か？"
+
+#: templates/_environment_list.html:150
+msgid "No resources"
+msgstr "リソースなし"
+
+#: templates/_environment_list.html:165
+msgid "No tfstate imported yet"
+msgstr "まだ tfstate がインポートされていません"
+
+#: templates/_environment_list.html:170
+msgid "No changes since last import"
+msgstr "前回のインポートから変更なし"
+
+#: templates/_environment_list.html:188
+msgid "View drift →"
+msgstr "ドリフトを表示 →"
+
+#: templates/_environment_list.html:213
+msgid "No environments found."
+msgstr "環境データがありません。"
+
+#: templates/_profile.html:4
+msgid "Profile"
+msgstr "プロフィール"
+
+#: templates/_profile.html:13
+msgid "User Information"
+msgstr "ユーザー情報"
+
+#: templates/_profile.html:23
+msgid "Last Name"
+msgstr "姓"
+
+#: templates/_profile.html:28
+msgid "First Name"
+msgstr "名"
+
+#: templates/_profile.html:35 templates/login.html:42
+msgid "Username"
+msgstr "ユーザー名"
+
+#: templates/_profile.html:38
+msgid "Username cannot be changed."
+msgstr "ユーザー名は変更できません。"
+
+#: templates/_profile.html:42
+msgid "Email"
+msgstr "メールアドレス"
+
+#: templates/_profile.html:62
+msgid "Organizations & Roles"
+msgstr "組織・ロール"
+
+#: templates/_profile.html:87
+msgid "Change"
+msgstr "変更"
+
+#: templates/_profile.html:104
+msgid "No organization memberships."
+msgstr "所属組織がありません。"
+
+#: templates/_profile.html:112 templates/_profile.html:139
+msgid "Change Password"
+msgstr "パスワード変更"
+
+#: templates/_profile.html:120
+msgid "Current Password"
+msgstr "現在のパスワード"
+
+#: templates/_profile.html:125
+msgid "New Password"
+msgstr "新しいパスワード"
+
+#: templates/_profile.html:130
+msgid "Confirm New Password"
+msgstr "新しいパスワード（確認）"
+
+#: templates/_profile.html:149 templates/totp_verify.html:7
+msgid "Two-Factor Authentication"
+msgstr "二段階認証"
+
+#: templates/_profile.html:160
+msgid "Danger Zone"
+msgstr "危険ゾーン"
+
+#: templates/_profile.html:162
+msgid "This action is irreversible."
+msgstr "この操作は取り消せません。"
+
+#: templates/_profile.html:168
+msgid "Delete Account"
+msgstr "アカウントを削除"
+
+#: templates/_profile.html:172
+msgid "Enter your password to confirm account deletion."
+msgstr "アカウント削除を確認するためパスワードを入力してください。"
+
+#: templates/_profile.html:178
+msgid "Also delete all assets in my organizations (OWNER only)"
+msgstr "所属組織の全リソースも削除する（オーナーのみ）"
+
+#: templates/_profile.html:190 templates/_profile_2fa_status.html:16
+#: templates/login.html:58
+msgid "Password"
+msgstr "パスワード"
+
+#: templates/_profile_2fa_status.html:6
+msgid "Two-factor authentication is enabled"
+msgstr "二段階認証は有効です"
+
+#: templates/_profile_2fa_status.html:10
+msgid "Enter your password to disable two-factor authentication."
+msgstr "二段階認証を無効にするためパスワードを入力してください。"
+
+#: templates/_profile_2fa_status.html:21
+msgid "Disable"
+msgstr "無効にする"
+
+#: templates/_profile_2fa_status.html:30
+msgid "Two-factor authentication is disabled"
+msgstr "二段階認証は無効です"
+
+#: templates/_profile_2fa_status.html:38
+msgid "Set Up Two-Factor Authentication"
+msgstr "二段階認証を設定"
+
+#: templates/_profile_totp_setup.html:4
+msgid ""
+"Scan the QR code below with an authenticator app (Google Authenticator, "
+"Authy, etc.)."
+msgstr ""
+"認証アプリ（Google Authenticator, Authy等）でQRコードをスキャンしてください。"
+
+#: templates/_profile_totp_setup.html:10
+msgid "Or enter this key manually:"
+msgstr "または手動でこのキーを入力："
+
+#: templates/_profile_totp_setup.html:24
+msgid "Verification Code"
+msgstr "確認コード"
+
+#: templates/_profile_totp_setup.html:31
+msgid "Confirm"
+msgstr "確認"
+
+#: templates/_sample_import_result.html:4
+msgid "Imported"
+msgstr "インポート済み"
+
+#: templates/_sample_import_result.html:11
+msgid "View →"
+msgstr "表示 →"
+
+#: templates/_sample_list.html:5
+msgid "Sample tfstate Library"
+msgstr "サンプル tfstate ライブラリ"
+
+#: templates/_sample_list.html:6
+msgid "Import a sample to see SyncVey in action, or view the raw file."
+msgstr "サンプルをインポートして SyncVey を試すか、生ファイルを表示します。"
+
+#: templates/_sample_list.html:43
+msgid "Import Sample"
+msgstr "サンプルをインポート"
+
+#: templates/_sample_list.html:52
+msgid "View File"
+msgstr "ファイルを表示"
+
+#: templates/_sample_list.html:62
+msgid "No sample files found."
+msgstr "サンプルファイルが見つかりません。"
+
+#: templates/_sample_viewer.html:11 templates/dashboard.html:114
+#: templates/dashboard.html:122
+msgid "Sample Library"
+msgstr "サンプルライブラリ"
+
+#: templates/_sample_viewer.html:21
+msgid "Download"
+msgstr "ダウンロード"
+
+#: templates/_sample_viewer.html:43
+msgid "Copy"
+msgstr "コピー"
+
+#: templates/_scan_result.html:10
+msgid "Scan complete"
+msgstr "スキャン完了"
+
+#: templates/_scan_result.html:12
+#, python-format
+msgid "+%(n)s new"
+msgstr "+%(n)s 新規"
+
+#: templates/_scan_result.html:15
+#, python-format
+msgid "%(n)s updated"
+msgstr "%(n)s 更新"
+
+#: templates/_system_create_form.html:4 templates/dashboard.html:174
+msgid "Add System"
+msgstr "システムを追加"
+
+#: templates/_system_create_form.html:23
+msgid "e.g. E-commerce"
+msgstr "例: ECサイト"
+
+#: templates/_system_create_form.html:29 templates/_system_edit_form.html:28
+msgid "Code (slug)"
+msgstr "コード（slug）"
+
+#: templates/_system_create_form.html:33
+msgid "e.g. ec-site (auto-generated if blank)"
+msgstr "例: ec-site（空白時は自動生成）"
+
+#: templates/_system_create_form.html:50 templates/_system_edit_form.html:49
+msgid "ap-northeast-1, us-east-1 (comma-separated)"
+msgstr "ap-northeast-1, us-east-1（カンマ区切り）"
+
+#: templates/_system_edit_form.html:4
+msgid "Edit System"
+msgstr "システムを編集"
+
+#: templates/_system_edit_form.html:55
+msgid "Notifications"
+msgstr "通知"
+
+#: templates/_system_edit_form.html:64
+msgid "Notified when drift is detected. Leave blank to disable."
+msgstr "ドリフト検出時に通知します。空欄で無効。"
+
+#: templates/_system_edit_form.html:66
+msgid "Notification Language"
+msgstr "通知言語"
+
+#: templates/_system_edit_form.html:76
+msgid "Scheduled Scan"
+msgstr "定期スキャン"
+
+#: templates/_system_edit_form.html:85
+msgid "Enable auto scan"
+msgstr "自動スキャンを有効化"
+
+#: templates/_system_edit_form.html:89
+msgid "Interval"
+msgstr "間隔"
+
+#: templates/_system_list.html:49
+msgid "envs"
+msgstr "環境"
+
+#: templates/_system_list.html:50
+msgid "resources"
+msgstr "リソース"
+
+#: templates/_system_list.html:59
+msgid "Edit"
+msgstr "編集"
+
+#: templates/_system_list.html:62
+#, python-format
+msgid ""
+"Delete \"%(name)s\"? All environments and resources under it will also be "
+"deleted."
+msgstr ""
+"「%(name)s」を削除します。配下の環境・リソースもすべて削除されます。よろしい"
+"ですか？"
+
+# ---------------------------------------------------------------------------
+# New / updated template entries
+# ---------------------------------------------------------------------------
+#: templates/_system_list.html:75 templates/dashboard.html:88
+#: templates/dashboard.html:96
+msgid "Apps / Middleware"
+msgstr "アプリ / ミドルウェア"
+
+#: templates/_system_list.html:97
+msgid "No systems found"
+msgstr "システムデータがありません"
+
+#: templates/_system_list.html:98
+msgid "Upload a tfstate file or add a system to get started"
+msgstr "tfstateをアップロードするか、システムを追加してください"
+
+#: templates/_system_list.html:106
+msgid "Add First System"
+msgstr "最初のシステムを追加"
+
+#: templates/_upload_secret_warning.html:10
+msgid "Sensitive data detected"
+msgstr "機密データを検出"
+
+#: templates/_upload_secret_warning.html:12
+#, python-format
+msgid ""
+"\n"
+"          <strong>%(name)s</strong> contains the following sensitive "
+"fields.\n"
+"        "
+msgstr ""
+"\n"
+"          <strong>%(name)s</strong> に以下の機密フィールドが含まれていま"
+"す。\n"
+"        "
+
+#: templates/_upload_secret_warning.html:25
+msgid "resource(s)"
+msgstr "リソース"
+
+#: templates/_upload_secret_warning.html:31
+msgid ""
+"Importing with sensitive data as-is poses a security risk. We recommend "
+"scrubbing before import."
+msgstr ""
+"機密データをそのままインポートするとセキュリティリスクになります。インポート"
+"前のスクラブを推奨します。"
+
+#: templates/_upload_secret_warning.html:48
+msgid "Scrub secrets and import"
+msgstr "機密情報を除去してインポート"
+
+#: templates/_upload_tfstate_form.html:20
+#: templates/_upload_tfstate_form.html:31
+msgid "tfstate File"
+msgstr "tfstate ファイル"
+
+#: templates/_upload_tfstate_form.html:35
+msgid "Click to choose"
+msgstr "クリックで選択"
+
+#: templates/_upload_tfstate_form.html:36
+msgid "or drag & drop your .tfstate file"
+msgstr "または .tfstate ファイルをドラッグ＆ドロップ"
+
+#: templates/_upload_tfstate_form.html:44
+msgid "System / Environment"
+msgstr "システム / 環境の指定"
+
+#: templates/_upload_tfstate_form.html:45
+msgid "auto-detected from tfstate; fill in manually if not detected"
+msgstr "tfstate から自動判定。判定できない場合は手動入力"
+
+#: templates/_upload_tfstate_form.html:55
+msgid "e.g. my-service (auto-detected)"
+msgstr "例: my-service（自動判定）"
+
+#: templates/_upload_tfstate_form.html:65
+msgid "e.g. production (auto-detected)"
+msgstr "例: production（自動判定）"
+
+#: templates/_upload_tfstate_form.html:75
+msgid "Auto-detect"
+msgstr "自動判定"
+
+#: templates/_upload_tfstate_form.html:79
+msgid "Testing"
+msgstr "テスト"
+
+#: templates/_upload_tfstate_form.html:97
+msgid "Upload & Register"
+msgstr "アップロードして登録/更新"
+
+#: templates/dashboard.html:56 templates/dashboard.html:65
+msgid "All Resources"
+msgstr "すべてのリソース"
+
+#: templates/dashboard.html:146
+msgid "Profile Settings"
+msgstr "プロフィール設定"
+
+#: templates/dashboard.html:153
+msgid "Log out"
+msgstr "ログアウト"
+
+#: templates/dashboard.html:182
+msgid "Import tfstate"
+msgstr "tfstate から登録"
+
+#: templates/dashboard.html:196
+msgid "Upload tfstate File"
+msgstr "tfstateファイルをアップロード"
+
+#: templates/dashboard.html:201 templates/dashboard.html:294
+msgid "Close"
+msgstr "閉じる"
+
+#: templates/dashboard.html:229
+msgid "Confirm deletion"
+msgstr "削除の確認"
+
+#: templates/dashboard.html:294
+msgid "A server error occurred (HTTP"
+msgstr "サーバーエラーが発生しました (HTTP"
+
+#: templates/dashboard.html:294
+msgid "Check the console for details."
+msgstr "コンソールを確認してください。"
+
+#: templates/login.html:7 templates/login.html:28
+msgid "Sign In"
+msgstr "ログイン"
+
+#: templates/login.html:74
+msgid "Sign in"
+msgstr "ログイン"
+
+#: templates/totp_verify.html:25
+msgid "Enter Verification Code"
+msgstr "確認コードを入力"
+
+#: templates/totp_verify.html:27
+msgid "Open your authenticator app and enter the 6-digit code."
+msgstr "認証アプリを開き、6桁のコードを入力してください。"
+
+#: templates/totp_verify.html:41
+msgid "6-digit code"
+msgstr "6桁のコード"
+
+#: templates/totp_verify.html:60
+msgid "Verify"
+msgstr "確認"
+
+#: templates/totp_verify.html:66
+msgid "Back to Sign In"
+msgstr "ログインに戻る"
+
+#~ msgid "Company Name"
+#~ msgstr "会社名"
+
+#~ msgid "Overview"
+#~ msgstr "概要"
+
+#~ msgid "Synchronized Survey"
+#~ msgstr "Synchronized Survey"
+
+#~ msgid "なし / その他"
+#~ msgstr "なし / その他"
+
+#~ msgid "ライブラリ"
+#~ msgstr "ライブラリ"
+
+#~ msgid "ミドルウェア"
+#~ msgstr "ミドルウェア"
+
+#~ msgid "ツール"
+#~ msgstr "ツール"
+
+#~ msgid "オーナー"
+#~ msgstr "オーナー"
+
+#~ msgid "インフラ管理者"
+#~ msgstr "インフラ管理者"
+
+#~ msgid "アプリ管理者"
+#~ msgstr "アプリ管理者"
+
+#~ msgid "閲覧者"
+#~ msgstr "閲覧者"
+
+#~ msgid "Production (本番)"
+#~ msgstr "本番 (Production)"
+
+#~ msgid "Staging (ステージング)"
+#~ msgstr "ステージング (Staging)"
+
+#~ msgid "Development (開発)"
+#~ msgstr "開発 (Development)"
+
+#~ msgid "QA (テスト)"
+#~ msgstr "QA (テスト)"

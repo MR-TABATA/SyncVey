@@ -1,0 +1,43 @@
+{% load i18n %}
+<div class="space-y-4">
+    <p class="text-sm text-slate-600">
+        {% trans "Scan the QR code below with an authenticator app (Google Authenticator, Authy, etc.)." %}
+    </p>
+
+    <div class="flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+        <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code" class="w-44 h-44">
+        <div class="text-center">
+            <p class="text-xs text-slate-500 mb-1">{% trans "Or enter this key manually:" %}</p>
+            <code class="text-xs font-mono bg-white border border-slate-200 rounded px-2 py-1 tracking-widest">{{ secret }}</code>
+        </div>
+    </div>
+
+    {% if error %}
+    <p class="text-sm text-red-600">{{ error }}</p>
+    {% endif %}
+
+    <form hx-post="{% url 'profile-totp-confirm' %}"
+          hx-target="#profile-2fa-section"
+          hx-swap="innerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="qr_b64" value="{{ qr_b64 }}">
+        <label class="block text-xs font-medium text-slate-500 mb-1">{% trans "Verification Code" %}</label>
+        <div class="flex items-center gap-2">
+            <input type="text" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
+                   placeholder="000 000" autofocus
+                   class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 tracking-widest text-center font-mono">
+            <button type="submit"
+                    class="px-4 py-2 bg-[#FF6B6B] hover:bg-[#e84040] text-white text-sm font-medium rounded-xl transition-colors">
+                {% trans "Confirm" %}
+            </button>
+        </div>
+    </form>
+
+    <button type="button"
+            hx-get="{% url 'profile' %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML"
+            class="text-xs text-slate-400 hover:text-slate-600">
+        {% trans "Cancel" %}
+    </button>
+</div>

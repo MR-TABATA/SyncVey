@@ -1,0 +1,52 @@
+{% load i18n static %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+    <div class="p-5">
+        <div class="flex justify-between items-start mb-4">
+            <div class="p-2 rounded-xl bg-white border border-slate-100 shadow-sm">
+                {% if asset.asset_type == 'EC2' %}<img src="{% static 'aws-icons/ec2.svg' %}" class="w-8 h-8" alt="EC2">
+                {% elif asset.asset_type == 'RDS' %}<img src="{% static 'aws-icons/rds.svg' %}" class="w-8 h-8" alt="RDS">
+                {% elif asset.asset_type == 'S3' %}<img src="{% static 'aws-icons/s3.svg' %}" class="w-8 h-8" alt="S3">
+                {% elif asset.asset_type == 'EBS' %}<img src="{% static 'aws-icons/ebs.svg' %}" class="w-8 h-8" alt="EBS">
+                {% elif asset.asset_type == 'ALB' %}<img src="{% static 'aws-icons/alb.svg' %}" class="w-8 h-8" alt="ALB">
+                {% elif asset.asset_type == 'VPC' %}<img src="{% static 'aws-icons/vpc.svg' %}" class="w-8 h-8" alt="VPC">
+                {% elif asset.asset_type == 'ECS' %}<img src="{% static 'aws-icons/ecs.svg' %}" class="w-8 h-8" alt="ECS">
+                {% else %}<i data-lucide="cloud" class="w-8 h-8 text-slate-400"></i>
+                {% endif %}
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider shadow-sm
+                {% if asset.provider == 'AWS' %}bg-orange-100 text-orange-700 border-orange-200
+                {% else %}bg-gray-100 text-gray-700 border-gray-200{% endif %}">
+                {{ asset.get_provider_display }}
+            </span>
+        </div>
+
+        <h3 class="text-lg font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors truncate">
+            {{ asset.name }}
+        </h3>
+        <p class="text-xs text-slate-500 font-mono mb-4 truncate bg-slate-50 px-2 py-1 rounded border border-slate-100 block w-fit max-w-full">
+            {{ asset.cloud_id|default:"—" }}
+        </p>
+
+        <div class="space-y-3 text-sm border-t border-slate-50 pt-4">
+            <div class="flex items-center justify-between">
+                <span class="text-slate-400">{% trans "Type" %}</span>
+                <span class="font-semibold text-slate-700">{{ asset.get_asset_type_display }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-slate-400">{% trans "Region" %}</span>
+                <span class="font-semibold text-slate-700">{{ asset.region|default:"-" }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-slate-400">{% trans "Environment" %}</span>
+                <span class="font-semibold text-slate-700 truncate max-w-[160px]">{{ asset.environment.name|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-50/50 px-5 py-3 border-t border-slate-100 flex justify-between items-center group-hover:bg-slate-50 transition-colors">
+        <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+            {% trans "Updated:" %} {{ asset.updated_at|date:"Y/m/d"|default:"—" }}
+        </span>
+        <span class="text-xs font-bold text-slate-500">{{ asset.get_provider_display }}</span>
+    </div>
+</div>
