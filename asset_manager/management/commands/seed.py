@@ -21,7 +21,7 @@ SEEDED_USERS = [
     "tabata_hiroshi", "tanaka_kenji", "yamada_yuki",
     "sato_mai", "suzuki_taro", "demo_viewer",
 ]
-SEEDED_GROUPS = ["オーナー", "インフラ管理者", "アプリ管理者", "閲覧者"]
+SEEDED_GROUPS = ["Owner", "Infra Admin", "App Admin", "Viewer"]
 
 
 class Command(BaseCommand):
@@ -65,7 +65,7 @@ class Command(BaseCommand):
         # ── Organizations ─────────────────────────────────────────────
         org_a, _ = Organization.objects.get_or_create(
             slug="arcana",
-            defaults={"name": "株式会社アルカナ"},
+            defaults={"name": "Arcana Inc."},
         )
         org_b, _ = Organization.objects.get_or_create(
             slug="demo-corp",
@@ -76,11 +76,11 @@ class Command(BaseCommand):
         # ── Systems ───────────────────────────────────────────────────
         ec_sys, _ = System.objects.get_or_create(
             code="ecsite",
-            defaults={"name": "ECサイト", "aws_scan_regions": ["ap-northeast-1"], "organization": org_a},
+            defaults={"name": "E-Commerce", "aws_scan_regions": ["ap-northeast-1"], "organization": org_a},
         )
         cms_sys, _ = System.objects.get_or_create(
             code="cms",
-            defaults={"name": "社内CMS", "aws_scan_regions": ["ap-northeast-1", "us-east-1"], "organization": org_a},
+            defaults={"name": "Internal CMS", "aws_scan_regions": ["ap-northeast-1", "us-east-1"], "organization": org_a},
         )
         demo_sys, _ = System.objects.get_or_create(
             code="demo",
@@ -348,7 +348,7 @@ class Command(BaseCommand):
             defaults={
                 "language": "typescript", "framework": "nextjs",
                 "repository_url": "https://github.com/example/ecsite-frontend",
-                "description": "Next.js フロントエンド",
+                "description": "Next.js frontend",
             },
         )
         ec_api, _ = Application.objects.get_or_create(
@@ -356,7 +356,7 @@ class Command(BaseCommand):
             defaults={
                 "language": "python", "framework": "django",
                 "repository_url": "https://github.com/example/ecsite-api",
-                "description": "Django REST API バックエンド",
+                "description": "Django REST API backend",
             },
         )
         cms_app, _ = Application.objects.get_or_create(
@@ -486,13 +486,13 @@ class Command(BaseCommand):
                         pass
             return result
 
-        g_owner,  _ = Group.objects.get_or_create(name="オーナー")
+        g_owner,  _ = Group.objects.get_or_create(name="Owner")
         g_owner.permissions.set(perms("view", "add", "change", "delete"))
 
-        g_infra,  _ = Group.objects.get_or_create(name="インフラ管理者")
+        g_infra,  _ = Group.objects.get_or_create(name="Infra Admin")
         g_infra.permissions.set(perms("view", "add", "change"))
 
-        g_app,    _ = Group.objects.get_or_create(name="アプリ管理者")
+        g_app,    _ = Group.objects.get_or_create(name="App Admin")
         app_only = []
         for action in ("view", "add", "change"):
             for model in ("application", "appenvconfig", "appdependency"):
@@ -504,7 +504,7 @@ class Command(BaseCommand):
         app_only += perms("view")
         g_app.permissions.set(app_only)
 
-        g_viewer, _ = Group.objects.get_or_create(name="閲覧者")
+        g_viewer, _ = Group.objects.get_or_create(name="Viewer")
         g_viewer.permissions.set(perms("view"))
 
         self.stdout.write("  groups OK")
@@ -524,11 +524,11 @@ class Command(BaseCommand):
             user.groups.add(group)
             return user
 
-        u_tabata  = make_user("tabata_hiroshi", "h.tabata@s-arcana.co.jp", "田畑 裕",   "Passw0rd!", g_owner,  is_staff=True)
-        u_tanaka  = make_user("tanaka_kenji",   "k.tanaka@s-arcana.co.jp", "田中 健二", "Passw0rd!", g_infra,  is_staff=True)
-        u_yamada  = make_user("yamada_yuki",    "y.yamada@s-arcana.co.jp", "山田 由紀", "Passw0rd!", g_app)
-        u_sato    = make_user("sato_mai",       "m.sato@s-arcana.co.jp",   "佐藤 舞",   "Passw0rd!", g_viewer)
-        u_suzuki  = make_user("suzuki_taro",    "t.suzuki@demo-corp.com",  "鈴木 太郎", "Passw0rd!", g_owner,  is_staff=True)
+        u_tabata  = make_user("tabata_hiroshi", "h.tabata@s-arcana.co.jp", "Hiroshi Tabata", "Passw0rd!", g_owner,  is_staff=True)
+        u_tanaka  = make_user("tanaka_kenji",   "k.tanaka@s-arcana.co.jp", "Kenji Tanaka",   "Passw0rd!", g_infra,  is_staff=True)
+        u_yamada  = make_user("yamada_yuki",    "y.yamada@s-arcana.co.jp", "Yuki Yamada",    "Passw0rd!", g_app)
+        u_sato    = make_user("sato_mai",       "m.sato@s-arcana.co.jp",   "Mai Sato",       "Passw0rd!", g_viewer)
+        u_suzuki  = make_user("suzuki_taro",    "t.suzuki@demo-corp.com",  "Taro Suzuki",    "Passw0rd!", g_owner,  is_staff=True)
         u_dviewer = make_user("demo_viewer",    "viewer@demo-corp.com",    "Demo Viewer","Passw0rd!", g_viewer)
 
         self.stdout.write("  users OK")
@@ -544,9 +544,9 @@ class Command(BaseCommand):
         ]:
             Membership.objects.get_or_create(user=user, organization=org, defaults={"role": role})
 
-        # superuser（admin / root 等）には意図的に組織を割り当てない。
-        # superuser は「管理専用」（Django admin）と位置づけ、org スコープのアプリは
-        # 役割を持つ組織メンバー（tabata_hiroshi 等）が利用する設計。
-        # 組織未所属ユーザーは OrgRequiredMiddleware が /admin/ へ誘導する。
+        # Superusers (admin / root, etc.) are intentionally NOT assigned an organization.
+        # They are management-only (Django admin); the org-scoped app is used by
+        # organization members with roles (tabata_hiroshi, etc.).
+        # OrgRequiredMiddleware redirects users without an organization to /admin/.
 
         self.stdout.write("  memberships OK")
