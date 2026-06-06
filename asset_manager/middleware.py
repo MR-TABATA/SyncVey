@@ -1,5 +1,8 @@
 import threading
 
+from django.contrib.auth import logout as auth_logout
+from django.shortcuts import redirect
+
 _thread_local = threading.local()
 
 
@@ -49,3 +52,31 @@ class SecurityHeadersMiddleware:
         response.setdefault('Content-Security-Policy', _CSP)
         response.setdefault('Permissions-Policy', _PERMISSIONS_POLICY)
         return response
+
+
+class OrgRequiredMiddleware:
+    """組織未所属の認証済みユーザーを org スコープのアプリから締め出す。
+
+    本アプリのデータは全て組織スコープ。Membership を持たないユーザー
+    （例: 組織未割当の superuser=root）はアプリ側で意味のある操作ができず、
+    書き込むと organization=None の孤児データを生むだけなので入口で弾く。
+    superuser/staff は Django admin へ、それ以外はログアウトさせる。
+    """
+
+    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/static', '/__debug__')
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, 'user', None)
+        path = request.path
+        if (user is not None and user.is_authenticated
+                and not any(path.startswith(p) for p in self.EXEMPT_PREFIXES)):
+            from .models import Membership
+            if not Membership.objects.filter(user=user).exists():
+                if user.is_staff or user.is_superuser:
+                    return redirect('/admin/')
+                auth_logout(request)
+                return redirect('/login/?no_org=1')
+        return self.get_response(request)

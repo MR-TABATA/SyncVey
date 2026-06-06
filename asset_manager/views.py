@@ -208,6 +208,8 @@ def _get_sidebar_counts(org=None):
         qs = Asset.objects.filter(asset_type__in=PRIMARY_ASSET_TYPES)
         if org:
             qs = qs.filter(environment__system__organization=org)
+        else:
+            qs = qs.none()  # 組織未所属は他組織の資産を集計しない（クロステナント漏洩防止）
         rows = qs.values('asset_type').annotate(c=Count('id'))
         by_type = {r['asset_type']: r['c'] for r in rows}
         by_type['ALL'] = sum(by_type.values())
@@ -234,6 +236,8 @@ def _get_dashboard_stats(org=None):
         qs = Asset.objects.all()
         if org:
             qs = qs.filter(environment__system__organization=org)
+        else:
+            qs = qs.none()  # 組織未所属は他組織の資産を集計しない（クロステナント漏洩防止）
         by_type     = {r['asset_type']:     r['c'] for r in qs.values('asset_type').annotate(c=Count('id'))}
         by_category = {r['asset_category']: r['c'] for r in qs.values('asset_category').annotate(c=Count('id'))}
         by_provider = {r['provider']: r['c'] for r in qs.values('provider').annotate(c=Count('id')) if r['provider']}

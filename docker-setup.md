@@ -35,11 +35,15 @@ docker compose up --build -d
 
 ### 初回ログイン
 
-| 項目     | デフォルト値（`.env` で変更可） |
-|----------|---------------------------------|
-| URL      | http://localhost:8000           |
-| Username | `admin`                         |
-| Password | `admin`                         |
+アプリ（資産台帳）と Django 管理サイトでアカウントが分かれています。
+**superuser（`admin` 等）は管理専用**で、アプリ画面にアクセスすると `/admin/` にリダイレクトされます。アプリは組織メンバーでログインしてください。
+
+| 用途 | URL | Username | Password |
+|------|-----|----------|----------|
+| アプリ（資産台帳） | http://localhost:8000 | `tabata_hiroshi` | `Passw0rd!` |
+| Django 管理サイト | http://localhost:8000/admin/ | `admin`（`.env` で変更可） | `admin` |
+
+> シードは他にも役割の異なる組織メンバーを作成します（例: `tanaka_kenji`=インフラ管理, `yamada_yuki`=アプリ管理, `sato_mai`=閲覧者、いずれも `Passw0rd!`）。権限による表示差を試せます。
 
 ### 2回目以降
 

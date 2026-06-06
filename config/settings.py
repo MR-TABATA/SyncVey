@@ -101,6 +101,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'asset_manager.middleware.OrgRequiredMiddleware',
     'asset_manager.middleware.SecurityHeadersMiddleware',
     'asset_manager.middleware.AuditMiddleware',
 ]

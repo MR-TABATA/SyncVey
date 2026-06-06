@@ -544,11 +544,9 @@ class Command(BaseCommand):
         ]:
             Membership.objects.get_or_create(user=user, organization=org, defaults={"role": role})
 
-        # createsuperuser で作った superuser が無所属だと（認可スコープにより）何も見えないため、
-        # 未所属の superuser を org_a の OWNER として迎え入れる。
-        from django.contrib.auth import get_user_model
-        for su in get_user_model().objects.filter(is_superuser=True):
-            if not Membership.objects.filter(user=su).exists():
-                Membership.objects.create(user=su, organization=org_a, role=Membership.Role.OWNER)
+        # superuser（admin / root 等）には意図的に組織を割り当てない。
+        # superuser は「管理専用」（Django admin）と位置づけ、org スコープのアプリは
+        # 役割を持つ組織メンバー（tabata_hiroshi 等）が利用する設計。
+        # 組織未所属ユーザーは OrgRequiredMiddleware が /admin/ へ誘導する。
 
         self.stdout.write("  memberships OK")
