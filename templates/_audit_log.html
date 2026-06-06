@@ -49,10 +49,21 @@
     {% endif %}
 </form>
 
-<!-- Table -->
+<!-- Table (xl and up — wide enough to fit alongside the sidebar) -->
 {% if page_obj %}
-<div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-    <table class="w-full text-left text-sm">
+<div class="hidden xl:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[760px] table-fixed text-left text-sm
+                  [&_th]:border-r [&_th]:border-slate-200 [&_th:last-child]:border-r-0
+                  [&_td]:border-r [&_td]:border-slate-100 [&_td:last-child]:border-r-0">
+        <colgroup>
+            <col class="w-[116px]"><!-- Date/Time -->
+            <col class="w-[132px]"><!-- User -->
+            <col class="w-[104px]"><!-- Action -->
+            <col class="w-[84px]"><!-- Type -->
+            <col><!-- Object (remaining) -->
+            <col class="w-[220px]"><!-- Changes -->
+        </colgroup>
         <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
                 <th class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{% trans "Date/Time" %}</th>
@@ -63,13 +74,13 @@
                 <th class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{% trans "Changes" %}</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-slate-100 [&>tr:nth-child(even)]:bg-slate-50/70">
             {% for log in page_obj %}
             <tr class="hover:bg-slate-50 transition-colors">
                 <!-- Date/Time -->
-                <td class="px-5 py-3 whitespace-nowrap">
-                    <span class="font-mono text-xs text-slate-600">{{ log.created_at|date:"Y-m-d" }}</span>
-                    <span class="font-mono text-xs text-slate-400 ml-1">{{ log.created_at|time:"H:i:s" }}</span>
+                <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="font-mono text-xs text-slate-600">{{ log.created_at|date:"Y-m-d" }}</div>
+                    <div class="font-mono text-[11px] text-slate-400">{{ log.created_at|time:"H:i:s" }}</div>
                 </td>
 
                 <!-- User -->
@@ -107,23 +118,27 @@
                 </td>
 
                 <!-- Object -->
-                <td class="px-5 py-3 max-w-[200px]">
+                <td class="px-5 py-3">
                     <span class="text-sm text-slate-700 truncate block" title="{{ log.object_repr }}">{{ log.object_repr }}</span>
                 </td>
 
                 <!-- Diff -->
-                <td class="px-5 py-3">
+                <td class="px-5 py-3 align-top">
                     {% if log.diff %}
-                        <div class="space-y-0.5">
+                        <div class="space-y-1">
                             {% for field, change in log.diff.items %}
-                                <div class="text-xs font-mono">
+                                <div class="text-xs font-mono leading-snug break-all">
                                     <span class="text-slate-500">{{ field }}:</span>
-                                    <span class="text-red-500 line-through">{{ change.old|truncatechars:30 }}</span>
+                                    <span class="text-red-500 line-through">{{ change.old|truncatechars:24 }}</span>
                                     <span class="text-slate-400 mx-0.5">→</span>
-                                    <span class="text-emerald-600">{{ change.new|truncatechars:30 }}</span>
+                                    <span class="text-emerald-600">{{ change.new|truncatechars:24 }}</span>
                                 </div>
                             {% endfor %}
                         </div>
+                    {% elif log.action == 'create' %}
+                        <span class="text-xs text-slate-400 italic whitespace-nowrap">{% trans "Created" %}</span>
+                    {% elif log.action == 'delete' %}
+                        <span class="text-xs text-slate-400 italic whitespace-nowrap">{% trans "Removed" %}</span>
                     {% else %}
                         <span class="text-xs text-slate-400">—</span>
                     {% endif %}
@@ -132,6 +147,83 @@
             {% endfor %}
         </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Cards (below xl — stacked layout avoids horizontal overflow on narrow / zoomed views) -->
+<div class="xl:hidden space-y-3">
+    {% for log in page_obj %}
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+        <!-- Header: timestamp + action -->
+        <div class="flex items-start justify-between gap-2 mb-3">
+            <div class="font-mono text-xs text-slate-500 leading-tight">
+                <span class="text-slate-600">{{ log.created_at|date:"Y-m-d" }}</span>
+                <span class="text-slate-400">{{ log.created_at|time:"H:i:s" }}</span>
+            </div>
+            {% if log.action == 'create' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                    <i data-lucide="plus-circle" class="w-3 h-3"></i> Create
+                </span>
+            {% elif log.action == 'update' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 whitespace-nowrap">
+                    <i data-lucide="pencil" class="w-3 h-3"></i> Update
+                </span>
+            {% elif log.action == 'delete' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 whitespace-nowrap">
+                    <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- Object -->
+        <div class="mb-2">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">{% trans "Object" %}</span>
+            <span class="text-sm text-slate-700 break-words">{{ log.object_repr }}</span>
+        </div>
+
+        <!-- Type + User -->
+        <div class="flex flex-wrap gap-x-6 gap-y-2 mb-3">
+            <div>
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">{% trans "Type" %}</span>
+                <span class="text-xs text-slate-600 font-medium">{{ model_labels|dict_get:log.model_name|default:log.model_name }}</span>
+            </div>
+            <div>
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">{% trans "User" %}</span>
+                {% if log.user %}
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">
+                        <i data-lucide="user" class="w-3 h-3"></i>
+                        {{ log.user.username }}
+                    </span>
+                {% else %}
+                    <span class="text-xs text-slate-400">—</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Changes -->
+        <div class="border-t border-slate-100 pt-2">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">{% trans "Changes" %}</span>
+            {% if log.diff %}
+                <div class="space-y-1">
+                    {% for field, change in log.diff.items %}
+                        <div class="text-xs font-mono leading-snug break-all">
+                            <span class="text-slate-500">{{ field }}:</span>
+                            <span class="text-red-500 line-through">{{ change.old|truncatechars:24 }}</span>
+                            <span class="text-slate-400 mx-0.5">→</span>
+                            <span class="text-emerald-600">{{ change.new|truncatechars:24 }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif log.action == 'create' %}
+                <span class="text-xs text-slate-400 italic">{% trans "Created" %}</span>
+            {% elif log.action == 'delete' %}
+                <span class="text-xs text-slate-400 italic">{% trans "Removed" %}</span>
+            {% else %}
+                <span class="text-xs text-slate-400">—</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
 </div>
 
 <!-- Pagination -->

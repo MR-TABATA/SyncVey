@@ -1274,6 +1274,14 @@ msgstr "オブジェクト"
 msgid "Changes"
 msgstr "変更内容"
 
+#: templates/_audit_log.html:120
+msgid "Created"
+msgstr "新規作成"
+
+#: templates/_audit_log.html:122
+msgid "Removed"
+msgstr "削除"
+
 #: templates/_audit_log.html:141
 #, python-format
 msgid ""
