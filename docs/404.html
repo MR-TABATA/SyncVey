@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SyncVey — 404 Not Found</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="This page doesn't exist. Head back to SyncVey — a self-hosted AWS infrastructure ledger with Terraform drift detection.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --text: #f1f3f7; --muted: rgba(255,255,255,0.6);
+      --coral: #FF6B6B; --coral-dark: #e84040; --indigo: #5641C4;
+      --grad-coral: linear-gradient(135deg, #FF6B6B, #e84040);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: radial-gradient(120% 120% at 50% 0%, #2d2160 0%, #1a1238 55%, #120c28 100%);
+      color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 32px;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 540px; }
+    .icon { width: 64px; height: 64px; margin: 0 auto 28px; display: block; opacity: 0.95; }
+    .icon line, .icon path { stroke: #fff; }
+    .icon path { stroke-dasharray: 340; stroke-dashoffset: 340; animation: draw 2.4s ease-out 0.2s forwards; }
+    @media (prefers-reduced-motion: reduce) { .icon path { animation: none; stroke-dashoffset: 0; } }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .code {
+      font-size: clamp(64px, 16vw, 120px); font-weight: 900; line-height: 1; margin-bottom: 12px;
+      background: var(--grad-coral); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    h1 { font-size: clamp(20px, 4vw, 28px); font-weight: 800; margin-bottom: 14px; }
+    p { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+    .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px;
+      background: var(--grad-coral); border-radius: 10px; font-weight: 600; color: #fff;
+      box-shadow: 0 4px 24px rgba(255,107,107,0.3);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px;
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04);
+      font-weight: 600; color: #fff;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.10); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <svg class="icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line x1="10" y1="86" x2="90" y2="86" stroke-width="6" stroke-linecap="round"/>
+      <line x1="26" y1="16" x2="26" y2="86" stroke-width="7" stroke-linecap="round"/>
+      <line x1="74" y1="16" x2="74" y2="86" stroke-width="7" stroke-linecap="round"/>
+      <line x1="10" y1="64" x2="90" y2="64" stroke-width="6" stroke-linecap="round"/>
+      <path d="M 10 64 L 26 16 Q 50 86 74 16 L 90 64" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="38" y1="64" x2="38" y2="44" stroke-width="3"/>
+      <line x1="50" y1="64" x2="50" y2="52" stroke-width="3"/>
+      <line x1="62" y1="64" x2="62" y2="44" stroke-width="3"/>
+    </svg>
+    <div class="code">404</div>
+    <h1 data-i18n="title">This bridge leads nowhere</h1>
+    <p data-i18n="body">The page you're looking for has drifted out of state. Let's sync you back to solid ground.</p>
+    <div class="actions">
+      <a class="btn-primary" href="index.html" data-i18n="home">← Back to SyncVey</a>
+      <a class="btn-secondary" href="https://github.com/MR-TABATA/SyncVey" data-i18n="repo">View on GitHub</a>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var lang = navigator.language || navigator.userLanguage || '';
+      if (lang.toLowerCase().indexOf('ja') === 0) {
+        document.documentElement.lang = 'ja';
+        var t = {
+          title: 'この橋は、どこにも架かっていません',
+          body: 'お探しのページは state から外れてしまったようです。確かな足場へ戻りましょう。',
+          home: '← SyncVey トップへ',
+          repo: 'GitHub を見る'
+        };
+        document.querySelectorAll('[data-i18n]').forEach(function (el) {
+          var k = el.getAttribute('data-i18n');
+          if (t[k]) el.textContent = t[k];
+        });
+        document.title = 'SyncVey — 404 ページが見つかりません';
+      }
+    })();
+  </script>
+</body>
+</html>
