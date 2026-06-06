@@ -57,59 +57,8 @@
                 {% endif %}
             </div>
             <!-- Action buttons -->
-            <div class="flex items-center gap-0.5">
-                <button
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                    hx-get="{% url 'environment-edit-form' env.id %}"
-                    hx-target="#crudModalBody"
-                    hx-on::after-request="document.getElementById('crudModal').showModal()"
-                    title="{% trans "Edit Environment" %}"
-                ><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                <button
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                    hx-get="{% url 'asset-create-form' %}?environment_id={{ env.id }}"
-                    hx-target="#crudModalBody"
-                    hx-on::after-request="document.getElementById('crudModal').showModal()"
-                    title="{% trans "Add Resource Manually" %}"
-                ><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
-                {% if env.backend_type == 's3' %}
-                <button
-                    class="relative p-1.5 rounded-lg transition-colors {% if env.s3_auto_sync %}text-sky-500 hover:text-sky-700 hover:bg-sky-50{% else %}text-slate-400 hover:text-sky-600 hover:bg-sky-50{% endif %}"
-                    hx-post="{% url 'env-sync-s3' env.id %}"
-                    hx-target="#scan-result-{{ env.id }}"
-                    hx-swap="innerHTML"
-                    hx-indicator="#scan-spinner-{{ env.id }}"
-                    hx-include="[name=csrfmiddlewaretoken]"
-                    onclick="event.stopPropagation()"
-                    title="{% if env.s3_auto_sync %}S3 Auto-sync enabled — click to sync now{% else %}S3 Remote State Sync{% endif %}"
-                >
-                  <i data-lucide="cloud-download" class="w-3.5 h-3.5 htmx-hide-on-request"></i>
-                  <svg id="scan-spinner-{{ env.id }}-s3" class="svy-loader w-4 h-4 htmx-indicator hidden" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line class="svy-pier" x1="26" y1="22" x2="26" y2="82" stroke-width="8"/><line class="svy-pier" x1="74" y1="22" x2="74" y2="82" stroke-width="8"/><line class="svy-pier" x1="10" y1="82" x2="90" y2="82" stroke-width="7"/><path class="svy-cable" d="M 10 68 L 26 22 Q 50 90 74 22 L 90 68" stroke-width="7"/></svg>
-                  {% if env.s3_auto_sync %}<span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-sky-400"></span>{% endif %}
-                </button>
-                {% else %}
-                <button
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                    onclick="document.getElementById('tfstateUploadModal').showModal()"
-                    title="Terraform Import"
-                ><i data-lucide="upload" class="w-3.5 h-3.5 {% if not env.tfstate_filename %}opacity-40{% endif %}"></i></button>
-                {% endif %}
-                {% blocktrans with name=env.name asvar del_confirm %}Delete "{{ name }}"? All resources under it will also be deleted.{% endblocktrans %}
-                <button
-                    class="p-1.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    hx-post="{% url 'environment-delete' env.id %}"
-                    hx-target="#main-content"
-                    hx-swap="innerHTML"
-                    hx-confirm="{{ del_confirm }}"
-                    title="{% trans "Delete" %}"
-                ><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                <button
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                    hx-get="{% url 'env-diagram' env.id %}"
-                    hx-target="#main-content"
-                    hx-swap="innerHTML"
-                    title="{% trans "Architecture Diagram" %}"
-                ><i data-lucide="git-fork" class="w-3.5 h-3.5"></i></button>
+            <div class="flex items-center gap-0.5 shrink-0">
+                <!-- Primary action: Boto3 scan -->
                 <button
                     class="p-1.5 rounded-lg text-slate-400 hover:text-green-600 hover:bg-green-50 transition-colors"
                     hx-post="{% url 'env-scan' env.id %}"
@@ -123,6 +72,67 @@
                   <i data-lucide="radar" class="w-3.5 h-3.5 htmx-hide-on-request"></i>
                   <svg id="scan-spinner-{{ env.id }}" class="svy-loader w-4 h-4 htmx-indicator hidden" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line class="svy-pier" x1="26" y1="22" x2="26" y2="82" stroke-width="8"/><line class="svy-pier" x1="74" y1="22" x2="74" y2="82" stroke-width="8"/><line class="svy-pier" x1="10" y1="82" x2="90" y2="82" stroke-width="7"/><path class="svy-cable" d="M 10 68 L 26 22 Q 50 90 74 22 L 90 68" stroke-width="7"/></svg>
                 </button>
+
+                {% blocktrans with name=env.name asvar del_confirm %}Delete "{{ name }}"? All resources under it will also be deleted.{% endblocktrans %}
+                <!-- Secondary actions: overflow menu -->
+                <details class="relative" onclick="event.stopPropagation()">
+                    <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="{% trans 'More actions' %}">
+                        <i data-lucide="more-vertical" class="w-3.5 h-3.5"></i>
+                    </summary>
+                    <div class="absolute right-0 mt-1 w-56 z-30 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-sm font-medium">
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                            hx-get="{% url 'environment-edit-form' env.id %}"
+                            hx-target="#crudModalBody"
+                            hx-on::after-request="document.getElementById('crudModal').showModal()"
+                            onclick="this.closest('details').removeAttribute('open')"
+                        ><i data-lucide="pencil" class="w-4 h-4 text-slate-400"></i> {% trans "Edit Environment" %}</button>
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                            hx-get="{% url 'asset-create-form' %}?environment_id={{ env.id }}"
+                            hx-target="#crudModalBody"
+                            hx-on::after-request="document.getElementById('crudModal').showModal()"
+                            onclick="this.closest('details').removeAttribute('open')"
+                        ><i data-lucide="plus" class="w-4 h-4 text-slate-400"></i> {% trans "Add Resource Manually" %}</button>
+                        {% if env.backend_type == 's3' %}
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 transition-colors {% if env.s3_auto_sync %}text-sky-600 hover:bg-sky-50{% else %}text-slate-600 hover:bg-sky-50{% endif %}"
+                            hx-post="{% url 'env-sync-s3' env.id %}"
+                            hx-target="#scan-result-{{ env.id }}"
+                            hx-swap="innerHTML"
+                            hx-indicator="#scan-spinner-{{ env.id }}"
+                            hx-include="[name=csrfmiddlewaretoken]"
+                            onclick="event.stopPropagation(); this.closest('details').removeAttribute('open')"
+                            title="{% if env.s3_auto_sync %}S3 Auto-sync enabled — click to sync now{% else %}S3 Remote State Sync{% endif %}"
+                        >
+                            <i data-lucide="cloud-download" class="w-4 h-4 htmx-hide-on-request {% if not env.s3_auto_sync %}text-slate-400{% endif %}"></i>
+                            <svg id="scan-spinner-{{ env.id }}-s3" class="svy-loader w-4 h-4 htmx-indicator hidden" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><line class="svy-pier" x1="26" y1="22" x2="26" y2="82" stroke-width="8"/><line class="svy-pier" x1="74" y1="22" x2="74" y2="82" stroke-width="8"/><line class="svy-pier" x1="10" y1="82" x2="90" y2="82" stroke-width="7"/><path class="svy-cable" d="M 10 68 L 26 22 Q 50 90 74 22 L 90 68" stroke-width="7"/></svg>
+                            {% if env.s3_auto_sync %}S3 Sync now{% else %}S3 Remote State Sync{% endif %}
+                        </button>
+                        {% else %}
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                            onclick="this.closest('details').removeAttribute('open'); document.getElementById('tfstateUploadModal').showModal()"
+                        ><i data-lucide="upload" class="w-4 h-4 text-slate-400 {% if not env.tfstate_filename %}opacity-40{% endif %}"></i> Terraform Import</button>
+                        {% endif %}
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                            hx-get="{% url 'env-diagram' env.id %}"
+                            hx-target="#main-content"
+                            hx-swap="innerHTML"
+                            onclick="this.closest('details').removeAttribute('open')"
+                        ><i data-lucide="git-fork" class="w-4 h-4 text-slate-400"></i> {% trans "Architecture Diagram" %}</button>
+                        <div class="my-1 border-t border-slate-100"></div>
+                        <button
+                            class="w-full flex items-center gap-2.5 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                            hx-post="{% url 'environment-delete' env.id %}"
+                            hx-target="#main-content"
+                            hx-swap="innerHTML"
+                            hx-confirm="{{ del_confirm }}"
+                            onclick="this.closest('details').removeAttribute('open')"
+                        ><i data-lucide="trash-2" class="w-4 h-4"></i> {% trans "Delete" %}</button>
+                    </div>
+                </details>
             </div>
         </div>
 
