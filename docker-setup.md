@@ -1,6 +1,8 @@
-# Docker セットアップ手順
+# Docker Setup Guide
 
-## 構成
+**English** | [日本語](docker-setup.ja.md)
+
+## Layout
 
 ```
 syncvey/
@@ -9,145 +11,145 @@ syncvey/
 └── manage.py
 ```
 
-### コンテナ一覧
+### Containers
 
-| コンテナ名       | イメージ             | ポート      | 役割          |
-|------------------|----------------------|-------------|---------------|
-| `syncvey-app` | ローカルビルド        | 8000 → 8000 | Django アプリ |
-| `syncvey-db`  | postgres:18.3-alpine | 5432 → 5432 | PostgreSQL    |
+| Container       | Image                | Ports       | Role          |
+|-----------------|----------------------|-------------|---------------|
+| `syncvey-app`   | local build          | 8000 → 8000 | Django app    |
+| `syncvey-db`    | postgres:18.3-alpine | 5432 → 5432 | PostgreSQL    |
 
 ---
 
-## 起動手順
+## Running
 
-### 初回・クリーンスタート
+### First run / clean start
 
 ```bash
-# イメージのビルドとコンテナ起動
+# Build the image and start the containers
 docker compose up --build -d
 ```
 
-起動時に以下が自動で実行されます：
+On startup the following run automatically:
 
-1. `migrate` — テーブル作成
-2. `createsuperuser` — 管理者アカウント作成（`.env` の値を使用）
-3. `seed` — サンプルデータ投入
+1. `migrate` — create tables
+2. `createsuperuser` — create the admin account (using values from `.env`)
+3. `seed` — load sample data
 
-### 初回ログイン
+### First login
 
-アプリ（資産台帳）と Django 管理サイトでアカウントが分かれています。
-**superuser（`admin` 等）は管理専用**で、アプリ画面にアクセスすると `/admin/` にリダイレクトされます。アプリは組織メンバーでログインしてください。
+The app (asset ledger) and the Django admin site use separate accounts.
+**Superusers (e.g. `admin`) are management-only** — visiting the app redirects them to `/admin/`. Log in to the app with an organization member.
 
-| 用途 | URL | Username | Password |
-|------|-----|----------|----------|
-| アプリ（資産台帳） | http://localhost:8000 | `tabata_hiroshi` | `Passw0rd!` |
-| Django 管理サイト | http://localhost:8000/admin/ | `admin`（`.env` で変更可） | `admin` |
+| Purpose | URL | Username | Password |
+|---------|-----|----------|----------|
+| App (asset ledger) | http://localhost:8000 | `tabata_hiroshi` | `Passw0rd!` |
+| Django admin | http://localhost:8000/admin/ | `admin` (configurable in `.env`) | `admin` |
 
-> シードは他にも役割の異なる組織メンバーを作成します（例: `tanaka_kenji`=インフラ管理, `yamada_yuki`=アプリ管理, `sato_mai`=閲覧者、いずれも `Passw0rd!`）。権限による表示差を試せます。
+> The seed also creates organization members with different roles (e.g. `tanaka_kenji` = infra admin, `yamada_yuki` = app admin, `sato_mai` = viewer — all with `Passw0rd!`), so you can try how permissions change what's visible.
 
-### 2回目以降
+### Subsequent runs
 
 ```bash
 docker compose up -d
 ```
 
-migrate・createsuperuser・seed はべき等なので毎回実行されますが、既存データは上書きされません。
+`migrate`, `createsuperuser`, and `seed` are idempotent, so they run every time but never overwrite existing data.
 
 ---
 
-## 停止・削除
+## Stopping / removing
 
 ```bash
-# 停止（データは保持）
+# Stop (data is kept)
 docker compose down
 
-# 停止 + DB データも削除
+# Stop and also delete the DB data
 docker compose down -v
 ```
 
 ---
 
-## よく使うコマンド
+## Common commands
 
-### ログ確認
+### Logs
 
 ```bash
-# 全コンテナ
+# All containers
 docker compose logs -f
 
-# 個別
+# Individual
 docker compose logs -f app
 docker compose logs -f db
 ```
 
-### コンテナへの接続
+### Shell into a container
 
 ```bash
-# アプリ
+# App
 docker exec -it syncvey-app bash
 
-# DB（PostgreSQL）
+# DB (PostgreSQL)
 docker exec -it syncvey-db psql -U user -d asset_manager
 ```
 
-### マイグレーション（手動実行）
+### Migrations (manual)
 
 ```bash
 docker exec syncvey-app python manage.py makemigrations
 docker exec syncvey-app python manage.py migrate
 ```
 
-### パッケージの追加
+### Adding a package
 
 ```bash
-# requirements.txt（本番）に追記後、イメージを再ビルド
+# After adding it to requirements.txt (production), rebuild the image
 docker compose build app
 docker compose up -d app
 ```
 
-### テスト用パッケージのインストール
+### Installing test dependencies
 
 ```bash
-# requirements-dev.txt（moto / pytest 等）をコンテナに追加インストール
+# Install requirements-dev.txt (moto / pytest, etc.) into the container
 docker compose exec app pip install -r requirements-dev.txt
 ```
 
 ---
 
-## 環境変数（`.env`）
+## Environment variables (`.env`)
 
-| 変数名                       | 説明                     | デフォルト値        |
-|------------------------------|--------------------------|---------------------|
-| `DB_NAME`                    | DB 名                    | `asset_manager`     |
-| `DB_USER`                    | DB ユーザー              | `user`              |
-| `DB_PASSWORD`                | DB パスワード            | `password`          |
-| `DB_PORT_EXTERNAL`           | ホスト側 DB ポート       | `5432`              |
-| `DATABASE_URL`               | 接続 URL                 | —                   |
-| `DJANGO_SUPERUSER_USERNAME`  | 初期管理者ユーザー名     | `admin`             |
-| `DJANGO_SUPERUSER_EMAIL`     | 初期管理者メール         | `admin@example.com` |
-| `DJANGO_SUPERUSER_PASSWORD`  | 初期管理者パスワード     | `admin`             |
-| `SECRET_KEY`                 | Django シークレットキー  | —（本番は必須）      |
-| `AWS_ACCESS_KEY_ID`          | AWS アクセスキー         | —                   |
-| `AWS_SECRET_ACCESS_KEY`      | AWS シークレットキー     | —                   |
-| `AWS_SCAN_REGIONS`           | スキャン対象リージョン   | `ap-northeast-1,...`|
-| `SLACK_WEBHOOK_URL`          | Slack通知（共通チャンネル）| —（任意）          |
+| Variable                     | Description                       | Default             |
+|------------------------------|-----------------------------------|---------------------|
+| `DB_NAME`                    | Database name                     | `asset_manager`     |
+| `DB_USER`                    | Database user                     | `user`              |
+| `DB_PASSWORD`                | Database password                 | `password`          |
+| `DB_PORT_EXTERNAL`           | Host-side DB port                 | `5432`              |
+| `DATABASE_URL`               | Connection URL                    | —                   |
+| `DJANGO_SUPERUSER_USERNAME`  | Initial admin username            | `admin`             |
+| `DJANGO_SUPERUSER_EMAIL`     | Initial admin email               | `admin@example.com` |
+| `DJANGO_SUPERUSER_PASSWORD`  | Initial admin password            | `admin`             |
+| `SECRET_KEY`                 | Django secret key                 | — (required in prod) |
+| `AWS_ACCESS_KEY_ID`          | AWS access key                    | —                   |
+| `AWS_SECRET_ACCESS_KEY`      | AWS secret key                    | —                   |
+| `AWS_SCAN_REGIONS`           | Regions to scan                   | `ap-northeast-1,...`|
+| `SLACK_WEBHOOK_URL`          | Slack notifications (shared channel) | — (optional)     |
 
 ---
 
-## トラブルシューティング
+## Troubleshooting
 
-### DB の起動を待たずにアプリが落ちる
+### The app crashes before the DB is ready
 
-`docker-compose.yml` の `healthcheck` が通るまでアプリは待機します。
-それでも失敗する場合は手動で再起動してください。
+The app waits until the `healthcheck` in `docker-compose.yml` passes.
+If it still fails, restart it manually:
 
 ```bash
 docker compose restart app
 ```
 
-### ポートが競合する
+### Port conflicts
 
-`.env` の `APP_PORT_EXTERNAL` または `DB_PORT_EXTERNAL` を変更してください。
+Change `APP_PORT_EXTERNAL` or `DB_PORT_EXTERNAL` in `.env`:
 
 ```
 APP_PORT_EXTERNAL=8001

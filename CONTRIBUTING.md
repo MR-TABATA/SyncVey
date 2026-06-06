@@ -1,24 +1,50 @@
-# 開発ガイドライン (CONTRIBUTING.md)
+# Contributing
 
-## 🏗 開発環境の起動
-本プロジェクトは **Dev Containers** を推奨しています。
-1. VS Codeでリポジトリを開き、`Reopen in Container` を選択してください。
-2. 必要な拡張機能と仮想環境（.venv）が自動でセットアップされます。
+**English** | [日本語](CONTRIBUTING.ja.md)
 
-## 📏 コーディング規約
-プラットフォーム間の整合性を保つため、以下の規則を適用します。
+Thanks for your interest in improving SyncVey!
 
-### 命名規則
-- **Frontend (React)**: 
-  - 変数・関数名: `camelCase` (例: `assetList`)
-  - コンポーネント名: `PascalCase` (例: `AssetTable`)
-- **Backend (Django/DRF)**:
-  - 変数・関数名: `snake_case` (例: `get_asset_detail`)
-  - クラス名: `PascalCase`
-  - **APIレスポンス**: フロントエンドとの親和性のため `camelCase` で返却することを推奨します。
+## Development environment
 
-## 🌿 Git運用
-- **ブランチ**: `feature/` または `fix/` プレフィックスを使用してください。
-- **プルリクエスト (PR)**:
-  - タイトル: `[fix] 資産一覧のソート不具合を修正 (#123)`
-  - テンプレートに従い、影響範囲とテスト項目を明記してください。
+**Dev Containers (recommended).** Open the repository in VS Code and choose
+**Reopen in Container** — the required extensions and the virtual environment
+(`.venv`) are set up automatically.
+
+**Or Docker Compose.** `docker compose up --build -d` (see the
+[Docker Setup Guide](docker-setup.md)).
+
+## Tech stack
+
+You'll be working with a server-rendered Django app — there is **no SPA and no
+REST framework**.
+
+- **Backend:** Python 3.12 / Django. Views return rendered **HTML** (full pages
+  or htmx partials), not JSON.
+- **Frontend:** htmx + Tailwind CSS inside Django templates. **No build step, no
+  Node toolchain** (Tailwind is loaded via the Play CDN).
+- **Database:** PostgreSQL.
+
+## Coding conventions
+
+- **Python:** `snake_case` for variables and functions, `PascalCase` for classes.
+  Follow standard Django conventions and keep views thin.
+- **Templates:** use Tailwind utility classes and reuse the existing partials
+  (`templates/_*.html`) and htmx patterns (`hx-get` / `hx-post` targeting
+  `#main-content`).
+- Match the style of the surrounding code — naming, comment density, and idioms.
+
+## Tests
+
+```bash
+docker compose exec app pip install -r requirements-dev.txt
+docker compose exec app pytest
+```
+
+`moto` mocks AWS; `pytest-django` and `pytest-playwright` cover unit and E2E tests.
+
+## Git workflow
+
+- **Branches:** use a `feature/` or `fix/` prefix.
+- **Pull requests:**
+  - Title example: `fix: correct asset list sorting (#123)`
+  - Describe the scope of impact and how you tested it.

@@ -130,11 +130,11 @@ docker compose exec app python manage.py seed   # 任意: サンプルデータ�
 
 各対象 AWS アカウントに ReadOnly の IAM Role を作成し、その ARN を SyncVey に登録します。
 
-詳細手順 → [docs/aws-setup.md](docs/aws-setup.md)
+詳細手順 → [aws-setup.md](aws-setup.ja.md)
 
 **概要：**
 1. `.env` に中央アカウントの IAM ユーザーキーを設定
-2. 付属の CloudFormation テンプレートで各対象アカウントに `SyncVeyReadOnly` ロールを作成
+2. 付属の IAM ポリシー（[`iam/iam-policy.json`](iam/iam-policy.json)）で各対象アカウントに `SyncVeyReadOnly` ロールを作成
 3. システムカードの 🛡 ボタンから Role ARN を登録
 4. **ScanLine** ボタンで初回スキャンを実行
 
