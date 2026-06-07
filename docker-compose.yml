@@ -23,9 +23,6 @@ services:
     build: .
     container_name: syncvey-app
     env_file: .env
-    volumes:
-      - .:/app
-      - /app/.venv # 仮想環境をコンテナ内に閉じ込める
     ports:
       - "${APP_PORT_EXTERNAL:-8000}:8000"
     environment:

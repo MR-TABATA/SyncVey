@@ -2,8 +2,8 @@
 FROM python:3.12-slim
 
 # 環境変数を設定
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # 作業ディレクトリを設定
 WORKDIR /app
@@ -23,3 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # 開発環境では requirements-dev.txt を別途インストール
 # docker compose exec app pip install -r requirements-dev.txt
+
+# アプリのソースをイメージに焼き込む（配布用：bind マウント不要で自己完結）。
+# ローカル開発のライブリロードは docker-compose.override.yml が .:/app を再マウントして実現する。
+COPY . .

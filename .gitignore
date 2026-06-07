@@ -42,6 +42,12 @@ Thumbs.db
 *.code-workspace
 
 # ========================
+# Docker
+# ========================
+# Dev-only live-reload override (ship docker-compose.override.yml.example instead)
+docker-compose.override.yml
+
+# ========================
 # Tools
 # ========================
 .claude/

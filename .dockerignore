@@ -1,0 +1,52 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+.venv/
+venv/
+
+# Secrets / environment — never bake into the image
+.env
+.env.*
+!.env.example
+
+# Django local
+*.log
+db.sqlite3
+media/
+
+# Tests / tooling
+.pytest_cache/
+test-results/
+.playwright-mcp/
+.coverage
+htmlcov/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# Agent / dev container
+.claude/
+.cursor/
+.devcontainer/
+
+# Compose override — dev-only, must not enter the image
+docker-compose.override.yml
+
+# GitHub Pages landing site — not used by the app image
+docs/
