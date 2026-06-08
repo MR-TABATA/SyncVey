@@ -36,23 +36,22 @@ class TestComputeRawDiff(TestCase):
         self.assertEqual(diffs[0]['old'],   't3.micro')
         self.assertEqual(diffs[0]['new'],   't3.small')
 
-    def test_detects_added_field(self):
+    def test_ignores_field_only_in_new(self):
+        """片側にしか無いキーは比較対象外（積集合比較）。
+
+        tfstate(全属性) と ライブスキャン(厳選キー) はスキーマが非対称で、
+        片側だけに在るキーを差分扱いすると誤検知の山になる。実ドリフトは
+        共通キー上で起きるため、増減は無視するのが正しい挙動。
+        """
         old = {}
         new = {'subnet_id': 'subnet-abc'}
-        diffs = _compute_raw_diff(old, new)
-        self.assertEqual(len(diffs), 1)
-        self.assertEqual(diffs[0]['field'], 'subnet_id')
-        self.assertEqual(diffs[0]['old'],   '')
-        self.assertEqual(diffs[0]['new'],   'subnet-abc')
+        self.assertEqual(_compute_raw_diff(old, new), [])
 
-    def test_detects_removed_field(self):
+    def test_ignores_field_only_in_old(self):
+        """片側(old)にしか無いキーも比較対象外（積集合比較）。"""
         old = {'public_ip': '1.2.3.4'}
         new = {}
-        diffs = _compute_raw_diff(old, new)
-        self.assertEqual(len(diffs), 1)
-        self.assertEqual(diffs[0]['field'], 'public_ip')
-        self.assertEqual(diffs[0]['old'],   '1.2.3.4')
-        self.assertEqual(diffs[0]['new'],   '')
+        self.assertEqual(_compute_raw_diff(old, new), [])
 
     def test_excludes_noise_fields(self):
         """tags_all / arn / tags / timeouts は除外されること"""

@@ -109,9 +109,16 @@ def _compute_raw_diff(old: dict, new: dict) -> list:
     """
     old / new の raw_data を比較し、変更フィールドのリストを返す。
     [{'field': str, 'old': str, 'new': str}, ...]
+
+    キーは「両方に存在するもの」の積集合(&)だけを比較する。
+    tfstate インポートは全属性(50+キー)を保存する一方、ライブスキャン
+    (scanner.py)は厳選した互換キー(~11)のみを出力するため、和集合(|)で
+    比較すると scanner が出さない tfstate 固有キーが全て「削除」と誤検知
+    される。実ドリフトは共通キー上で起きるので積集合で比較するのが正しい。
+    新規/削除リソースの検出は raw_data_prev の有無で別途行う(drift_report_view)。
     """
     changes = []
-    keys = (set(old.keys()) | set(new.keys())) - _DIFF_EXCLUDE
+    keys = (set(old.keys()) & set(new.keys())) - _DIFF_EXCLUDE
     for key in sorted(keys):
         ov = old.get(key)
         nv = new.get(key)
@@ -137,7 +144,10 @@ def _get_env_drift_summary(environment) -> dict:
             has_data = True
         if not asset.raw_data_prev:
             added += 1
-        elif asset.raw_data != asset.raw_data_prev:
+        elif _compute_raw_diff(asset.raw_data_prev, asset.raw_data):
+            # 生の != ではなく drift レポートと同じ判定にする。
+            # スキーマ非対称(tfstate全属性 vs scan厳選)で raw_data != prev が
+            # 常に真になり、バッジ件数が膨らむのを防ぐ。
             changed += 1
     return {'changed': changed, 'added': added, 'total': changed + added, 'has_data': has_data}
 
