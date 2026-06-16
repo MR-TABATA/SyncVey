@@ -210,3 +210,54 @@ class TestRunScan(TestCase):
         result = run_scan(system, env)
 
         self.assertEqual(result['scanned'], result['created'] + result['updated'])
+
+
+# ---------------------------------------------------------------------------
+# _record_drift_snapshot  (Drift履歴)
+# ---------------------------------------------------------------------------
+
+class TestRecordDriftSnapshot(TestCase):
+
+    def _env_with_asset(self):
+        org = Organization.objects.create(name='drift-org')
+        system = System.objects.create(name='s', code='s', organization=org)
+        env = Environment.objects.create(system=system, name='prod', env_type='PROD')
+        return env
+
+    def test_no_snapshot_for_empty_environment(self):
+        from asset_manager.views import _record_drift_snapshot
+        from asset_manager.models import DriftSnapshot
+        env = self._env_with_asset()
+        self.assertIsNone(_record_drift_snapshot(env, DriftSnapshot.Source.SCAN))
+        self.assertEqual(DriftSnapshot.objects.count(), 0)
+
+    def test_new_asset_counts_as_added(self):
+        from asset_manager.views import _record_drift_snapshot
+        from asset_manager.models import DriftSnapshot
+        env = self._env_with_asset()
+        Asset.objects.create(
+            environment=env, name='ec2-1', provider='AWS', asset_type='EC2',
+            asset_category='COMPUTE', cloud_id='i-aaa',
+            raw_data={'instance_type': 't3.micro'},  # raw_data_prev は空 → ADDED
+        )
+        snap = _record_drift_snapshot(env, DriftSnapshot.Source.SCAN)
+        self.assertIsNotNone(snap)
+        self.assertEqual(snap.added_count, 1)
+        self.assertEqual(snap.changed_count, 0)
+        self.assertEqual(len(snap.detail['added']), 1)
+
+    def test_changed_asset_captures_field_diff(self):
+        from asset_manager.views import _record_drift_snapshot
+        from asset_manager.models import DriftSnapshot
+        env = self._env_with_asset()
+        Asset.objects.create(
+            environment=env, name='ec2-1', provider='AWS', asset_type='EC2',
+            asset_category='COMPUTE', cloud_id='i-bbb',
+            raw_data_prev={'instance_type': 't3.micro'},
+            raw_data={'instance_type': 't3.small'},
+        )
+        snap = _record_drift_snapshot(env, DriftSnapshot.Source.TFSTATE)
+        self.assertEqual(snap.changed_count, 1)
+        self.assertEqual(snap.added_count, 0)
+        self.assertEqual(snap.detail['changed'][0]['changes'][0]['field'], 'instance_type')
+        self.assertEqual(snap.source, DriftSnapshot.Source.TFSTATE)

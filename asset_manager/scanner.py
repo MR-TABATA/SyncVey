@@ -233,25 +233,271 @@ def scan_lambda(session):
     return results
 
 
+def scan_dynamodb(session):
+    ddb = session.client('dynamodb')
+    results = []
+    paginator = ddb.get_paginator('list_tables')
+    for page in paginator.paginate():
+        for name in page.get('TableNames', []):
+            try:
+                t = ddb.describe_table(TableName=name)['Table']
+            except ClientError:
+                continue
+            results.append({
+                'id':              name,
+                'name':            name,
+                'arn':             t.get('TableArn', ''),
+                'billing_mode':    (t.get('BillingModeSummary') or {}).get('BillingMode', 'PROVISIONED'),
+                'read_capacity':   (t.get('ProvisionedThroughput') or {}).get('ReadCapacityUnits', 0),
+                'write_capacity':  (t.get('ProvisionedThroughput') or {}).get('WriteCapacityUnits', 0),
+                'table_status':    t.get('TableStatus', ''),
+                'item_count':      t.get('ItemCount', 0),
+                '_resource_type':  'aws_dynamodb_table',
+                '_scan_source':    'boto3',
+            })
+    return results
+
+
+def scan_elasticache(session):
+    ec = session.client('elasticache')
+    results = []
+    paginator = ec.get_paginator('describe_cache_clusters')
+    for page in paginator.paginate():
+        for c in page.get('CacheClusters', []):
+            results.append({
+                'id':                   c['CacheClusterId'],
+                'name':                 c['CacheClusterId'],
+                'engine':               c.get('Engine', ''),
+                'engine_version':       c.get('EngineVersion', ''),
+                'node_type':            c.get('CacheNodeType', ''),
+                'num_cache_nodes':      c.get('NumCacheNodes', 0),
+                'cache_cluster_status': c.get('CacheClusterStatus', ''),
+                '_resource_type':       'aws_elasticache_cluster',
+                '_scan_source':         'boto3',
+            })
+    return results
+
+
+def scan_efs(session):
+    efs = session.client('efs')
+    results = []
+    paginator = efs.get_paginator('describe_file_systems')
+    for page in paginator.paginate():
+        for fs in page.get('FileSystems', []):
+            results.append({
+                'id':                      fs['FileSystemId'],
+                'name':                    fs.get('Name') or fs['FileSystemId'],
+                'performance_mode':        fs.get('PerformanceMode', ''),
+                'throughput_mode':         fs.get('ThroughputMode', ''),
+                'encrypted':               fs.get('Encrypted', False),
+                'lifecycle_state':         fs.get('LifeCycleState', ''),
+                'number_of_mount_targets': fs.get('NumberOfMountTargets', 0),
+                'tags':                    _tags(fs.get('Tags')),
+                '_resource_type':          'aws_efs_file_system',
+                '_scan_source':            'boto3',
+            })
+    return results
+
+
+def scan_eks(session):
+    eks = session.client('eks')
+    results = []
+    paginator = eks.get_paginator('list_clusters')
+    for page in paginator.paginate():
+        for name in page.get('clusters', []):
+            try:
+                c = eks.describe_cluster(name=name)['cluster']
+            except ClientError:
+                continue
+            results.append({
+                'id':              name,
+                'name':            name,
+                'arn':             c.get('arn', ''),
+                'version':         c.get('version', ''),
+                'status':          c.get('status', ''),
+                'role_arn':        c.get('roleArn', ''),
+                'endpoint':        c.get('endpoint', ''),
+                'tags':            c.get('tags') or {},
+                '_resource_type':  'aws_eks_cluster',
+                '_scan_source':    'boto3',
+            })
+    return results
+
+
+def scan_sns(session):
+    sns = session.client('sns')
+    results = []
+    paginator = sns.get_paginator('list_topics')
+    for page in paginator.paginate():
+        for t in page.get('Topics', []):
+            arn = t['TopicArn']
+            results.append({
+                'id':              arn,
+                'arn':             arn,
+                'name':            arn.split(':')[-1],
+                '_resource_type':  'aws_sns_topic',
+                '_scan_source':    'boto3',
+            })
+    return results
+
+
+def scan_sqs(session):
+    sqs = session.client('sqs')
+    results = []
+    for url in sqs.list_queues().get('QueueUrls', []):
+        try:
+            attrs = sqs.get_queue_attributes(
+                QueueUrl=url,
+                AttributeNames=[
+                    'QueueArn', 'VisibilityTimeout', 'DelaySeconds',
+                    'MaximumMessageSize', 'MessageRetentionPeriod', 'FifoQueue',
+                ],
+            ).get('Attributes', {})
+        except ClientError:
+            attrs = {}
+        arn = attrs.get('QueueArn', url)
+        results.append({
+            'id':                         arn,
+            'arn':                        arn,
+            'name':                       url.rstrip('/').split('/')[-1],
+            'url':                        url,
+            'visibility_timeout_seconds': attrs.get('VisibilityTimeout', ''),
+            'delay_seconds':              attrs.get('DelaySeconds', ''),
+            'max_message_size':           attrs.get('MaximumMessageSize', ''),
+            'message_retention_seconds':  attrs.get('MessageRetentionPeriod', ''),
+            'fifo_queue':                 attrs.get('FifoQueue', 'false'),
+            '_resource_type':             'aws_sqs_queue',
+            '_scan_source':               'boto3',
+        })
+    return results
+
+
+def scan_apigatewayv2(session):
+    api = session.client('apigatewayv2')
+    results = []
+    for a in api.get_apis().get('Items', []):
+        results.append({
+            'id':                         a['ApiId'],
+            'name':                       a.get('Name', a['ApiId']),
+            'protocol_type':              a.get('ProtocolType', ''),
+            'api_endpoint':               a.get('ApiEndpoint', ''),
+            'route_selection_expression': a.get('RouteSelectionExpression', ''),
+            '_resource_type':             'aws_apigatewayv2_api',
+            '_scan_source':               'boto3',
+        })
+    return results
+
+
+# ── Global services (region-agnostic — scanned once) ───────────────────────
+
+def scan_cloudfront(session):
+    cf = session.client('cloudfront')
+    results = []
+    paginator = cf.get_paginator('list_distributions')
+    for page in paginator.paginate():
+        dl = page.get('DistributionList') or {}
+        for d in dl.get('Items') or []:
+            results.append({
+                'id':              d['Id'],
+                'arn':             d.get('ARN', ''),
+                'domain_name':     d.get('DomainName', ''),
+                'enabled':         d.get('Enabled', False),
+                'status':          d.get('Status', ''),
+                'price_class':     d.get('PriceClass', ''),
+                'comment':         d.get('Comment', ''),
+                '_resource_type':  'aws_cloudfront_distribution',
+                '_scan_source':    'boto3',
+            })
+    return results
+
+
+def scan_route53(session):
+    r53 = session.client('route53')
+    results = []
+    paginator = r53.get_paginator('list_hosted_zones')
+    for page in paginator.paginate():
+        for z in page.get('HostedZones', []):
+            config = z.get('Config') or {}
+            results.append({
+                'id':             z['Id'].split('/')[-1],
+                'name':           z.get('Name', ''),
+                'private_zone':   config.get('PrivateZone', False),
+                'comment':        config.get('Comment', ''),
+                'record_count':   z.get('ResourceRecordSetCount', 0),
+                '_resource_type': 'aws_route53_zone',
+                '_scan_source':   'boto3',
+            })
+    return results
+
+
 # ---------------------------------------------------------------------------
 # Scanner registry  (resource_type → scanner function)
 # ---------------------------------------------------------------------------
 
+# Regional services — scanned in every configured region.
 SCANNERS = [
-    ('aws_instance',        scan_ec2),
-    ('aws_db_instance',     scan_rds),
-    ('aws_ecs_service',     scan_ecs_services),
-    ('aws_s3_bucket',       scan_s3),
-    ('aws_lb',              scan_alb),
-    ('aws_vpc',             scan_vpc),
-    ('aws_ebs_volume',      scan_ebs),
-    ('aws_lambda_function', scan_lambda),
+    ('aws_instance',            scan_ec2),
+    ('aws_db_instance',         scan_rds),
+    ('aws_ecs_service',         scan_ecs_services),
+    ('aws_s3_bucket',           scan_s3),
+    ('aws_lb',                  scan_alb),
+    ('aws_vpc',                 scan_vpc),
+    ('aws_ebs_volume',          scan_ebs),
+    ('aws_lambda_function',     scan_lambda),
+    ('aws_dynamodb_table',      scan_dynamodb),
+    ('aws_elasticache_cluster', scan_elasticache),
+    ('aws_efs_file_system',     scan_efs),
+    ('aws_eks_cluster',         scan_eks),
+    ('aws_sns_topic',           scan_sns),
+    ('aws_sqs_queue',           scan_sqs),
+    ('aws_apigatewayv2_api',    scan_apigatewayv2),
+]
+
+# Global services — scanned once (not per-region) to avoid duplicate churn.
+GLOBAL_SCANNERS = [
+    ('aws_cloudfront_distribution', scan_cloudfront),
+    ('aws_route53_zone',            scan_route53),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
+def _upsert_asset(environment, region, attrs, result):
+    """Normalize one scanned attribute dict into an Asset (create or update)."""
+    cloud_id = attrs.get('id') or attrs.get('arn', '')
+    if not cloud_id:
+        return
+
+    result['scanned'] += 1
+    resource_type = attrs.get('_resource_type', '')
+    asset_type, asset_category = resolve_resource_type(resource_type, attrs)
+    provider = resolve_provider(resource_type)
+    name = attrs.get('name') or cloud_id
+
+    asset, created = Asset.objects.get_or_create(
+        cloud_id=cloud_id,
+        defaults={
+            'environment':      environment,
+            'name':             name,
+            'provider':         provider,
+            'asset_type':       asset_type,
+            'asset_category':   asset_category,
+            'region':           region,
+            'raw_data':         attrs,
+            'last_imported_at': timezone.now(),
+        },
+    )
+    if created:
+        result['created'] += 1
+    else:
+        asset.raw_data_prev    = asset.raw_data
+        asset.raw_data         = attrs
+        asset.last_imported_at = timezone.now()
+        asset.save(update_fields=['raw_data', 'raw_data_prev', 'last_imported_at'])
+        result['updated'] += 1
+
 
 def run_scan(system, environment):
     """
@@ -273,40 +519,26 @@ def run_scan(system, environment):
         for resource_type, scanner_fn in SCANNERS:
             try:
                 items = scanner_fn(session)
-            except ClientError as e:
+            except Exception as e:
+                # A single service failing must not abort the whole scan.
                 result['errors'].append(f"{region}/{resource_type}: {e}")
                 continue
 
             for attrs in items:
-                result['scanned'] += 1
-                cloud_id = attrs.get('id') or attrs.get('arn', '')
-                if not cloud_id:
-                    continue
+                _upsert_asset(environment, region, attrs, result)
 
-                asset_type, asset_category = resolve_resource_type(resource_type, attrs)
-                provider = resolve_provider(resource_type)
-                name = attrs.get('name') or cloud_id
-
-                asset, created = Asset.objects.get_or_create(
-                    cloud_id=cloud_id,
-                    defaults={
-                        'environment':      environment,
-                        'name':             name,
-                        'provider':         provider,
-                        'asset_type':       asset_type,
-                        'asset_category':   asset_category,
-                        'region':           region,
-                        'raw_data':         attrs,
-                        'last_imported_at': timezone.now(),
-                    },
-                )
-                if created:
-                    result['created'] += 1
-                else:
-                    asset.raw_data_prev    = asset.raw_data
-                    asset.raw_data         = attrs
-                    asset.last_imported_at = timezone.now()
-                    asset.save(update_fields=['raw_data', 'raw_data_prev', 'last_imported_at'])
-                    result['updated'] += 1
+    # Global services — scanned once via a us-east-1 session.
+    try:
+        gsession = get_session(system.aws_role_arn, 'us-east-1')
+        for resource_type, scanner_fn in GLOBAL_SCANNERS:
+            try:
+                items = scanner_fn(gsession)
+            except Exception as e:
+                result['errors'].append(f"global/{resource_type}: {e}")
+                continue
+            for attrs in items:
+                _upsert_asset(environment, 'global', attrs, result)
+    except Exception as e:
+        result['errors'].append(f"global: session error — {e}")
 
     return result

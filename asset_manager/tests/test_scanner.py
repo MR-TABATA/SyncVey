@@ -11,6 +11,7 @@ from django.test import TestCase
 from asset_manager.scanner import (
     scan_ec2, scan_rds, scan_ecs_services,
     scan_s3, scan_alb, scan_vpc, scan_ebs, scan_lambda,
+    scan_dynamodb, scan_sns, scan_sqs,
 )
 
 REGION = 'ap-northeast-1'
@@ -345,3 +346,69 @@ class TestScanLambda(TestCase):
         )
         results = scan_lambda(_session())
         self.assertEqual(results[0]['runtime'], 'python3.11')
+
+
+# ---------------------------------------------------------------------------
+# DynamoDB
+# ---------------------------------------------------------------------------
+
+@mock_aws
+class TestScanDynamoDB(TestCase):
+
+    def test_empty_account_returns_empty_list(self):
+        self.assertEqual(scan_dynamodb(_session()), [])
+
+    def test_finds_table(self):
+        ddb = boto3.client('dynamodb', region_name=REGION)
+        ddb.create_table(
+            TableName='sessions',
+            AttributeDefinitions=[{'AttributeName': 'id', 'AttributeType': 'S'}],
+            KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
+            BillingMode='PAY_PER_REQUEST',
+        )
+        results = scan_dynamodb(_session())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'],             'sessions')
+        self.assertEqual(results[0]['billing_mode'],   'PAY_PER_REQUEST')
+        self.assertEqual(results[0]['_resource_type'], 'aws_dynamodb_table')
+        self.assertEqual(results[0]['_scan_source'],   'boto3')
+
+
+# ---------------------------------------------------------------------------
+# SNS
+# ---------------------------------------------------------------------------
+
+@mock_aws
+class TestScanSns(TestCase):
+
+    def test_empty_account_returns_empty_list(self):
+        self.assertEqual(scan_sns(_session()), [])
+
+    def test_finds_topic(self):
+        sns = boto3.client('sns', region_name=REGION)
+        sns.create_topic(Name='alerts')
+        results = scan_sns(_session())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['name'],           'alerts')
+        self.assertEqual(results[0]['_resource_type'], 'aws_sns_topic')
+        self.assertEqual(results[0]['_scan_source'],   'boto3')
+
+
+# ---------------------------------------------------------------------------
+# SQS
+# ---------------------------------------------------------------------------
+
+@mock_aws
+class TestScanSqs(TestCase):
+
+    def test_empty_account_returns_empty_list(self):
+        self.assertEqual(scan_sqs(_session()), [])
+
+    def test_finds_queue(self):
+        sqs = boto3.client('sqs', region_name=REGION)
+        sqs.create_queue(QueueName='jobs')
+        results = scan_sqs(_session())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['name'],           'jobs')
+        self.assertEqual(results[0]['_resource_type'], 'aws_sqs_queue')
+        self.assertEqual(results[0]['_scan_source'],   'boto3')

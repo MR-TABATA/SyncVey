@@ -1,0 +1,91 @@
+{% load i18n static %}
+
+{# ── Breadcrumb ─────────────────────────────────────────────────── #}
+<div class="mb-5 flex items-center gap-2 text-sm">
+    <button class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+            hx-get="{% url 'system-list' %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML"
+            hx-on::after-request="setSidebarActive('systems')">
+        {% trans "Systems" %}
+    </button>
+    <span class="text-slate-300">/</span>
+    <button class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+            hx-get="{% url 'environment-list' environment.system.id %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML">
+        {{ environment.system.name }}
+    </button>
+    <span class="text-slate-300">/</span>
+    <span class="text-slate-500">{{ environment.name }}</span>
+    <span class="text-slate-300">/</span>
+    <span class="font-semibold text-slate-700">{% trans "Drift History" %}</span>
+    <button class="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-colors"
+            hx-get="{% url 'env-drift' environment.id %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML">
+        <i data-lucide="git-compare" class="w-3.5 h-3.5"></i>
+        {% trans "Latest report" %}
+    </button>
+</div>
+
+{% if snapshots %}
+{# ── Trend chart ────────────────────────────────────────────────── #}
+{% if peak %}
+<div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">{% trans "Drift trend" %}</span>
+        <span class="text-xs text-slate-400">{% trans "oldest → newest" %}</span>
+    </div>
+    <div class="flex flex-row-reverse items-end gap-1 h-24">
+        {% for s in snapshots %}
+        <div class="flex-1 min-w-[3px] flex flex-col justify-end h-full group/bar relative"
+             title="{{ s.detected_at|date:'Y-m-d H:i' }} — {{ s.changed_count }} {% trans 'changed' %}, {{ s.added_count }} {% trans 'added' %}">
+            <div class="rounded-t-sm transition-colors {% if s.has_drift %}bg-blue-400 group-hover/bar:bg-blue-600{% else %}bg-slate-200 group-hover/bar:bg-slate-300{% endif %}"
+                 style="height: {% widthratio s.total_count peak 100 %}%; min-height: 3px;"></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ── Snapshot list (newest first) ───────────────────────────────── #}
+<div class="space-y-2">
+    {% for s in snapshots %}
+    <button class="w-full text-left bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm rounded-xl px-4 py-3 flex items-center gap-4 transition-all"
+            hx-get="{% url 'drift-snapshot-detail' environment.id s.id %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML">
+        <div class="flex flex-col">
+            <span class="text-sm font-semibold text-slate-700">{{ s.detected_at|date:"Y-m-d H:i" }}</span>
+            <span class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ s.get_source_display }}</span>
+        </div>
+        <div class="ml-auto flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span class="text-sm font-bold text-slate-700">{{ s.changed_count }}</span>
+                <span class="text-xs text-slate-400">{% trans "changed" %}</span>
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                <span class="text-sm font-bold text-slate-700">{{ s.added_count }}</span>
+                <span class="text-xs text-slate-400">{% trans "added" %}</span>
+            </span>
+            {% if s.has_drift %}
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+            {% else %}
+            <span class="inline-flex items-center gap-1 text-xs text-green-700 font-medium bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                <i data-lucide="check" class="w-3 h-3"></i>{% trans "no drift" %}
+            </span>
+            {% endif %}
+        </div>
+    </button>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
+    <i data-lucide="history" class="w-10 h-10 text-slate-200 mx-auto mb-3"></i>
+    <p class="text-sm font-medium text-slate-500 mb-1">{% trans "No drift history yet." %}</p>
+    <p class="text-xs text-slate-400">{% trans "Run a scan or import a tfstate to start tracking drift over time." %}</p>
+</div>
+{% endif %}

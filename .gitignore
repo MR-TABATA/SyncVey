@@ -54,3 +54,6 @@ docker-compose.override.yml
 .cursor/
 .pytest_cache/
 test-results/
+
+# Virtualenv (local)
+.venv/

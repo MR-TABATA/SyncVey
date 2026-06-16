@@ -6,6 +6,7 @@ from .scan import ScanJob
 from .application import Application, AppEnvConfig, AppDependency
 from .audit import AuditLog
 from .eol import EolSnapshot
+from .drift import DriftSnapshot
 
 __all__ = [
     'BaseModel',
@@ -16,4 +17,5 @@ __all__ = [
     'Application', 'AppEnvConfig', 'AppDependency',
     'AuditLog',
     'EolSnapshot',
+    'DriftSnapshot',
 ]

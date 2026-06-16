@@ -12,6 +12,7 @@ from .models import (
     Application, AppEnvConfig, AppDependency,
     AuditLog,
     EolSnapshot,
+    DriftSnapshot,
 )
 
 
@@ -238,6 +239,24 @@ class EolSnapshotAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         # スナップショットはジョブ/コマンドが作る。手動追加は不可。
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Drift Snapshot（読み取り専用・観測用）
+# ---------------------------------------------------------------------------
+
+@admin.register(DriftSnapshot)
+class DriftSnapshotAdmin(admin.ModelAdmin):
+    list_display    = ('environment', 'source', 'changed_count', 'added_count', 'unchanged_count', 'detected_at')
+    list_filter     = ('source', 'environment__env_type')
+    search_fields   = ('environment__name', 'environment__system__name')
+    readonly_fields = ('environment', 'source', 'changed_count', 'added_count', 'unchanged_count', 'detail', 'detected_at')
+
+    def has_add_permission(self, request):
         return False
 
     def has_change_permission(self, request, obj=None):

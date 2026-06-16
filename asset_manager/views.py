@@ -61,6 +61,10 @@ _DIFF_EXCLUDE = frozenset({
     # 汎用タイムスタンプ
     'last_modified', 'last_modified_time', 'created_time',
     'created_at', 'updated_at',
+    # DynamoDB / ElastiCache / EFS / Route53 — AWS が自動更新する動的値
+    'item_count', 'table_status', 'cache_cluster_status',
+    'lifecycle_state', 'number_of_mount_targets', 'record_count',
+    'size_in_bytes',
 })
 
 # tfstate / Boto3 レスポンスから除去するシークレット系キー名（部分一致）
@@ -150,6 +154,48 @@ def _get_env_drift_summary(environment) -> dict:
             # 常に真になり、バッジ件数が膨らむのを防ぐ。
             changed += 1
     return {'changed': changed, 'added': added, 'total': changed + added, 'has_data': has_data}
+
+
+def _record_drift_snapshot(environment, source):
+    """
+    現時点の raw_data / raw_data_prev からドリフトを計算し DriftSnapshot を1件保存する。
+    スキャン／取込の直後に呼ぶ前提（その回で持ち込まれた差分を切り取る）。
+    資産が無い環境では何もしない。差分ゼロでも推移を残すため記録する。
+    """
+    from .models import DriftSnapshot
+
+    assets = environment.assets.only(
+        'asset_type', 'name', 'cloud_id', 'provider', 'raw_data', 'raw_data_prev',
+    ).order_by('asset_type', 'name')
+
+    changed, added, unchanged = [], [], 0
+    for asset in assets:
+        meta = {
+            'type':     asset.asset_type,
+            'name':     asset.name,
+            'cloud_id': asset.cloud_id,
+            'provider': asset.provider,
+        }
+        if not asset.raw_data_prev:
+            added.append(meta)
+        else:
+            diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
+            if diff:
+                changed.append({**meta, 'changes': diff})
+            else:
+                unchanged += 1
+
+    if not (changed or added or unchanged):
+        return None
+
+    return DriftSnapshot.objects.create(
+        environment=environment,
+        source=source,
+        changed_count=len(changed),
+        added_count=len(added),
+        unchanged_count=unchanged,
+        detail={'changed': changed, 'added': added},
+    )
 
 
 def _safe_query_or_empty(query_fn):
@@ -760,6 +806,8 @@ def _do_import_tfstate(request, tfstate_data, tfstate_config, filename):
             environment.env_type = tfstate_config['env_type']
             environment.save(update_fields=['env_type'])
         processed_count = _process_tfstate_data(tfstate_data, environment)
+        from .models import DriftSnapshot
+        _record_drift_snapshot(environment, DriftSnapshot.Source.TFSTATE)
     except Exception as e:
         return _render_upload_form_error(request, _("An error occurred during processing: %(err)s") % {'err': e})
 
@@ -1436,6 +1484,39 @@ def drift_report_view(request, environment_id):
     })
 
 
+def drift_history_view(request, environment_id):
+    """環境のドリフト履歴（時系列の推移）。"""
+    from .models import DriftSnapshot
+
+    env       = _user_environment_or_404(request, environment_id)
+    snapshots = list(DriftSnapshot.objects.filter(environment=env)[:100])
+
+    # 推移バーの高さ正規化用に最大値を出す
+    peak = max((s.total_count for s in snapshots), default=0)
+
+    return render(request, '_drift_history.html', {
+        'environment': env,
+        'snapshots':   snapshots,
+        'peak':        peak,
+    })
+
+
+def drift_snapshot_detail_view(request, environment_id, snapshot_id):
+    """履歴上の1スナップショットの差分詳細（保存済み detail を描画）。"""
+    from .models import DriftSnapshot
+
+    env      = _user_environment_or_404(request, environment_id)
+    snapshot = get_object_or_404(DriftSnapshot, pk=snapshot_id, environment=env)
+    detail   = snapshot.detail or {}
+
+    return render(request, '_drift_snapshot.html', {
+        'environment': env,
+        'snapshot':    snapshot,
+        'changed':     detail.get('changed', []),
+        'added':       detail.get('added', []),
+    })
+
+
 # ---------------------------------------------------------------------------
 # Authentication
 # ---------------------------------------------------------------------------
@@ -1774,6 +1855,9 @@ def trigger_scan_view(request, environment_id):
         if result['errors']:
             job.error_message = '\n'.join(result['errors'])
         job.save()
+        # Drift 履歴を記録
+        from .models import DriftSnapshot
+        _record_drift_snapshot(env, DriftSnapshot.Source.SCAN)
         # Drift 通知
         from .notifications import send_drift_notification
         send_drift_notification(system, env, result)
@@ -1821,6 +1905,8 @@ def sync_s3_state_core(env):
         count = _process_tfstate_data(tfstate_data, env)
         env.tfstate_filename = f's3://{env.s3_bucket}/{env.s3_key}'
         env.save(update_fields=['tfstate_filename'])
+        from .models import DriftSnapshot
+        _record_drift_snapshot(env, DriftSnapshot.Source.S3SYNC)
     except Exception as e:
         return {'errors': [f'{_("Import error")}: {e}'], 'created': 0, 'updated': 0, 'scanned': 0}
 

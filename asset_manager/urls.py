@@ -31,6 +31,8 @@ from .views import (
     # Diagram / Drift
     diagram_view,
     drift_report_view,
+    drift_history_view,
+    drift_snapshot_detail_view,
     # Profile
     profile_view,
     profile_update_view,
@@ -87,6 +89,8 @@ urlpatterns = [
     path('environments/<int:environment_id>/diagram/', diagram_view, name='env-diagram'),
     # Drift Report
     path('environments/<int:environment_id>/drift/', drift_report_view, name='env-drift'),
+    path('environments/<int:environment_id>/drift/history/', drift_history_view, name='env-drift-history'),
+    path('environments/<int:environment_id>/drift/history/<int:snapshot_id>/', drift_snapshot_detail_view, name='drift-snapshot-detail'),
     # Boto3 Scan
     path('environments/<int:environment_id>/scan/', trigger_scan_view, name='env-scan'),
     # S3 Remote State sync

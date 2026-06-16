@@ -3,14 +3,6 @@
 {# ── Breadcrumb ─────────────────────────────────────────────────── #}
 <div class="mb-5 flex items-center gap-2 text-sm">
     <button class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
-            hx-get="{% url 'system-list' %}"
-            hx-target="#main-content"
-            hx-swap="innerHTML"
-            hx-on::after-request="setSidebarActive('systems')">
-        {% trans "Systems" %}
-    </button>
-    <span class="text-slate-300">/</span>
-    <button class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
             hx-get="{% url 'environment-list' environment.system.id %}"
             hx-target="#main-content"
             hx-swap="innerHTML">
@@ -19,14 +11,14 @@
     <span class="text-slate-300">/</span>
     <span class="text-slate-500">{{ environment.name }}</span>
     <span class="text-slate-300">/</span>
-    <span class="font-semibold text-slate-700">{% trans "Drift Report" %}</span>
-    <button class="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-colors"
+    <button class="text-slate-500 hover:text-slate-800 font-medium transition-colors"
             hx-get="{% url 'env-drift-history' environment.id %}"
             hx-target="#main-content"
             hx-swap="innerHTML">
-        <i data-lucide="history" class="w-3.5 h-3.5"></i>
-        {% trans "History" %}
+        {% trans "Drift History" %}
     </button>
+    <span class="text-slate-300">/</span>
+    <span class="font-semibold text-slate-700">{{ snapshot.detected_at|date:"Y-m-d H:i" }}</span>
 </div>
 
 {# ── Summary bar ────────────────────────────────────────────────── #}
@@ -41,13 +33,11 @@
         <span class="text-2xl font-black text-slate-800">{{ added|length }}</span>
         <span class="text-sm text-slate-500">{% trans "added" %}</span>
     </div>
-    <div class="flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0"></span>
-        <span class="text-2xl font-black text-slate-400">{{ unchanged|length }}</span>
-        <span class="text-sm text-slate-400">{% trans "unchanged" %}</span>
-    </div>
+    <span class="ml-auto text-xs font-medium uppercase tracking-wide text-slate-400">
+        {{ snapshot.get_source_display }}
+    </span>
     {% if not changed and not added %}
-    <span class="ml-auto inline-flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 border border-green-200 px-3 py-1 rounded-full">
+    <span class="inline-flex items-center gap-1.5 text-sm text-green-700 font-medium bg-green-50 border border-green-200 px-3 py-1 rounded-full">
         <i data-lucide="check-circle" class="w-4 h-4"></i>
         {% trans "No drift detected" %}
     </span>
@@ -63,21 +53,19 @@
     </h3>
     <div class="space-y-3">
         {% for item in changed %}
-        {% asset_icon_url item.asset.provider item.asset.asset_type as icon_path %}
+        {% asset_icon_url item.provider item.type as icon_path %}
         <div class="bg-white border border-blue-200 rounded-xl overflow-hidden">
-            {# Resource header #}
             <div class="px-4 py-3 flex items-center gap-3 bg-blue-50/50 border-b border-blue-100">
                 {% if icon_path %}
-                    <img src="{% static icon_path %}" class="w-5 h-5 shrink-0" alt="{{ item.asset.asset_type }}">
+                    <img src="{% static icon_path %}" class="w-5 h-5 shrink-0" alt="{{ item.type }}">
                 {% else %}
                     <i data-lucide="cloud" class="w-5 h-5 shrink-0 text-slate-400"></i>
                 {% endif %}
-                <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700">{{ item.asset.asset_type }}</span>
-                <span class="font-semibold text-slate-800">{{ item.asset.name }}</span>
-                <span class="font-mono text-xs text-slate-400 truncate max-w-[200px]">{{ item.asset.cloud_id }}</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700">{{ item.type }}</span>
+                <span class="font-semibold text-slate-800">{{ item.name }}</span>
+                <span class="font-mono text-xs text-slate-400 truncate max-w-[200px]">{{ item.cloud_id }}</span>
                 <span class="ml-auto text-xs text-blue-600 font-medium shrink-0">{{ item.changes|length }} {% trans "fields" %}</span>
             </div>
-            {# Field-level diff #}
             <div class="divide-y divide-slate-100">
                 {% for change in item.changes %}
                 <div class="px-4 py-3 grid grid-cols-[180px_1fr] gap-4 items-start">
@@ -110,16 +98,16 @@
     </h3>
     <div class="space-y-2">
         {% for item in added %}
-        {% asset_icon_url item.asset.provider item.asset.asset_type as icon_path %}
+        {% asset_icon_url item.provider item.type as icon_path %}
         <div class="bg-white border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
             {% if icon_path %}
-                <img src="{% static icon_path %}" class="w-5 h-5 shrink-0" alt="{{ item.asset.asset_type }}">
+                <img src="{% static icon_path %}" class="w-5 h-5 shrink-0" alt="{{ item.type }}">
             {% else %}
                 <i data-lucide="cloud" class="w-5 h-5 shrink-0 text-slate-400"></i>
             {% endif %}
-            <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-green-100 text-green-700">{{ item.asset.asset_type }}</span>
-            <span class="font-semibold text-slate-800">{{ item.asset.name }}</span>
-            <span class="font-mono text-xs text-slate-400 truncate max-w-[220px]">{{ item.asset.cloud_id }}</span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-green-100 text-green-700">{{ item.type }}</span>
+            <span class="font-semibold text-slate-800">{{ item.name }}</span>
+            <span class="font-mono text-xs text-slate-400 truncate max-w-[220px]">{{ item.cloud_id }}</span>
             <span class="ml-auto text-xs font-semibold text-green-600 shrink-0">{% trans "New resource" %}</span>
         </div>
         {% endfor %}
@@ -127,39 +115,9 @@
 </div>
 {% endif %}
 
-{# ── UNCHANGED (collapsible) ─────────────────────────────────────── #}
-{% if unchanged %}
-<details class="group">
-    <summary class="cursor-pointer list-none flex items-center gap-3 mb-3 select-none">
-        <i data-lucide="minus-circle" class="w-4 h-4 text-slate-300 shrink-0"></i>
-        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">
-            {% trans "Unchanged" %} ({{ unchanged|length }})
-        </span>
-        <span class="text-xs text-slate-400 group-open:hidden">— {% trans "click to expand" %}</span>
-    </summary>
-    <div class="space-y-2">
-        {% for item in unchanged %}
-        {% asset_icon_url item.asset.provider item.asset.asset_type as icon_path %}
-        <div class="bg-white border border-slate-100 rounded-xl px-4 py-2.5 flex items-center gap-3 opacity-60">
-            {% if icon_path %}
-                <img src="{% static icon_path %}" class="w-4 h-4 shrink-0 grayscale" alt="{{ item.asset.asset_type }}">
-            {% else %}
-                <i data-lucide="cloud" class="w-4 h-4 shrink-0 text-slate-300"></i>
-            {% endif %}
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400">{{ item.asset.asset_type }}</span>
-            <span class="text-sm text-slate-500">{{ item.asset.name }}</span>
-            <span class="ml-auto text-xs text-slate-400">{% trans "No changes" %}</span>
-        </div>
-        {% endfor %}
-    </div>
-</details>
-{% endif %}
-
-{# ── No data at all ──────────────────────────────────────────────── #}
-{% if not changed and not added and not unchanged %}
+{% if not changed and not added %}
 <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
-    <i data-lucide="file-search" class="w-10 h-10 text-slate-200 mx-auto mb-3"></i>
-    <p class="text-sm font-medium text-slate-500 mb-1">{% trans "No resources in this environment." %}</p>
-    <p class="text-xs text-slate-400">{% trans "Import a tfstate file to get started." %}</p>
+    <i data-lucide="check-circle" class="w-10 h-10 text-green-200 mx-auto mb-3"></i>
+    <p class="text-sm font-medium text-slate-500">{% trans "No drift was detected in this snapshot." %}</p>
 </div>
 {% endif %}
