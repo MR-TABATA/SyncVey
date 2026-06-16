@@ -23,6 +23,12 @@ Spin it up with a single `docker compose up`.
 
 ![SyncVey Drift report](docs/screenshots/drift-en.png)
 
+**Drift history** — drift trend over time, with the field-level diff for each snapshot
+
+![SyncVey Drift history](docs/screenshots/drift-history-en.png)
+
+![SyncVey Drift snapshot detail](docs/screenshots/drift-snapshot-en.png)
+
 ---
 
 ## Why SyncVey?
@@ -70,10 +76,11 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 
 | Feature | Description |
 |---------|-------------|
-| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, S3, ALB, VPC, and EBS resources — and more |
-| **AWS scan** | Auto-discover resources — including ECS and Lambda — in target accounts via AssumeRole |
+| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, CloudFront, Route 53 resources — and more |
+| **AWS scan** | Auto-discover 17+ resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
+| **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
 | **Architecture diagram** | Visualize resource relationships within an environment |
@@ -200,6 +207,7 @@ All views return rendered HTML (full pages or partials).
 /systems/<id>/applications/            Applications under a system
 /environments/<id>/scan/               Run an AWS scan
 /environments/<id>/drift/              Drift report
+/environments/<id>/drift/history/      Drift history (trend over time)
 /environments/<id>/diagram/            Architecture diagram
 /environments/<id>/sync-s3/            Sync remote tfstate from S3
 /assets/                               Asset list

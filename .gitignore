@@ -57,3 +57,6 @@ test-results/
 
 # Virtualenv (local)
 .venv/
+
+# Playwright MCP browser artifacts
+.playwright-mcp/

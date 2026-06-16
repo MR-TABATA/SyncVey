@@ -22,6 +22,12 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 
 ![SyncVey Drift レポート](docs/screenshots/drift-ja.png)
 
+**Drift 履歴** — ドリフトの推移と、各スナップショットのフィールド単位の差分
+
+![SyncVey Drift 履歴](docs/screenshots/drift-history-ja.png)
+
+![SyncVey Drift スナップショット詳細](docs/screenshots/drift-snapshot-ja.png)
+
 ---
 
 ## なぜ SyncVey を作ったか
@@ -46,10 +52,11 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 
 | 機能 | 説明 |
 |------|------|
-| **資産台帳** | EC2 / ECS / Lambda / RDS / S3 / ALB / VPC / EBS ほかを一覧・検索 |
-| **AWSスキャン** | AssumeRole で対象アカウントのリソースを自動検出（ECS / Lambda も含む） |
+| **資産台帳** | EC2 / ECS / Lambda / RDS / DynamoDB / ElastiCache / EFS / EKS / S3 / ALB / VPC / EBS / SNS / SQS / API Gateway / CloudFront / Route 53 ほかを一覧・検索 |
+| **AWSスキャン** | AssumeRole で対象アカウントの 17 種以上のリソース（コンピュート・DB・ストレージ・ネットワーク・メッセージング）を自動検出 |
 | **Terraform連携** | tfstate をアップロードして資産をインポート |
 | **ドリフト検知** | tfstate と AWS 実態の属性レベルの差分を検出 |
+| **ドリフト履歴** | 差分の推移を記録。スキャン/インポートのたびにスナップショットを保存し、推移グラフと各時点の差分を表示 |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告（既定オフライン・任意で日次更新） |
 | **構成図** | 環境内のリソース関係を可視化 |
@@ -174,6 +181,7 @@ SyncVey は JSON REST API ではなく、htmx ベースのサーバーサイド�
 /systems/<id>/applications/            システム配下のアプリケーション
 /environments/<id>/scan/               AWSスキャン実行
 /environments/<id>/drift/              Drift レポート
+/environments/<id>/drift/history/      Drift 履歴（推移）
 /environments/<id>/diagram/            構成図
 /environments/<id>/sync-s3/            S3 からリモート tfstate を同期
 /assets/                               資産一覧
