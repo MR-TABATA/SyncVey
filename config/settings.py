@@ -89,6 +89,17 @@ INSTALLED_APPS = [
 APSCHEDULER_DATETIME_FORMAT = "Y-m-d H:i:s"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
+# --- Feature flags / plugins ------------------------------------------------
+# Optional / advanced features are kept detachable (see asset_manager/plugins.py).
+# Toggle a feature with an env var, e.g.
+#   FEATURE_DRIFT_HISTORY=false
+# Installable plugin apps (AppConfig.syncvey_plugin = True) can be added here.
+SYNCVEY_FEATURES = {
+    key[len('FEATURE_'):].lower(): _env_bool(key)
+    for key in os.environ
+    if key.startswith('FEATURE_')
+}
+
 if DEBUG and not _is_testing:
     INSTALLED_APPS += ['debug_toolbar']
 
@@ -125,6 +136,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
+                'asset_manager.context_processors.features',
             ],
         },
     },

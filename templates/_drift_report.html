@@ -20,6 +20,7 @@
     <span class="text-slate-500">{{ environment.name }}</span>
     <span class="text-slate-300">/</span>
     <span class="font-semibold text-slate-700">{% trans "Drift Report" %}</span>
+    {% if features.drift_history %}
     <button class="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-lg px-3 py-1.5 transition-colors"
             hx-get="{% url 'env-drift-history' environment.id %}"
             hx-target="#main-content"
@@ -27,6 +28,7 @@
         <i data-lucide="history" class="w-3.5 h-3.5"></i>
         {% trans "History" %}
     </button>
+    {% endif %}
 </div>
 
 {# ── Summary bar ────────────────────────────────────────────────── #}
