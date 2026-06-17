@@ -121,6 +121,21 @@
                         <i data-lucide="flask-conical" class="w-5 h-5 shrink-0"></i>
                         {% trans "Sample Library" %}
                     </button>
+
+                    <!-- Plugin-contributed nav (see asset_manager/plugins.py) -->
+                    {% for item in plugin_nav_items %}
+                    <button
+                        id="sidebar-{{ item.key }}-btn" data-title="{{ item.label }}"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        hx-get="{{ item.url }}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        hx-on::after-request="setSidebarActive('{{ item.key }}')"
+                    >
+                        <i data-lucide="{{ item.icon|default:'puzzle' }}" class="w-5 h-5 shrink-0"></i>
+                        {{ item.label }}
+                    </button>
+                    {% endfor %}
                 </div>
 
             </nav>

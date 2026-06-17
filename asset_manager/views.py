@@ -1487,7 +1487,10 @@ def drift_report_view(request, environment_id):
 def drift_history_view(request, environment_id):
     """環境のドリフト履歴（時系列の推移）。"""
     from .models import DriftSnapshot
+    from .plugins import feature_enabled
 
+    if not feature_enabled('drift_history'):
+        raise Http404
     env       = _user_environment_or_404(request, environment_id)
     snapshots = list(DriftSnapshot.objects.filter(environment=env)[:100])
 
@@ -1504,7 +1507,10 @@ def drift_history_view(request, environment_id):
 def drift_snapshot_detail_view(request, environment_id, snapshot_id):
     """履歴上の1スナップショットの差分詳細（保存済み detail を描画）。"""
     from .models import DriftSnapshot
+    from .plugins import feature_enabled
 
+    if not feature_enabled('drift_history'):
+        raise Http404
     env      = _user_environment_or_404(request, environment_id)
     snapshot = get_object_or_404(DriftSnapshot, pk=snapshot_id, environment=env)
     detail   = snapshot.detail or {}
