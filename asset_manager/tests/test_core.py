@@ -261,3 +261,79 @@ class TestRecordDriftSnapshot(TestCase):
         self.assertEqual(snap.added_count, 0)
         self.assertEqual(snap.detail['changed'][0]['changes'][0]['field'], 'instance_type')
         self.assertEqual(snap.source, DriftSnapshot.Source.TFSTATE)
+
+
+# ---------------------------------------------------------------------------
+# DriftSnapshot.prune  (履歴の保持件数キャップ)
+# ---------------------------------------------------------------------------
+
+from datetime import timedelta
+from django.test import override_settings
+from django.utils import timezone
+
+
+class TestDriftSnapshotPrune(TestCase):
+
+    def _env(self, name='prod'):
+        org = Organization.objects.create(name=f'prune-org-{name}', slug=f'prune-org-{name}')
+        system = System.objects.create(name=f's-{name}', code=f's-{name}', organization=org)
+        return Environment.objects.create(system=system, name=name, env_type='PROD')
+
+    def _make_snapshots(self, env, n):
+        """detected_at を1分刻みで割り振り、新しい順を決定的にする。"""
+        from asset_manager.models import DriftSnapshot
+        base = timezone.now()
+        for i in range(n):
+            snap = DriftSnapshot.objects.create(environment=env, added_count=i)
+            DriftSnapshot.objects.filter(pk=snap.pk).update(
+                detected_at=base + timedelta(minutes=i)
+            )
+
+    def test_prune_keeps_newest_n(self):
+        from asset_manager.models import DriftSnapshot
+        env = self._env()
+        self._make_snapshots(env, 5)
+
+        deleted = DriftSnapshot.prune(env, keep=2)
+
+        self.assertEqual(deleted, 3)
+        survivors = list(
+            DriftSnapshot.objects.filter(environment=env)
+            .order_by('-detected_at').values_list('added_count', flat=True)
+        )
+        self.assertEqual(survivors, [4, 3])  # 一番新しい2件のみ
+
+    def test_prune_unlimited_is_noop(self):
+        from asset_manager.models import DriftSnapshot
+        env = self._env()
+        self._make_snapshots(env, 4)
+
+        self.assertEqual(DriftSnapshot.prune(env, keep=0), 0)
+        self.assertEqual(DriftSnapshot.objects.filter(environment=env).count(), 4)
+
+    def test_prune_is_scoped_per_environment(self):
+        from asset_manager.models import DriftSnapshot
+        env_a = self._env('a')
+        env_b = self._env('b')
+        self._make_snapshots(env_a, 4)
+        self._make_snapshots(env_b, 4)
+
+        DriftSnapshot.prune(env_a, keep=1)
+
+        self.assertEqual(DriftSnapshot.objects.filter(environment=env_a).count(), 1)
+        self.assertEqual(DriftSnapshot.objects.filter(environment=env_b).count(), 4)
+
+    @override_settings(DRIFT_SNAPSHOT_RETENTION=3)
+    def test_record_enforces_retention(self):
+        from asset_manager.views import _record_drift_snapshot
+        from asset_manager.models import DriftSnapshot
+        env = self._env()
+        Asset.objects.create(
+            environment=env, name='ec2-1', provider='AWS', asset_type='EC2',
+            asset_category='COMPUTE', cloud_id='i-ccc',
+            raw_data={'instance_type': 't3.micro'},  # raw_data_prev 空 → 毎回ADDED
+        )
+        for _ in range(6):
+            _record_drift_snapshot(env, DriftSnapshot.Source.SCAN)
+
+        self.assertEqual(DriftSnapshot.objects.filter(environment=env).count(), 3)

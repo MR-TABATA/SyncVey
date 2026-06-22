@@ -52,3 +52,30 @@ class DriftSnapshot(BaseModel):
     @property
     def has_drift(self):
         return self.total_count > 0
+
+    @classmethod
+    def prune(cls, environment, keep=None):
+        """
+        environment ごとに最新 keep 件だけ残し、古いスナップショットを削除する。
+
+        keep が None のときは settings.DRIFT_SNAPSHOT_RETENTION を使う。
+        keep が 0 以下（無制限）のときは何もしない。
+        戻り値: 削除した件数。
+        """
+        if keep is None:
+            from django.conf import settings
+            keep = getattr(settings, 'DRIFT_SNAPSHOT_RETENTION', 0)
+        if not keep or keep <= 0:
+            return 0
+
+        keep_ids = list(
+            cls.objects.filter(environment=environment)
+            .order_by('-detected_at')
+            .values_list('pk', flat=True)[:keep]
+        )
+        deleted, _ = (
+            cls.objects.filter(environment=environment)
+            .exclude(pk__in=keep_ids)
+            .delete()
+        )
+        return deleted

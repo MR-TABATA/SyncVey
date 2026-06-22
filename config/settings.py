@@ -214,6 +214,10 @@ SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL', '')
 EOL_REFRESH_ENABLED = _env_bool('EOL_REFRESH_ENABLED', False)
 EOL_REFRESH_DYNAMIC = _env_bool('EOL_REFRESH_DYNAMIC', True)
 
+# ドリフト履歴の保持件数（Environment ごと）。スキャン／取込／S3同期のたびに
+# 差分ゼロでも1行積むため、未設定だとテーブルが無限に伸びる。0 以下で無制限。
+DRIFT_SNAPSHOT_RETENTION = int(os.getenv('DRIFT_SNAPSHOT_RETENTION', '500') or '0')
+
 # Debug toolbar (Docker環境でも表示可能にする)
 INTERNAL_IPS = [
     '127.0.0.1',
