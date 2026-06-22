@@ -286,20 +286,14 @@ msgstr "変更なし"
 msgid "Detail"
 msgstr "詳細"
 
-#, fuzzy
-#| msgid "Fetched At"
 msgid "Detected At"
-msgstr "取得日時"
+msgstr "検出日時"
 
-#, fuzzy
-#| msgid "Snapshot"
 msgid "Drift Snapshot"
-msgstr "スナップショット"
+msgstr "ドリフトスナップショット"
 
-#, fuzzy
-#| msgid "EOL Snapshots"
 msgid "Drift Snapshots"
-msgstr "EOLスナップショット一覧"
+msgstr "ドリフトスナップショット一覧"
 
 msgid "EOL Data"
 msgstr "EOLデータ"
@@ -538,8 +532,7 @@ msgid ""
 "and Environment Name manually."
 msgstr ""
 "システム名または環境名を自動判定できませんでした。システム名と環境名を手動で"
-"入力してください。システム名または環境名を自動判定できませんでした。システム"
-"名と環境名を手動で入力してください。"
+"入力してください。"
 
 msgid "Session expired. Please upload the file again."
 msgstr "セッションが切れました。ファイルを再度アップロードしてください。"
@@ -1079,7 +1072,7 @@ msgstr ""
 "か？"
 
 msgid "More actions"
-msgstr ""
+msgstr "その他の操作"
 
 msgid "Add Resource Manually"
 msgstr "リソースを手動追加"
