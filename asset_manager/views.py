@@ -188,7 +188,7 @@ def _record_drift_snapshot(environment, source):
     if not (changed or added or unchanged):
         return None
 
-    return DriftSnapshot.objects.create(
+    snapshot = DriftSnapshot.objects.create(
         environment=environment,
         source=source,
         changed_count=len(changed),
@@ -196,6 +196,9 @@ def _record_drift_snapshot(environment, source):
         unchanged_count=unchanged,
         detail={'changed': changed, 'added': added},
     )
+    # 差分ゼロでも毎回1行積むため、env ごとに上限を超えた古い分を間引く
+    DriftSnapshot.prune(environment)
+    return snapshot
 
 
 def _safe_query_or_empty(query_fn):
