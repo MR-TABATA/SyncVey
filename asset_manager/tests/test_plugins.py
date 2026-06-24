@@ -76,3 +76,85 @@ class TestDriftHistoryGating(TestCase):
         env = self._env()
         resp = self.client.get(f'/environments/{env.id}/drift/history/')
         self.assertEqual(resp.status_code, 404)
+
+
+class TestDriftHistoryRender(TestCase):
+    """Happy-path render of the drift-history views with real snapshots."""
+
+    def _env(self):
+        from asset_manager.models import Organization, System, Environment, Membership
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        org = Organization.objects.create(name='org')
+        user = User.objects.create_user(username='u', password='pw')
+        Membership.objects.create(user=user, organization=org, role=Membership.Role.OWNER)
+        system = System.objects.create(name='s', code='s', organization=org)
+        env = Environment.objects.create(system=system, name='prod', env_type='PROD')
+        self.client.force_login(user)
+        return env
+
+    def _snapshot(self, env, **kwargs):
+        from asset_manager.models import DriftSnapshot
+        return DriftSnapshot.objects.create(environment=env, **kwargs)
+
+    def test_history_renders_snapshots(self):
+        env = self._env()
+        self._snapshot(env, source='scan', changed_count=2, added_count=1, unchanged_count=5)
+        self._snapshot(env, source='tfstate', changed_count=0, added_count=0, unchanged_count=7)
+
+        resp = self.client.get(f'/environments/{env.id}/drift/history/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, '_drift_history.html')
+        self.assertEqual(len(resp.context['snapshots']), 2)
+        # peak は total_count(changed+added) の最大 = 3
+        self.assertEqual(resp.context['peak'], 3)
+
+    def test_history_empty_has_zero_peak(self):
+        env = self._env()
+        resp = self.client.get(f'/environments/{env.id}/drift/history/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['peak'], 0)
+
+    def test_snapshot_detail_renders_saved_diff(self):
+        env = self._env()
+        snap = self._snapshot(
+            env, source='scan', changed_count=1, added_count=1,
+            detail={
+                'changed': [{'type': 'EC2', 'name': 'web', 'cloud_id': 'i-1',
+                             'provider': 'AWS', 'changes': [{'key': 'instance_type'}]}],
+                'added':   [{'type': 'S3', 'name': 'bucket', 'cloud_id': 'b-1',
+                             'provider': 'AWS'}],
+            },
+        )
+        resp = self.client.get(f'/environments/{env.id}/drift/history/{snap.id}/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, '_drift_snapshot.html')
+        self.assertEqual(len(resp.context['changed']), 1)
+        self.assertEqual(len(resp.context['added']), 1)
+
+    def test_snapshot_detail_handles_empty_detail(self):
+        env = self._env()
+        snap = self._snapshot(env, source='scan')  # detail defaults to {}
+        resp = self.client.get(f'/environments/{env.id}/drift/history/{snap.id}/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['changed'], [])
+        self.assertEqual(resp.context['added'], [])
+
+    def test_snapshot_detail_404_for_other_environment(self):
+        from asset_manager.models import System, Environment
+        env = self._env()
+        other_system = System.objects.create(
+            name='s2', code='s2', organization=env.system.organization)
+        other_env = Environment.objects.create(
+            system=other_system, name='stg', env_type='STG')
+        snap = self._snapshot(other_env, source='scan')
+        # snapshot belongs to a different environment in the same org -> 404
+        resp = self.client.get(f'/environments/{env.id}/drift/history/{snap.id}/')
+        self.assertEqual(resp.status_code, 404)
+
+    @override_settings(SYNCVEY_FEATURES={'drift_history': False})
+    def test_snapshot_detail_404_when_disabled(self):
+        env = self._env()
+        snap = self._snapshot(env, source='scan')
+        resp = self.client.get(f'/environments/{env.id}/drift/history/{snap.id}/')
+        self.assertEqual(resp.status_code, 404)
