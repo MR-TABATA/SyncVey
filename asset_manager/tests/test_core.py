@@ -337,3 +337,32 @@ class TestDriftSnapshotPrune(TestCase):
             _record_drift_snapshot(env, DriftSnapshot.Source.SCAN)
 
         self.assertEqual(DriftSnapshot.objects.filter(environment=env).count(), 3)
+
+
+# ---------------------------------------------------------------------------
+# ICON_MAP coverage
+# サイドバー／ダッシュボードに出る主要タイプは必ずアイコンを持ち（雲フォールバック禁止）、
+# 登録パスの実ファイルが static に存在することを保証する。
+# ライブスキャン対象を増やしたときの取りこぼし検知が目的。
+# ---------------------------------------------------------------------------
+
+class TestIconCoverage(TestCase):
+
+    def test_every_primary_asset_type_has_an_aws_icon(self):
+        from asset_manager.resource_registry import ICON_MAP, PRIMARY_ASSET_TYPES
+        aws_icons = ICON_MAP['AWS']
+        missing = [t for t in PRIMARY_ASSET_TYPES if t not in aws_icons]
+        self.assertEqual(
+            missing, [],
+            f"PRIMARY_ASSET_TYPES without an icon (fall back to default cloud glyph): {missing}",
+        )
+
+    def test_every_registered_icon_file_exists(self):
+        from django.contrib.staticfiles.finders import find
+        from asset_manager.resource_registry import ICON_MAP
+        for provider, icons in ICON_MAP.items():
+            for asset_type, rel_path in icons.items():
+                self.assertIsNotNone(
+                    find(rel_path),
+                    f"ICON_MAP[{provider!r}][{asset_type!r}] -> {rel_path} not found in static",
+                )

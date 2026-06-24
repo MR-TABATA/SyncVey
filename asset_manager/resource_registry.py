@@ -199,6 +199,7 @@ ICON_MAP = {
         # ── Storage ──────────────────────────────────────────────────────────
         'S3':           'cloud-icons/aws/s3.svg',
         'EBS':          'cloud-icons/aws/ebs.svg',
+        'EFS':          'cloud-icons/aws/efs.svg',
         # ── Network ──────────────────────────────────────────────────────────
         'VPC':          'cloud-icons/aws/vpc.svg',
         'ALB':          'cloud-icons/aws/alb.svg',
