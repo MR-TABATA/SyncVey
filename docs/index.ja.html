@@ -364,6 +364,16 @@
         <h3>最小権限のIAMで動かす</h3>
         <p>広すぎるReadOnlyAccessは使いません。スキャンに必要な特定リソースの読み取りだけに絞ったカスタムIAMポリシーJSONを同梱しています。</p>
       </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗓️</div>
+        <h3>ミドルウェアのEOLを先回り</h3>
+        <p>環境ごとにサポート終了（EOL）のランタイム・ミドルウェアを検出。標準では内蔵データでオフライン判定し、任意で日次更新を有効にすれば endoflife.date から最新の終了日を取得します。EOL一覧が塩漬けになることはもうありません。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>2段階認証でアクセスを保護</h3>
+        <p>TOTPによる2段階認証を標準搭載（Google Authenticator / 1Password / Authy など）。外部IDプロバイダは不要で、プロフィール画面からアカウントごとに有効化できます。</p>
+      </div>
       <div class="feature-card" style="grid-column: span 2; background: linear-gradient(135deg, rgba(255,107,107,0.06), rgba(255,107,107,0.02)); border-color: rgba(255,107,107,0.3);">
         <div style="display:flex; align-items:flex-start; gap:20px;">
           <div style="font-size:32px; flex-shrink:0;">🧩</div>
@@ -388,12 +398,14 @@
       <div class="resource-tag">💾 EBS</div>
       <div class="resource-tag">⚡ Lambda</div>
       <div class="resource-tag">🧮 DynamoDB</div>
+      <div class="resource-tag">🧊 ElastiCache</div>
+      <div class="resource-tag">📁 EFS</div>
       <div class="resource-tag">☸️ EKS</div>
       <div class="resource-tag">📨 SQS</div>
       <div class="resource-tag">📣 SNS</div>
+      <div class="resource-tag">🚪 API Gateway</div>
       <div class="resource-tag">🌍 CloudFront</div>
       <div class="resource-tag">🧭 Route 53</div>
-      <div class="resource-tag">🔑 IAM Role</div>
       <div class="resource-tag resource-tag-more">+ more...</div>
     </div>
   </div>
