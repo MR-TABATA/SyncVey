@@ -333,6 +333,111 @@ def _get_dashboard_stats(org=None):
         return {'total_assets': 0, 'total_systems': 0, 'total_envs': 0, 'by_type': {}, 'by_category': {}, 'category_cards': [], 'by_provider': {}, 'provider_rows': []}
 
 
+# 空状態（org 未所属 / DB 未準備）でも壊さないデフォルト
+_EMPTY_SIGNALS = {
+    'drift_current': 0, 'drift_delta': None, 'drift_top_env_id': None,
+    'eol_overdue': 0, 'eol_soon': 0,
+    'last_scan': None, 'last_scan_stale': True, 'scanned_systems': 0, 'has_history': False,
+}
+
+
+def _get_dashboard_signals(org=None):
+    """
+    ヒーロー行用の「シグナル」を返す。
+
+    _get_dashboard_stats が「いま何があるか」(生カウント)なのに対し、こちらは
+    「それが緊急か」を判断するためのコンテキスト層:
+      - drift_current : 各環境の最新スナップショットの総ドリフト件数の合計
+      - drift_delta   : 直前スナップショットとの差分（前回比。履歴のある環境のみ）
+      - eol_overdue/soon : サポート終了済み / 期限間近の依存パッケージ数
+      - last_scan     : 直近で完了したスキャンの時刻（鮮度表示用）
+    生データではなく「次のアクションを選べる」材料にするのが狙い。
+    """
+    if not org:
+        return dict(_EMPTY_SIGNALS)
+    try:
+        from .models import DriftSnapshot, ScanJob
+        from .eol_data import get_eol_status
+
+        # ── Drift: 環境ごとに最新2件を取り、現在値と前回比を出す（1クエリ） ──
+        rows = (
+            DriftSnapshot.objects
+            .filter(environment__system__organization=org)
+            .order_by('environment_id', '-detected_at')
+            .values('environment_id', 'changed_count', 'added_count')
+        )
+        latest_by_env = {}   # env_id -> total_count（最新）
+        prev_by_env   = {}   # env_id -> total_count（2番目に新しい）
+        for r in rows:
+            env_id = r['environment_id']
+            total  = r['changed_count'] + r['added_count']
+            if env_id not in latest_by_env:
+                latest_by_env[env_id] = total
+            elif env_id not in prev_by_env:
+                prev_by_env[env_id] = total
+
+        drift_current = sum(latest_by_env.values())
+        # 前回比は「直前スナップショットがある環境」だけで比較する
+        has_history = bool(prev_by_env)
+        drift_delta = None
+        if has_history:
+            cur_for_cmp  = sum(latest_by_env[e] for e in prev_by_env)
+            prev_for_cmp = sum(prev_by_env.values())
+            drift_delta  = cur_for_cmp - prev_for_cmp
+        drift_top_env_id = (
+            max(latest_by_env, key=latest_by_env.get)
+            if latest_by_env and drift_current > 0 else None
+        )
+
+        # ── EOL: 追跡中の依存のうち終了済み / 期限間近を数える ──
+        eol_overdue = eol_soon = 0
+        deps = (
+            AppDependency.objects
+            .filter(app_env_config__application__system__organization=org)
+            .values_list('name', 'version')
+        )
+        for name, version in deps:
+            status = get_eol_status(name, version)
+            if status == 'eol':
+                eol_overdue += 1
+            elif status == 'warning':
+                eol_soon += 1
+
+        # ── Freshness: 直近で完了したスキャン時刻 ──
+        last_scan = (
+            ScanJob.objects
+            .filter(system__organization=org, status=ScanJob.Status.DONE,
+                    finished_at__isnull=False)
+            .order_by('-finished_at')
+            .values_list('finished_at', flat=True)
+            .first()
+        )
+        scanned_systems = (
+            ScanJob.objects
+            .filter(system__organization=org, status=ScanJob.Status.DONE)
+            .values('system_id').distinct().count()
+        )
+        # 24時間より古い（または未スキャン）なら「鮮度が落ちている」扱い
+        last_scan_stale = (
+            last_scan is None
+            or (timezone.now() - last_scan).total_seconds() > 86400
+        )
+
+        return {
+            'drift_current':    drift_current,
+            'drift_delta':      drift_delta,
+            'drift_top_env_id': drift_top_env_id,
+            'eol_overdue':      eol_overdue,
+            'eol_soon':         eol_soon,
+            'last_scan':        last_scan,
+            'last_scan_stale':  last_scan_stale,
+            'scanned_systems':  scanned_systems,
+            'has_history':      has_history,
+        }
+    except (ProgrammingError, OperationalError):
+        return dict(_EMPTY_SIGNALS)
+
+
 def _systems_queryset(org=None):
     qs = System.objects.filter(organization=org) if org else System.objects.none()
     return (
@@ -369,6 +474,7 @@ def dashboard_view(request):
         'systems': systems,
         'env_types': Environment.EnvType.choices,
         'stats': _get_dashboard_stats(org),
+        'signals': _get_dashboard_signals(org),
         'user_org': org,
         'apps_count': apps_count,
         'audit_count': audit_count,
