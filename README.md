@@ -15,9 +15,10 @@ Spin it up with a single `docker compose up`.
 
 ## Screenshots
 
-**Dashboard** — Systems, Environments, and Assets at a glance
+**Dashboard** — a hero-signal row answers what's happening (drift / EOL),
+whether it's urgent (trend vs the last scan, freshness), and what to do next
 
-![SyncVey Dashboard](docs/screenshots/dashboard-en.png)
+![SyncVey Dashboard](docs/screenshots/dashboard-hero-en.png)
 
 **Drift report** — attribute-level diff between tfstate and actual AWS state
 

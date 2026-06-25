@@ -340,6 +340,130 @@ class TestDriftSnapshotPrune(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# _get_dashboard_signals  (ヒーロー行: 前回比ドリフト / EOL / 鮮度)
+# ---------------------------------------------------------------------------
+
+from unittest import mock
+
+
+class TestDashboardSignals(TestCase):
+
+    def _org(self):
+        return Organization.objects.create(name='sig-org', slug='sig-org')
+
+    def _env(self, org, name='prod'):
+        system = System.objects.create(name=f's-{name}', code=f's-{name}', organization=org)
+        return Environment.objects.create(system=system, name=name, env_type='PROD')
+
+    def _snap(self, env, changed=0, added=0, minutes_ago=0):
+        from asset_manager.models import DriftSnapshot
+        snap = DriftSnapshot.objects.create(
+            environment=env, changed_count=changed, added_count=added)
+        DriftSnapshot.objects.filter(pk=snap.pk).update(
+            detected_at=timezone.now() - timedelta(minutes=minutes_ago))
+        return snap
+
+    def test_no_org_returns_empty_signals(self):
+        from asset_manager.views import _get_dashboard_signals
+        sig = _get_dashboard_signals(None)
+        self.assertEqual(sig['drift_current'], 0)
+        self.assertIsNone(sig['drift_delta'])
+        self.assertFalse(sig['has_history'])
+        self.assertTrue(sig['last_scan_stale'])
+
+    def test_drift_current_sums_latest_snapshot_per_env(self):
+        from asset_manager.views import _get_dashboard_signals
+        org = self._org()
+        env_a = self._env(org, 'a')
+        env_b = self._env(org, 'b')
+        # env_a: older=1, latest=3 ; env_b: latest=2
+        self._snap(env_a, changed=1, minutes_ago=10)
+        self._snap(env_a, changed=3, minutes_ago=1)
+        self._snap(env_b, added=2, minutes_ago=1)
+        sig = _get_dashboard_signals(org)
+        self.assertEqual(sig['drift_current'], 5)          # 3 (a) + 2 (b)
+        self.assertEqual(sig['drift_top_env_id'], env_a.id)
+
+    def test_drift_delta_compares_to_previous_snapshot(self):
+        from asset_manager.views import _get_dashboard_signals
+        org = self._org()
+        env = self._env(org)
+        self._snap(env, changed=2, minutes_ago=10)   # previous total=2
+        self._snap(env, changed=5, minutes_ago=1)    # latest total=5
+        sig = _get_dashboard_signals(org)
+        self.assertTrue(sig['has_history'])
+        self.assertEqual(sig['drift_delta'], 3)      # 5 - 2
+
+    def test_no_history_yields_null_delta(self):
+        from asset_manager.views import _get_dashboard_signals
+        org = self._org()
+        env = self._env(org)
+        self._snap(env, changed=4, minutes_ago=1)    # only one snapshot
+        sig = _get_dashboard_signals(org)
+        self.assertEqual(sig['drift_current'], 4)
+        self.assertFalse(sig['has_history'])
+        self.assertIsNone(sig['drift_delta'])
+
+    def test_eol_counts_overdue_and_soon(self):
+        from asset_manager.views import _get_dashboard_signals
+        from asset_manager.models import Application, AppEnvConfig, AppDependency
+        org = self._org()
+        env = self._env(org)
+        app = Application.objects.create(system=env.system, name='web', language='python')
+        cfg = AppEnvConfig.objects.create(application=app, environment=env)
+        AppDependency.objects.create(app_env_config=cfg, name='python', version='2.7')
+        AppDependency.objects.create(app_env_config=cfg, name='django', version='3.2')
+        AppDependency.objects.create(app_env_config=cfg, name='requests', version='2.31')
+
+        def fake_status(name, version):
+            return {'python': 'eol', 'django': 'warning', 'requests': 'ok'}.get(name, 'unknown')
+
+        with mock.patch('asset_manager.eol_data.get_eol_status', side_effect=fake_status):
+            sig = _get_dashboard_signals(org)
+        self.assertEqual(sig['eol_overdue'], 1)
+        self.assertEqual(sig['eol_soon'], 1)
+
+    def test_freshness_reflects_latest_done_scan(self):
+        from asset_manager.views import _get_dashboard_signals
+        from asset_manager.models import ScanJob
+        org = self._org()
+        env = self._env(org)
+        job = ScanJob.objects.create(system=env.system, status=ScanJob.Status.DONE)
+        ScanJob.objects.filter(pk=job.pk).update(finished_at=timezone.now() - timedelta(minutes=5))
+        sig = _get_dashboard_signals(org)
+        self.assertIsNotNone(sig['last_scan'])
+        self.assertFalse(sig['last_scan_stale'])       # 5 min ago → fresh
+        self.assertEqual(sig['scanned_systems'], 1)
+
+    def test_freshness_stale_when_scan_is_old(self):
+        from asset_manager.views import _get_dashboard_signals
+        from asset_manager.models import ScanJob
+        org = self._org()
+        env = self._env(org)
+        job = ScanJob.objects.create(system=env.system, status=ScanJob.Status.DONE)
+        ScanJob.objects.filter(pk=job.pk).update(finished_at=timezone.now() - timedelta(hours=30))
+        sig = _get_dashboard_signals(org)
+        self.assertTrue(sig['last_scan_stale'])        # 30h ago → stale
+
+    def test_dashboard_renders_hero_band(self):
+        from asset_manager.models import Membership
+        from django.contrib.auth import get_user_model
+        org = self._org()
+        env = self._env(org)
+        self._snap(env, changed=2, minutes_ago=10)
+        self._snap(env, changed=5, minutes_ago=1)
+        User = get_user_model()
+        user = User.objects.create_user(username='sig-u', password='pw')
+        Membership.objects.create(user=user, organization=org, role=Membership.Role.OWNER)
+        self.client.force_login(user)
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, '_dashboard_hero.html')
+        self.assertEqual(resp.context['signals']['drift_current'], 5)
+        self.assertEqual(resp.context['signals']['drift_delta'], 3)
+
+
+# ---------------------------------------------------------------------------
 # ICON_MAP coverage
 # サイドバー／ダッシュボードに出る主要タイプは必ずアイコンを持ち（雲フォールバック禁止）、
 # 登録パスの実ファイルが static に存在することを保証する。
