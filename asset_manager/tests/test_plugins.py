@@ -43,12 +43,13 @@ class TestAvailableFeatures(TestCase):
 
 class TestPluginDiscovery(TestCase):
 
-    def test_no_plugin_apps_yields_no_nav_items(self):
-        # No app in this project sets syncvey_plugin = True yet.
-        self.assertEqual(plugins.plugin_nav_items(), [])
+    def test_drift_risk_plugin_contributes_nav_item(self):
+        # syncvey_drift_risk is an installed plugin app (syncvey_plugin = True).
+        keys = {item['key'] for item in plugins.plugin_nav_items()}
+        self.assertIn('drift-risk', keys)
 
-    def test_plugin_feature_names_empty_without_plugins(self):
-        self.assertEqual(plugins._plugin_feature_names(), set())
+    def test_plugin_feature_names_include_installed_plugins(self):
+        self.assertIn('drift_risk', plugins._plugin_feature_names())
 
 
 class TestDriftHistoryGating(TestCase):

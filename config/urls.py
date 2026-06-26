@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -9,6 +10,12 @@ urlpatterns = [
     # HTMXアプリケーションのURLをインクルード
     path('', include('asset_manager.urls')),
 ]
+
+# Optional plugin apps register their routes only when installed, so removing a
+# plugin from INSTALLED_APPS can't leave a dangling include — the core never
+# hard-depends on it.
+if apps.is_installed('syncvey_drift_risk'):
+    urlpatterns += [path('', include('syncvey_drift_risk.urls'))]
 
 if settings.DEBUG:
     urlpatterns = [

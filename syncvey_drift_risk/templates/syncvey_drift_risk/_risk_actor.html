@@ -1,0 +1,16 @@
+{% load i18n %}
+{# Lazy CloudTrail attribution, swapped into the row's #actor-<id> container. #}
+{% if actor %}
+<div class="text-xs text-right leading-relaxed">
+  <div class="font-semibold text-slate-700">{{ actor.user }}</div>
+  <div class="text-slate-500">{{ actor.event }}</div>
+  {% if actor.time %}<div class="text-slate-400">{{ actor.time }}</div>{% endif %}
+  {% if actor.source_ip %}<div class="text-slate-400">{{ actor.source_ip }}</div>{% endif %}
+</div>
+{% elif error == 'no-role' %}
+<div class="text-xs text-right text-slate-400">{% trans "No IAM role configured for this system" %}</div>
+{% elif error == 'lookup-failed' %}
+<div class="text-xs text-right text-amber-600">{% trans "CloudTrail lookup failed" %}</div>
+{% else %}
+<div class="text-xs text-right text-slate-400">{% trans "No CloudTrail record in the last 90 days" %}</div>
+{% endif %}
