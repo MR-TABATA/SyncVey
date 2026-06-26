@@ -57,6 +57,7 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 | **Terraform連携** | tfstate をアップロードして資産をインポート |
 | **ドリフト検知** | tfstate と AWS 実態の属性レベルの差分を検出 |
 | **ドリフト履歴** | 差分の推移を記録。スキャン/インポートのたびにスナップショットを保存し、推移グラフと各時点の差分を表示 |
+| **ドリフトのリスク評価・犯人特定** | ドリフトをセキュリティ影響度で採点（例: セキュリティグループが `0.0.0.0/0` に開放）し、誰がそのリソースを変更したかを CloudTrail で特定 |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告（既定オフライン・任意で日次更新） |
 | **構成図** | 環境内のリソース関係を可視化 |
@@ -154,6 +155,7 @@ SyncVey は完全セルフホスト型です。外部への送信通信は以下
 | 接続先 | タイミング | 方向 | 制御 |
 |--------|-----------|------|------|
 | AWS API（boto3 / AssumeRole） | 手動・定期スキャン時 | 送信 HTTPS | Role ARN を設定した場合のみ |
+| AWS CloudTrail（`LookupEvents`） | Drift Risk 画面で「Who changed this?」を押した時 | 送信 HTTPS | 遅延実行・自動では呼ばない。Role と `cloudtrail:LookupEvents` が必要 |
 | `hooks.slack.com` | ドリフト検出かつ Webhook 設定時 | 送信 HTTPS | システム個別の Slack Webhook URL（オプトイン） |
 | `endoflife.date` | EOL データの日次取得 | 送信 HTTPS | **既定OFF** — `EOL_REFRESH_ENABLED=true` で有効化 |
 
@@ -182,6 +184,7 @@ SyncVey は JSON REST API ではなく、htmx ベースのサーバーサイド�
 /environments/<id>/scan/               AWSスキャン実行
 /environments/<id>/drift/              Drift レポート
 /environments/<id>/drift/history/      Drift 履歴（推移）
+/drift-risk/                           ドリフトのリスク評価・犯人特定
 /environments/<id>/diagram/            構成図
 /environments/<id>/sync-s3/            S3 からリモート tfstate を同期
 /assets/                               資産一覧

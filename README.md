@@ -82,6 +82,7 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
+| **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
 | **Architecture diagram** | Visualize resource relationships within an environment |
@@ -180,6 +181,7 @@ there is no telemetry or usage analytics.
 | Destination | When | Direction | How to control |
 |-------------|------|-----------|----------------|
 | AWS APIs (boto3 / AssumeRole) | On-demand or scheduled scan | Outbound HTTPS | Only when a Role ARN is configured |
+| AWS CloudTrail (`LookupEvents`) | Clicking "Who changed this?" on the Drift Risk page | Outbound HTTPS | Lazy, never automatic — needs the role + `cloudtrail:LookupEvents` |
 | `hooks.slack.com` | Drift detected + webhook configured | Outbound HTTPS | Per-system Slack Webhook URL (opt-in) |
 | `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
 
@@ -209,6 +211,7 @@ All views return rendered HTML (full pages or partials).
 /environments/<id>/scan/               Run an AWS scan
 /environments/<id>/drift/              Drift report
 /environments/<id>/drift/history/      Drift history (trend over time)
+/drift-risk/                           Drift risk & attribution (security triage)
 /environments/<id>/diagram/            Architecture diagram
 /environments/<id>/sync-s3/            Sync remote tfstate from S3
 /assets/                               Asset list
