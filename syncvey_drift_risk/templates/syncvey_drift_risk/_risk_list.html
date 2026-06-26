@@ -1,0 +1,89 @@
+{% load i18n %}
+{# htmx partial swapped into #main-content by the sidebar "Drift Risk" entry. #}
+
+<div class="space-y-5">
+
+  <div class="flex flex-wrap items-center gap-3">
+    <h2 class="font-bold text-slate-800 text-xl">{% trans "Drift Risk" %}</h2>
+    <span class="text-sm text-slate-500">{% trans "Changed resources, graded by security impact" %}</span>
+  </div>
+
+  {# severity summary chips #}
+  <div class="flex flex-wrap gap-2">
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-red-50 text-red-700 border border-red-200">
+      {% trans "Critical" %} <span class="tabular-nums">{{ counts.critical|default:0 }}</span>
+    </span>
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+      {% trans "High" %} <span class="tabular-nums">{{ counts.high|default:0 }}</span>
+    </span>
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+      {% trans "Medium" %} <span class="tabular-nums">{{ counts.medium|default:0 }}</span>
+    </span>
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+      {% trans "Low" %} <span class="tabular-nums">{{ counts.low|default:0 }}</span>
+    </span>
+  </div>
+
+  {% if rows %}
+  <div class="space-y-3">
+    {% for row in rows %}
+    {% with sev=row.severity %}
+    <div class="rounded-2xl border bg-white p-4
+                {% if sev == 'critical' %}border-red-200{% elif sev == 'high' %}border-orange-200{% elif sev == 'medium' %}border-amber-200{% else %}border-slate-200{% endif %}">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide
+                         {% if sev == 'critical' %}bg-red-100 text-red-700
+                         {% elif sev == 'high' %}bg-orange-100 text-orange-700
+                         {% elif sev == 'medium' %}bg-amber-100 text-amber-700
+                         {% else %}bg-slate-100 text-slate-600{% endif %}">{{ sev }}</span>
+            <span class="font-semibold text-slate-800 truncate">{{ row.asset.name }}</span>
+            <span class="text-xs text-slate-400">{{ row.asset.asset_type }}</span>
+          </div>
+          <div class="mt-0.5 text-xs text-slate-500">
+            {{ row.asset.environment.system.name }} / {{ row.asset.environment.name }}
+            · <code class="text-slate-400">{{ row.asset.cloud_id }}</code>
+          </div>
+          <ul class="mt-2 space-y-1">
+            {% for f in row.findings %}
+            <li class="text-sm text-slate-600 flex items-start gap-2">
+              <span class="mt-1 w-1.5 h-1.5 rounded-full shrink-0
+                           {% if f.severity == 'critical' %}bg-red-500
+                           {% elif f.severity == 'high' %}bg-orange-500
+                           {% elif f.severity == 'medium' %}bg-amber-500
+                           {% else %}bg-slate-300{% endif %}"></span>
+              <span><code class="text-slate-500">{{ f.field }}</code> — {{ f.reason }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="shrink-0 text-right">
+          <div id="actor-{{ row.asset.id }}">
+            <button type="button"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    hx-get="{% url 'drift_risk:actor' row.asset.id %}"
+                    hx-target="#actor-{{ row.asset.id }}"
+                    hx-swap="innerHTML"
+                    hx-indicator="#actor-spin-{{ row.asset.id }}">
+              <i data-lucide="user-search" class="w-3.5 h-3.5"></i>
+              {% trans "Who changed this?" %}
+              <span id="actor-spin-{{ row.asset.id }}" class="htmx-indicator">…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="rounded-2xl border border-emerald-200 bg-white p-8 text-center">
+    <div class="text-emerald-600 font-semibold">{% trans "No risky drift" %}</div>
+    <p class="mt-1 text-sm text-slate-500">{% trans "No changed resource currently differs from its recorded state in a way worth flagging." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>if (window.lucide) lucide.createIcons();</script>

@@ -1,0 +1,100 @@
+"""
+views.py
+--------
+Two htmx partial views, both gated by the ``drift_risk`` feature flag:
+
+- ``drift_risk_view``     : the risk list — every *changed* resource across the
+                            org, graded by severity (cheap, no AWS calls).
+- ``drift_risk_actor_view``: lazy per-resource attribution — only here do we
+                            actually call CloudTrail, and only when the user
+                            clicks "Who changed this?" on a row.
+
+The plugin reaches into the core (asset_manager) for models and a few helpers;
+the core never reaches back. Removing this app from INSTALLED_APPS makes
+``feature_enabled('drift_risk')`` false and these routes 404.
+"""
+
+from collections import Counter
+
+from django.http import Http404
+from django.shortcuts import render, get_object_or_404
+
+from asset_manager.models import Asset
+from asset_manager.plugins import feature_enabled
+from asset_manager.views import htmx_login_required, _get_user_org, _compute_raw_diff
+from asset_manager.scanner import get_session
+
+from .rules import assess, SEVERITY_ORDER
+
+
+@htmx_login_required
+def drift_risk_view(request):
+    if not feature_enabled('drift_risk'):
+        raise Http404
+
+    org = _get_user_org(request)
+    rows = []
+    if org:
+        assets = (
+            Asset.objects
+            .filter(environment__system__organization=org)
+            .select_related('environment', 'environment__system')
+            .only('name', 'asset_type', 'cloud_id', 'provider',
+                  'raw_data', 'raw_data_prev',
+                  'environment__name', 'environment__system__name',
+                  'environment__system_id')
+        )
+        for asset in assets:
+            if not asset.raw_data_prev:
+                continue  # newly-seen / unmanaged: no field change to grade here
+            changes = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
+            if not changes:
+                continue
+            result = assess(asset.asset_type, changes)
+            rows.append({
+                'asset':    asset,
+                'severity': result['severity'],
+                'findings': result['findings'],
+            })
+        rows.sort(key=lambda r: SEVERITY_ORDER[r['severity']], reverse=True)
+
+    counts = Counter(r['severity'] for r in rows)
+    return render(request, 'syncvey_drift_risk/_risk_list.html', {
+        'rows':   rows,
+        'counts': counts,
+        'total':  len(rows),
+    })
+
+
+@htmx_login_required
+def drift_risk_actor_view(request, asset_id):
+    if not feature_enabled('drift_risk'):
+        raise Http404
+
+    org = _get_user_org(request)
+    if org is None:
+        raise Http404
+    asset = get_object_or_404(
+        Asset.objects.select_related('environment', 'environment__system'),
+        pk=asset_id, environment__system__organization=org,
+    )
+    system = asset.environment.system
+
+    actor, error = None, None
+    if not system.aws_role_arn:
+        error = 'no-role'
+    else:
+        # CloudTrail is regional; query the system's first configured scan region.
+        region = (system.aws_scan_regions or ['ap-northeast-1'])[0]
+        try:
+            from .cloudtrail import lookup_actor
+            session = get_session(system.aws_role_arn, region=region)
+            actor = lookup_actor(session, asset.cloud_id)
+        except Exception:  # noqa: BLE001 - never break the row over attribution
+            error = 'lookup-failed'
+
+    return render(request, 'syncvey_drift_risk/_risk_actor.html', {
+        'asset': asset,
+        'actor': actor,
+        'error': error,
+    })
