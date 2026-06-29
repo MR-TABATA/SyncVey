@@ -91,3 +91,29 @@ def plugin_nav_items(request=None) -> list:
         except Exception:  # noqa: BLE001 - a broken plugin must not break the shell
             continue
     return items
+
+
+def plugin_scheduled_jobs() -> list:
+    """
+    Collect background-job specs contributed by installed plugin apps, so a
+    plugin can register an apscheduler job without the core scheduler importing
+    it. An AppConfig opts in with:
+
+        def scheduled_jobs(self):
+            return [{'id': 'my_job', 'name': 'My job',
+                     'func': my_module.run, 'trigger': CronTrigger(hour=9)}]
+
+    `func` must be importable by reference (module-level), since the job store
+    persists it by path. A plugin that returns nothing (e.g. its feature is
+    disabled) simply contributes no jobs. A failing plugin is skipped.
+    """
+    jobs = []
+    for cfg in _plugin_app_configs():
+        getter = getattr(cfg, 'scheduled_jobs', None)
+        if not callable(getter):
+            continue
+        try:
+            jobs.extend(getter() or [])
+        except Exception:  # noqa: BLE001 - a broken plugin must not break startup
+            continue
+    return jobs
