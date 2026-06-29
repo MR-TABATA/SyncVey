@@ -83,6 +83,7 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
+| **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
 | **Architecture diagram** | Visualize resource relationships within an environment |
@@ -181,8 +182,8 @@ there is no telemetry or usage analytics.
 | Destination | When | Direction | How to control |
 |-------------|------|-----------|----------------|
 | AWS APIs (boto3 / AssumeRole) | On-demand or scheduled scan | Outbound HTTPS | Only when a Role ARN is configured |
-| AWS CloudTrail (`LookupEvents`) | Clicking "Who changed this?" on the Drift Risk page | Outbound HTTPS | Lazy, never automatic — needs the role + `cloudtrail:LookupEvents` |
-| `hooks.slack.com` | Drift detected + webhook configured | Outbound HTTPS | Per-system Slack Webhook URL (opt-in) |
+| AWS CloudTrail (`LookupEvents`) | Clicking "Who changed this?", or the weekly drift briefing | Outbound HTTPS | Lazy, never automatic — needs the role + `cloudtrail:LookupEvents` |
+| `hooks.slack.com` | Drift detected, or the weekly drift briefing | Outbound HTTPS | Per-system Slack Webhook URL (opt-in); briefing also needs `DRIFT_DIGEST_ENABLED=true` |
 | `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
 
 **EOL refresh detail.** End-of-life detection works offline using built-in data.
@@ -212,6 +213,7 @@ All views return rendered HTML (full pages or partials).
 /environments/<id>/drift/              Drift report
 /environments/<id>/drift/history/      Drift history (trend over time)
 /drift-risk/                           Drift risk & attribution (security triage)
+/drift-digest/                         Drift briefing (weekly Slack rollup preview)
 /environments/<id>/diagram/            Architecture diagram
 /environments/<id>/sync-s3/            Sync remote tfstate from S3
 /assets/                               Asset list
