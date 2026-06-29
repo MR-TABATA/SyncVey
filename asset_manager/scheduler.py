@@ -140,6 +140,25 @@ def start():
         )
         logger.info("EOL daily refresh job registered.")
 
+    # Plugin-contributed jobs (discovered via the seam — core never imports the
+    # plugin). A plugin whose feature is off contributes nothing.
+    from .plugins import plugin_scheduled_jobs
+    for spec in plugin_scheduled_jobs():
+        try:
+            _scheduler.add_job(
+                spec['func'],
+                trigger=spec['trigger'],
+                id=spec['id'],
+                name=spec.get('name', spec['id']),
+                jobstore='default',
+                max_instances=1,
+                coalesce=True,
+                replace_existing=True,
+            )
+            logger.info("Plugin job registered: %s", spec['id'])
+        except Exception:  # noqa: BLE001 - a bad plugin job must not block startup
+            logger.exception("Failed to register plugin job %s", spec.get('id'))
+
     _scheduler.start()
     logger.info("Scheduler started.")
 

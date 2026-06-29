@@ -221,6 +221,11 @@ EOL_REFRESH_DYNAMIC = _env_bool('EOL_REFRESH_DYNAMIC', True)
 # 差分ゼロでも1行積むため、未設定だとテーブルが無限に伸びる。0 以下で無制限。
 DRIFT_SNAPSHOT_RETENTION = int(os.getenv('DRIFT_SNAPSHOT_RETENTION', '500') or '0')
 
+# 週次ドリフト・ブリーフィング（syncvey_drift_risk プラグイン）。既定OFF＝
+# 外部送信なし。true でスケジューラに毎週月曜 09:00 のジョブを登録し、Slack
+# Webhook を設定済みのシステムへサマリを送る（オプトイン）。
+DRIFT_DIGEST_ENABLED = _env_bool('DRIFT_DIGEST_ENABLED', False)
+
 # Debug toolbar (Docker環境でも表示可能にする)
 INTERNAL_IPS = [
     '127.0.0.1',

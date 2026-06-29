@@ -98,3 +98,25 @@ def drift_risk_actor_view(request, asset_id):
         'actor': actor,
         'error': error,
     })
+
+
+@htmx_login_required
+def drift_digest_preview_view(request):
+    """
+    Preview the weekly drift briefing per system, in-app, without waiting for
+    the cron or wiring Slack. Attribution is skipped here (it's a synchronous
+    page render) — the delivered Slack briefing names names; this previews the
+    shape, severity, and trend.
+    """
+    if not feature_enabled('drift_risk'):
+        raise Http404
+
+    from asset_manager.models import System
+    from .digest import build_digest
+
+    org = _get_user_org(request)
+    systems = System.objects.filter(organization=org) if org else System.objects.none()
+    digests = [build_digest(system, attribute=False) for system in systems]
+    return render(request, 'syncvey_drift_risk/_digest_preview.html', {
+        'digests': digests,
+    })

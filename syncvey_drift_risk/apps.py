@@ -20,9 +20,35 @@ class DriftRiskConfig(AppConfig):
     feature_name = 'drift_risk'
 
     def nav_items(self, request):
+        return [
+            {
+                'key': 'drift-risk',
+                'label': _('Drift Risk'),
+                'url': reverse('drift_risk:home'),
+                'icon': 'shield-alert',
+            },
+            {
+                'key': 'drift-digest',
+                'label': _('Drift Briefing'),
+                'url': reverse('drift_risk:digest'),
+                'icon': 'mail',
+            },
+        ]
+
+    def scheduled_jobs(self):
+        """
+        Register the weekly drift briefing — opt-in via DRIFT_DIGEST_ENABLED
+        (like the EOL refresh job), so a fresh install stays quiet until the
+        operator turns it on and configures a Slack webhook.
+        """
+        from django.conf import settings
+        if not getattr(settings, 'DRIFT_DIGEST_ENABLED', False):
+            return []
+        from apscheduler.triggers.cron import CronTrigger
+        from .digest import run_digest_job
         return [{
-            'key': 'drift-risk',
-            'label': _('Drift Risk'),
-            'url': reverse('drift_risk:home'),
-            'icon': 'shield-alert',
+            'id': 'drift_digest_weekly',
+            'name': 'Weekly drift briefing',
+            'func': run_digest_job,
+            'trigger': CronTrigger(day_of_week='mon', hour=9, minute=0),
         }]

@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 
 from asset_manager.models import (
-    Organization, System, Environment, Membership, Asset,
+    Organization, System, Environment, Membership, Asset, DriftSnapshot,
 )
 from syncvey_drift_risk import rules
 
@@ -160,3 +160,114 @@ class TestCloudTrail(TestCase):
         session = mock.Mock()
         session.client.side_effect = Exception('AccessDenied')
         self.assertIsNone(lookup_actor(session, 'sg-123'))
+
+
+# ---------------------------------------------------------------------------
+# digest — the weekly briefing (build + send + scheduled-job seam)
+# ---------------------------------------------------------------------------
+
+from datetime import timedelta
+from django.utils import timezone
+
+
+class TestDigest(TestCase):
+
+    def _system(self, webhook='https://hooks.slack.com/services/x', role='arn:aws:iam::1:role/r'):
+        org = Organization.objects.create(name='o', slug='o')
+        return System.objects.create(name='s', code='s', organization=org,
+                                     slack_webhook_url=webhook, aws_role_arn=role)
+
+    def _env(self, system, name='prod'):
+        return Environment.objects.create(system=system, name=name, env_type='PROD')
+
+    def _snap(self, env, changed_detail, changed=0, added=0, days_ago=0):
+        snap = DriftSnapshot.objects.create(
+            environment=env, changed_count=changed, added_count=added,
+            detail={'changed': changed_detail, 'added': []})
+        DriftSnapshot.objects.filter(pk=snap.pk).update(
+            detected_at=timezone.now() - timedelta(days=days_ago))
+        return snap
+
+    def test_build_counts_severity_and_trend(self):
+        from syncvey_drift_risk.digest import build_digest
+        sys = self._system()
+        env = self._env(sys)
+        # baseline a week ago: 1 drift
+        self._snap(env, [{'type': 'EC2', 'name': 'a', 'cloud_id': 'i-a',
+                          'changes': [{'field': 'instance_type', 'old': 't3.micro', 'new': 't3.small'}]}],
+                   changed=1, days_ago=8)
+        # latest: a critical SG change (total 1)
+        self._snap(env, [{'type': 'SG', 'name': 'web', 'cloud_id': 'sg-1',
+                          'changes': [{'field': 'ingress_cidr', 'old': '10.0.0.0/8', 'new': '0.0.0.0/0'}]}],
+                   changed=1, days_ago=0)
+        d = build_digest(sys, attribute=False)
+        self.assertEqual(d['severity_counts']['critical'], 1)
+        self.assertEqual(d['total_now'], 1)
+        self.assertEqual(d['delta'], 0)          # 1 now vs 1 at window start
+        self.assertTrue(d['has_data'])
+        self.assertEqual(d['top'][0]['severity'], rules.CRITICAL)
+
+    def test_send_skips_when_no_drift(self):
+        from syncvey_drift_risk.digest import send_digest
+        sys = self._system()
+        self._env(sys)  # no snapshots → nothing to report
+        with mock.patch('asset_manager.notifications._post_to_slack', return_value=True) as post:
+            self.assertFalse(send_digest(sys))
+            post.assert_not_called()
+
+    def test_send_posts_when_drift_present(self):
+        from syncvey_drift_risk.digest import send_digest
+        sys = self._system()
+        env = self._env(sys)
+        self._snap(env, [{'type': 'SG', 'name': 'web', 'cloud_id': 'sg-1',
+                          'changes': [{'field': 'ingress_cidr', 'old': '10.0.0.0/8', 'new': '0.0.0.0/0'}]}],
+                   changed=1)
+        with mock.patch('asset_manager.notifications._post_to_slack', return_value=True) as post, \
+             mock.patch('syncvey_drift_risk.digest._attach_actors'):
+            self.assertTrue(send_digest(sys))
+            post.assert_called_once()
+
+    def test_send_skips_without_webhook(self):
+        from syncvey_drift_risk.digest import send_digest
+        sys = self._system(webhook='')
+        env = self._env(sys)
+        self._snap(env, [{'type': 'SG', 'name': 'w', 'cloud_id': 'sg-1',
+                          'changes': [{'field': 'cidr', 'old': '', 'new': '0.0.0.0/0'}]}], changed=1)
+        self.assertFalse(send_digest(sys))
+
+    def test_preview_view_gating_and_render(self):
+        sys = self._system()
+        user = get_user_model().objects.create_user(username='u', password='pw')
+        Membership.objects.create(user=user, organization=sys.organization, role=Membership.Role.OWNER)
+        env = self._env(sys)
+        self._snap(env, [{'type': 'SG', 'name': 'web', 'cloud_id': 'sg-1',
+                          'changes': [{'field': 'ingress_cidr', 'old': '10.0.0.0/8', 'new': '0.0.0.0/0'}]}],
+                   changed=1)
+        self.client.force_login(user)
+        resp = self.client.get('/drift-digest/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.context['digests']), 1)
+        self.assertEqual(resp.context['digests'][0]['severity_counts']['critical'], 1)
+
+    @override_settings(SYNCVEY_FEATURES={'drift_risk': False})
+    def test_preview_404_when_disabled(self):
+        sys = self._system()
+        user = get_user_model().objects.create_user(username='u', password='pw')
+        Membership.objects.create(user=user, organization=sys.organization, role=Membership.Role.OWNER)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get('/drift-digest/').status_code, 404)
+
+
+class TestSchedulerSeam(TestCase):
+
+    def test_digest_job_registered_only_when_enabled(self):
+        from asset_manager.plugins import plugin_scheduled_jobs
+        with override_settings(DRIFT_DIGEST_ENABLED=True):
+            ids = {j['id'] for j in plugin_scheduled_jobs()}
+            self.assertIn('drift_digest_weekly', ids)
+
+    def test_no_digest_job_by_default(self):
+        from asset_manager.plugins import plugin_scheduled_jobs
+        with override_settings(DRIFT_DIGEST_ENABLED=False):
+            ids = {j['id'] for j in plugin_scheduled_jobs()}
+            self.assertNotIn('drift_digest_weekly', ids)
