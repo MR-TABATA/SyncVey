@@ -118,6 +118,26 @@
         <input type="text" id="state-text" name="state-text" placeholder="州 / 省 / 地域" style="display:none;" />
       </div>
 
+      <div class="form-group">
+        <label for="source">SyncVey をどこで知りましたか？ <span style="color:var(--muted);font-weight:400;">（任意）</span></label>
+        <select id="source" name="source">
+          <option value="">回答しない</option>
+          <option value="dev.to">dev.to の記事</option>
+          <option value="Search">Google / 検索</option>
+          <option value="GitHub">GitHub</option>
+          <option value="Reddit">Reddit</option>
+          <option value="Hacker News">Hacker News</option>
+          <option value="X">X / Twitter</option>
+          <option value="Friend">知人・同僚</option>
+          <option value="Other">その他</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="note">SyncVey に何を期待していますか？ <span style="color:var(--muted);font-weight:400;">（任意）</span></label>
+        <input type="text" id="note" name="note" placeholder="例: Terraform が見落とすコンソール作成リソースを検出したい" maxlength="200" />
+      </div>
+
       <button type="submit" class="btn-submit" id="submit-btn">
         ダウンロードページへ →
       </button>
@@ -219,6 +239,8 @@
     const sel = document.getElementById('state-select');
     const txt = document.getElementById('state-text');
     const state = sel.style.display !== 'none' ? sel.value : txt.value;
+    const source = document.getElementById('source').value;
+    const note = document.getElementById('note').value;
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
@@ -229,7 +251,7 @@
       fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        body: JSON.stringify({ country, state, lang: 'ja' }),
+        body: JSON.stringify({ country, state, lang: 'ja', source, note, referrer: document.referrer || '' }),
         headers: { 'Content-Type': 'application/json' }
       });
     } catch (_) {}
