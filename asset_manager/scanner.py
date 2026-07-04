@@ -388,6 +388,44 @@ def scan_apigatewayv2(session):
     return results
 
 
+def _iso(dt):
+    """boto3 datetime → ISO string (JSON-safe), or '' if absent."""
+    return dt.isoformat() if dt else ''
+
+
+def scan_secrets(session):
+    """
+    Secrets Manager secrets.
+
+    ListSecrets already returns the rotation metadata (RotationEnabled,
+    LastRotatedDate, NextRotationDate) — no DescribeSecret needed — which lets
+    the drift-risk plugin flag a rotation that *should* have happened but
+    didn't. We deliberately capture no secret value; this is metadata only.
+    """
+    sm = session.client('secretsmanager')
+    results = []
+    paginator = sm.get_paginator('list_secrets')
+    for page in paginator.paginate():
+        for s in page.get('SecretList', []):
+            arn = s['ARN']
+            rules_cfg = s.get('RotationRules') or {}
+            results.append({
+                'id':                       arn,
+                'arn':                      arn,
+                'name':                     s.get('Name', arn.split(':')[-1]),
+                'rotation_enabled':         s.get('RotationEnabled', False),
+                'rotation_lambda_arn':      s.get('RotationLambdaARN', ''),
+                'rotation_interval_days':   rules_cfg.get('AutomaticallyAfterDays', ''),
+                'last_rotated_date':        _iso(s.get('LastRotatedDate')),
+                'next_rotation_date':       _iso(s.get('NextRotationDate')),
+                'last_changed_date':        _iso(s.get('LastChangedDate')),
+                'created_date':             _iso(s.get('CreatedDate')),
+                '_resource_type':           'aws_secretsmanager_secret',
+                '_scan_source':             'boto3',
+            })
+    return results
+
+
 # ── Global services (region-agnostic — scanned once) ───────────────────────
 
 def scan_cloudfront(session):
@@ -451,6 +489,7 @@ SCANNERS = [
     ('aws_sns_topic',           scan_sns),
     ('aws_sqs_queue',           scan_sqs),
     ('aws_apigatewayv2_api',    scan_apigatewayv2),
+    ('aws_secretsmanager_secret', scan_secrets),
 ]
 
 # Global services — scanned once (not per-region) to avoid duplicate churn.

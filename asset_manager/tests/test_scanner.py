@@ -11,7 +11,7 @@ from django.test import TestCase
 from asset_manager.scanner import (
     scan_ec2, scan_rds, scan_ecs_services,
     scan_s3, scan_alb, scan_vpc, scan_ebs, scan_lambda,
-    scan_dynamodb, scan_sns, scan_sqs,
+    scan_dynamodb, scan_sns, scan_sqs, scan_secrets,
 )
 
 REGION = 'ap-northeast-1'
@@ -412,3 +412,34 @@ class TestScanSqs(TestCase):
         self.assertEqual(results[0]['name'],           'jobs')
         self.assertEqual(results[0]['_resource_type'], 'aws_sqs_queue')
         self.assertEqual(results[0]['_scan_source'],   'boto3')
+
+
+# ---------------------------------------------------------------------------
+# Secrets Manager
+# ---------------------------------------------------------------------------
+
+@mock_aws
+class TestScanSecrets(TestCase):
+
+    def test_empty_account_returns_empty_list(self):
+        self.assertEqual(scan_secrets(_session()), [])
+
+    def test_captures_rotation_metadata(self):
+        sm = boto3.client('secretsmanager', region_name=REGION)
+        sm.create_secret(Name='db-creds', SecretString='{"pw":"x"}')
+        results = scan_secrets(_session())
+        self.assertEqual(len(results), 1)
+        row = results[0]
+        self.assertEqual(row['name'],           'db-creds')
+        self.assertEqual(row['_resource_type'], 'aws_secretsmanager_secret')
+        self.assertEqual(row['_scan_source'],   'boto3')
+        # rotation fields are present (unrotated secret → disabled / empty)
+        self.assertIn('rotation_enabled', row)
+        self.assertIn('last_rotated_date', row)
+        self.assertFalse(row['rotation_enabled'])
+
+    def test_never_stores_the_secret_value(self):
+        sm = boto3.client('secretsmanager', region_name=REGION)
+        sm.create_secret(Name='api-key', SecretString='super-secret-value')
+        row = scan_secrets(_session())[0]
+        self.assertNotIn('super-secret-value', str(row))

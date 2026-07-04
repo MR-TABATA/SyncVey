@@ -5,7 +5,7 @@
 
   <div class="flex flex-wrap items-center gap-3">
     <h2 class="font-bold text-slate-800 text-xl">{% trans "Drift Risk" %}</h2>
-    <span class="text-sm text-slate-500">{% trans "Changed resources, graded by security impact" %}</span>
+    <span class="text-sm text-slate-500">{% trans "Changed resources and overdue secret rotation, graded by security impact" %}</span>
   </div>
 
   {# severity summary chips #}
@@ -58,6 +58,7 @@
             {% endfor %}
           </ul>
         </div>
+        {% if row.has_change %}
         <div class="shrink-0 text-right">
           <div id="actor-{{ row.asset.id }}">
             <button type="button"
@@ -72,6 +73,7 @@
             </button>
           </div>
         </div>
+        {% endif %}
       </div>
     </div>
     {% endwith %}

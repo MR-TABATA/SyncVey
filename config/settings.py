@@ -226,6 +226,11 @@ DRIFT_SNAPSHOT_RETENTION = int(os.getenv('DRIFT_SNAPSHOT_RETENTION', '500') or '
 # Webhook を設定済みのシステムへサマリを送る（オプトイン）。
 DRIFT_DIGEST_ENABLED = _env_bool('DRIFT_DIGEST_ENABLED', False)
 
+# Secrets Manager のローテーション許容日数（syncvey_drift_risk プラグイン）。
+# 有効なのに最後のローテーションからこの日数を超えた secret は「起きるべき
+# ローテーションが起きていない」ドリフトとして点灯する。2倍を超えると critical。
+SECRET_ROTATION_MAX_AGE_DAYS = int(os.getenv('SECRET_ROTATION_MAX_AGE_DAYS', '90') or '90')
+
 # Debug toolbar (Docker環境でも表示可能にする)
 INTERNAL_IPS = [
     '127.0.0.1',
