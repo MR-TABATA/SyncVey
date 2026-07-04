@@ -16,8 +16,10 @@ the core never reaches back. Removing this app from INSTALLED_APPS makes
 
 from collections import Counter
 
+from django.conf import settings
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
 
 from asset_manager.models import Asset
 from asset_manager.plugins import feature_enabled
@@ -25,6 +27,7 @@ from asset_manager.views import htmx_login_required, _get_user_org, _compute_raw
 from asset_manager.scanner import get_session
 
 from .rules import assess, SEVERITY_ORDER
+from .rotation import assess_rotation
 
 
 @htmx_login_required
@@ -44,17 +47,34 @@ def drift_risk_view(request):
                   'environment__name', 'environment__system__name',
                   'environment__system_id')
         )
+        now = timezone.now()
+        max_age = settings.SECRET_ROTATION_MAX_AGE_DAYS
         for asset in assets:
-            if not asset.raw_data_prev:
-                continue  # newly-seen / unmanaged: no field change to grade here
-            changes = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
-            if not changes:
+            findings = []
+            has_change = False
+
+            # Change-based risk: grade the field diff (needs a prior snapshot).
+            if asset.raw_data_prev:
+                changes = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
+                if changes:
+                    findings.extend(assess(asset.asset_type, changes)['findings'])
+                    has_change = True
+
+            # Standing risk: a secret rotation that should have happened but
+            # didn't — evaluated on current state, no diff required.
+            if (asset.raw_data or {}).get('_resource_type') == 'aws_secretsmanager_secret':
+                findings.extend(assess_rotation(asset.raw_data, now, max_age)['findings'])
+
+            if not findings:
                 continue
-            result = assess(asset.asset_type, changes)
+
+            severity = max((f['severity'] for f in findings),
+                           key=lambda s: SEVERITY_ORDER[s])
             rows.append({
-                'asset':    asset,
-                'severity': result['severity'],
-                'findings': result['findings'],
+                'asset':      asset,
+                'severity':   severity,
+                'findings':   findings,
+                'has_change': has_change,
             })
         rows.sort(key=lambda r: SEVERITY_ORDER[r['severity']], reverse=True)
 

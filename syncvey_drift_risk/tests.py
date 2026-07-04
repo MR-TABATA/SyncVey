@@ -55,6 +55,55 @@ class TestRules(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# rotation — standing "should have rotated but didn't" risk (no AWS, no DB)
+# ---------------------------------------------------------------------------
+
+from datetime import datetime, timedelta, timezone as _tz
+
+from syncvey_drift_risk import rotation
+
+
+class TestRotationRules(TestCase):
+
+    NOW = datetime(2026, 7, 4, tzinfo=_tz.utc)
+
+    def _ago(self, days):
+        return (self.NOW - timedelta(days=days)).isoformat()
+
+    def test_disabled_rotation_is_high(self):
+        result = rotation.assess_rotation({'rotation_enabled': False}, self.NOW, 90)
+        self.assertEqual(result['severity'], rules.HIGH)
+        self.assertEqual(result['findings'][0]['field'], 'rotation_enabled')
+
+    def test_enabled_but_never_rotated_is_medium(self):
+        result = rotation.assess_rotation(
+            {'rotation_enabled': True, 'last_rotated_date': ''}, self.NOW, 90)
+        self.assertEqual(result['severity'], rules.MEDIUM)
+
+    def test_recently_rotated_is_clean(self):
+        result = rotation.assess_rotation(
+            {'rotation_enabled': True, 'last_rotated_date': self._ago(10)}, self.NOW, 90)
+        self.assertEqual(result['findings'], [])
+        self.assertEqual(result['severity'], rules.LOW)
+
+    def test_overdue_is_high(self):
+        result = rotation.assess_rotation(
+            {'rotation_enabled': True, 'last_rotated_date': self._ago(100)}, self.NOW, 90)
+        self.assertEqual(result['severity'], rules.HIGH)
+
+    def test_severely_overdue_is_critical(self):
+        result = rotation.assess_rotation(
+            {'rotation_enabled': True, 'last_rotated_date': self._ago(200)}, self.NOW, 90)
+        self.assertEqual(result['severity'], rules.CRITICAL)
+
+    def test_truthy_string_flag_counts_as_enabled(self):
+        # scan stores JSON; a "true"/"false" string must be read like the bool
+        result = rotation.assess_rotation(
+            {'rotation_enabled': 'true', 'last_rotated_date': self._ago(5)}, self.NOW, 90)
+        self.assertEqual(result['findings'], [])
+
+
+# ---------------------------------------------------------------------------
 # views — gating + the risk list
 # ---------------------------------------------------------------------------
 
@@ -98,6 +147,27 @@ class TestRiskViews(TestCase):
     def test_404_when_feature_disabled(self):
         self._setup()
         self.assertEqual(self.client.get('/drift-risk/').status_code, 404)
+
+    @override_settings(SECRET_ROTATION_MAX_AGE_DAYS=90)
+    def test_stale_secret_surfaces_without_a_diff(self):
+        # a secret with no prior snapshot (no change) still lights up on its
+        # standing rotation posture, and offers no "who changed this?" button.
+        org, system, env, _ = self._setup(prev={}, cur={'ingress_cidr': '0.0.0.0/0'})
+        old = (timezone.now() - timedelta(days=400)).isoformat()
+        Asset.objects.create(
+            environment=env, name='db-creds', provider='AWS',
+            asset_type='SECRETS_MGR', asset_category='SECURITY', cloud_id='arn:secret:db',
+            raw_data_prev={},
+            raw_data={'_resource_type': 'aws_secretsmanager_secret',
+                      'rotation_enabled': True, 'last_rotated_date': old},
+        )
+        resp = self.client.get('/drift-risk/')
+        self.assertEqual(resp.context['total'], 1)
+        row = resp.context['rows'][0]
+        self.assertEqual(row['asset'].name, 'db-creds')
+        self.assertEqual(row['severity'], rules.CRITICAL)
+        self.assertFalse(row['has_change'])
+        self.assertNotContains(resp, 'Who changed this?')
 
     def test_actor_no_role(self):
         _, system, _, asset = self._setup(role='')
