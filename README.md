@@ -77,12 +77,13 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 
 | Feature | Description |
 |---------|-------------|
-| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, CloudFront, Route 53 resources — and more |
-| **AWS scan** | Auto-discover 17+ resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
+| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, Secrets Manager, CloudFront, Route 53 resources — and more |
+| **AWS scan** | Auto-discover 18 resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
+| **Secret rotation drift** | Flag Secrets Manager secrets that *should* have rotated but didn't — rotation disabled, never run, or past the `SECRET_ROTATION_MAX_AGE_DAYS` limit (default 90). Graded on current state, so it surfaces even when nothing changed between two scans. Metadata only: the secret value is never read or stored |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
