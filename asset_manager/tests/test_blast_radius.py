@@ -21,6 +21,11 @@ from syncvey_blast_radius.graph import (
     build_edges,
     build_reverse_index,
 )
+from syncvey_blast_radius.propagate import (
+    ImpactedAsset,
+    blast_radius,
+    blast_report,
+)
 
 
 class FakeAsset:
@@ -276,3 +281,102 @@ class TestGraphAgainstFixtures(TestAgainstFixtures):
                              environment_id=2)
         edges = build_edges(env1 + [intruder])
         assert all(e.src != 'i-0intruder00' for e in edges)
+
+
+# ---------------------------------------------------------------------------
+# propagate — step 3: BFS the blast radius out from drifted nodes
+# ---------------------------------------------------------------------------
+
+class TestBlastRadius:
+    # A small hand-built adjacency:  vpc — subnet — inst,  subnet — inst2
+    ADJ = {
+        'vpc':    {'subnet'},
+        'subnet': {'vpc', 'inst', 'inst2'},
+        'inst':   {'subnet'},
+        'inst2':  {'subnet'},
+        'lonely': set(),
+    }
+
+    def test_source_is_distance_zero(self):
+        assert blast_radius(self.ADJ, 'subnet')['subnet'] == 0
+
+    def test_shortest_hops_from_source(self):
+        dist = blast_radius(self.ADJ, 'inst')
+        assert dist == {'inst': 0, 'subnet': 1, 'vpc': 2, 'inst2': 2}
+
+    def test_multi_source_takes_nearest(self):
+        # Drift on both vpc and inst2: subnet is 1 hop from each, vpc is a source.
+        dist = blast_radius(self.ADJ, ['vpc', 'inst2'])
+        assert dist['vpc'] == 0 and dist['inst2'] == 0
+        assert dist['subnet'] == 1
+        assert dist['inst'] == 2
+
+    def test_string_source_is_treated_as_single(self):
+        assert set(blast_radius(self.ADJ, 'vpc')) == {'vpc', 'subnet', 'inst',
+                                                      'inst2'}
+
+    def test_max_hops_caps_traversal(self):
+        dist = blast_radius(self.ADJ, 'inst', max_hops=1)
+        assert dist == {'inst': 0, 'subnet': 1}
+
+    def test_unknown_source_is_its_own_radius(self):
+        assert blast_radius(self.ADJ, 'ghost-0000') == {'ghost-0000': 0}
+
+    def test_disconnected_node_reaches_nothing(self):
+        assert blast_radius(self.ADJ, 'lonely') == {'lonely': 0}
+
+
+class TestBlastReport:
+    def _wired(self):
+        vpc = FakeAsset('vpc-0bbb33344')
+        subnet = FakeAsset('subnet-0aaa11122', {'vpc_id': 'vpc-0bbb33344'})
+        inst = FakeAsset('i-0inst000000', {'subnet_id': 'subnet-0aaa11122'})
+        return [vpc, subnet, inst]
+
+    def test_ranks_by_proximity_with_source_first(self):
+        report = blast_report(self._wired(), {'subnet-0aaa11122'})
+        assert [(r.cloud_id, r.hops, r.is_source) for r in report] == [
+            ('subnet-0aaa11122', 0, True),
+            ('i-0inst000000', 1, False),
+            ('vpc-0bbb33344', 1, False),
+        ]
+
+    def test_carries_the_asset_record(self):
+        assets = self._wired()
+        report = blast_report(assets, {'i-0inst000000'})
+        by_id = {r.cloud_id: r for r in report}
+        assert by_id['i-0inst000000'].asset is assets[2]
+        assert by_id['vpc-0bbb33344'].hops == 2
+
+    def test_drifted_id_without_asset_still_appears(self):
+        report = blast_report(self._wired(), {'ghost-0000'})
+        ghost = next(r for r in report if r.cloud_id == 'ghost-0000')
+        assert ghost.is_source and ghost.asset is None and ghost.hops == 0
+
+    def test_max_hops_limits_the_report(self):
+        report = blast_report(self._wired(), {'i-0inst000000'}, max_hops=1)
+        assert {r.cloud_id for r in report} == {'i-0inst000000',
+                                                'subnet-0aaa11122'}
+
+
+class TestBlastReportAgainstFixtures(TestAgainstFixtures):
+    def _fake_assets(self):
+        assets = []
+        for attrs in self._import_shape_assets():
+            cloud_id = attrs.get('id') or attrs.get('arn')
+            if not cloud_id:
+                continue
+            assets.append(FakeAsset(cloud_id, attrs))
+        return assets
+
+    def test_drift_on_a_hub_node_blasts_outward(self):
+        assets = self._fake_assets()
+        adj = build_adjacency(assets)
+        # Pick the most-connected node (a VPC/subnet hub) as the drift source.
+        hub = max(adj, key=lambda n: len(adj[n]))
+        report = blast_report(assets, {hub})
+        # It reaches beyond its immediate neighbours (multiple rings), and the
+        # single drifted source is the only hops-0 entry.
+        assert sum(1 for r in report if r.is_source) == 1
+        assert max(r.hops for r in report) >= 2
+        assert len(report) > len(adj[hub])
