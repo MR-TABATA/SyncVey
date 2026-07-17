@@ -26,6 +26,13 @@ from syncvey_blast_radius.propagate import (
     blast_radius,
     blast_report,
 )
+from syncvey_blast_radius.score import (
+    ScoredAsset,
+    impact_report,
+    impact_scores,
+    severity_weight,
+    top_impacts,
+)
 
 
 class FakeAsset:
@@ -357,6 +364,139 @@ class TestBlastReport:
         report = blast_report(self._wired(), {'i-0inst000000'}, max_hops=1)
         assert {r.cloud_id for r in report} == {'i-0inst000000',
                                                 'subnet-0aaa11122'}
+
+
+# ---------------------------------------------------------------------------
+# Step 4 — severity-weighted, distance-decayed impact scoring
+# ---------------------------------------------------------------------------
+
+class TestSeverityWeight:
+    def test_orders_low_to_critical(self):
+        assert (severity_weight('low') < severity_weight('medium')
+                < severity_weight('high') < severity_weight('critical'))
+
+    def test_is_case_insensitive(self):
+        assert severity_weight('CRITICAL') == severity_weight('critical')
+
+    def test_unknown_grade_uses_default(self):
+        assert severity_weight('bogus') == 1.0
+        assert severity_weight(None, default=0.5) == 0.5
+
+    def test_critical_outweighs_a_chain_of_lows(self):
+        # A single critical source must beat any number of decayed low sources,
+        # so the doubling scheme keeps criticals on top.
+        assert severity_weight('critical') > severity_weight('low') * 4
+
+
+class TestImpactScores:
+    # vpc — subnet — inst,  subnet — inst2  (same shape as TestBlastRadius)
+    ADJ = {
+        'vpc':    {'subnet'},
+        'subnet': {'vpc', 'inst', 'inst2'},
+        'inst':   {'subnet'},
+        'inst2':  {'subnet'},
+        'lonely': set(),
+    }
+
+    def test_source_scores_its_own_weight(self):
+        scores = impact_scores(self.ADJ, {'subnet': 8.0})
+        assert scores['subnet'] == 8.0
+
+    def test_score_decays_by_hop(self):
+        scores = impact_scores(self.ADJ, {'inst': 8.0}, decay=0.5)
+        assert scores['inst'] == 8.0          # hops 0
+        assert scores['subnet'] == 4.0        # hops 1: 8 * 0.5
+        assert scores['vpc'] == 2.0           # hops 2: 8 * 0.5**2
+        assert scores['inst2'] == 2.0         # hops 2
+
+    def test_far_but_severe_source_beats_near_but_mild(self):
+        # inst2 is a near (1 hop) low drift; vpc is a far (2 hop) critical drift.
+        # At subnet, critical wins: 8 * 0.5**1 = 4.0 > 1 * 0.5**1 = 0.5.
+        scores = impact_scores(self.ADJ, {'inst2': 1.0, 'vpc': 8.0}, decay=0.5)
+        assert scores['subnet'] == 4.0
+        # inst sits 2 hops from vpc, 2 hops from inst2 → critical path wins.
+        assert scores['inst'] == 8.0 * 0.5 ** 2
+
+    def test_node_takes_best_of_two_sources(self):
+        scores = impact_scores(self.ADJ, {'vpc': 4.0, 'inst': 8.0}, decay=0.5)
+        # subnet is 1 hop from each: max(4*0.5, 8*0.5) = 4.0.
+        assert scores['subnet'] == 4.0
+
+    def test_decay_one_does_not_fade(self):
+        scores = impact_scores(self.ADJ, {'inst': 3.0}, decay=1.0)
+        assert scores['vpc'] == 3.0
+
+    def test_max_hops_caps_traversal(self):
+        scores = impact_scores(self.ADJ, {'inst': 8.0}, max_hops=1)
+        assert set(scores) == {'inst', 'subnet'}
+
+    def test_off_graph_source_is_its_own_radius(self):
+        assert impact_scores(self.ADJ, {'ghost-0000': 8.0}) == {'ghost-0000': 8.0}
+
+    def test_invalid_decay_rejected(self):
+        import pytest
+        for bad in (0, -0.1, 1.5):
+            with pytest.raises(ValueError):
+                impact_scores(self.ADJ, {'inst': 1.0}, decay=bad)
+
+
+class TestImpactReport:
+    def _wired(self):
+        vpc = FakeAsset('vpc-0bbb33344')
+        subnet = FakeAsset('subnet-0aaa11122', {'vpc_id': 'vpc-0bbb33344'})
+        inst = FakeAsset('i-0inst000000', {'subnet_id': 'subnet-0aaa11122'})
+        return [vpc, subnet, inst]
+
+    def test_ranks_hardest_hit_first_with_source_on_top(self):
+        report = impact_report(self._wired(),
+                               {'subnet-0aaa11122': severity_weight('critical')})
+        assert report[0].cloud_id == 'subnet-0aaa11122'
+        assert report[0].is_source and report[0].hops == 0
+        # Score strictly decreases down the ranking.
+        scores = [r.score for r in report]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_carries_the_asset_record_and_hops(self):
+        assets = self._wired()
+        report = impact_report(assets, {'i-0inst000000': 8.0})
+        by_id = {r.cloud_id: r for r in report}
+        assert by_id['i-0inst000000'].asset is assets[2]
+        assert by_id['vpc-0bbb33344'].hops == 2
+        assert by_id['vpc-0bbb33344'].score == 8.0 * 0.5 ** 2
+
+    def test_drifted_id_without_asset_still_appears(self):
+        report = impact_report(self._wired(), {'ghost-0000': 4.0})
+        ghost = next(r for r in report if r.cloud_id == 'ghost-0000')
+        assert ghost.is_source and ghost.asset is None and ghost.score == 4.0
+
+    def test_returns_scored_asset_records(self):
+        report = impact_report(self._wired(), {'subnet-0aaa11122': 1.0})
+        assert all(isinstance(r, ScoredAsset) for r in report)
+
+
+class TestTopImpacts:
+    def _wired(self):
+        vpc = FakeAsset('vpc-0bbb33344')
+        subnet = FakeAsset('subnet-0aaa11122', {'vpc_id': 'vpc-0bbb33344'})
+        inst = FakeAsset('i-0inst000000', {'subnet_id': 'subnet-0aaa11122'})
+        return [vpc, subnet, inst]
+
+    def test_returns_n_hardest_hit_in_order(self):
+        top = top_impacts(self._wired(),
+                          {'subnet-0aaa11122': severity_weight('critical')}, 2)
+        assert len(top) == 2
+        assert top[0].cloud_id == 'subnet-0aaa11122'  # the source, highest score
+        assert top[0].score >= top[1].score
+
+    def test_n_larger_than_radius_returns_all(self):
+        top = top_impacts(self._wired(), {'subnet-0aaa11122': 1.0}, 99)
+        assert len(top) == 3
+
+    def test_agrees_with_the_head_of_the_full_report(self):
+        sources = {'i-0inst000000': 8.0}
+        full = impact_report(self._wired(), sources)
+        top = top_impacts(self._wired(), sources, 2)
+        assert [r.score for r in top] == [r.score for r in full[:2]]
 
 
 class TestBlastReportAgainstFixtures(TestAgainstFixtures):
