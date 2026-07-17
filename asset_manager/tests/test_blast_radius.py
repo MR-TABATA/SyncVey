@@ -33,6 +33,7 @@ from syncvey_blast_radius.score import (
     severity_weight,
     top_impacts,
 )
+from syncvey_blast_radius.service import drifted_source_weights
 
 
 class FakeAsset:
@@ -497,6 +498,75 @@ class TestTopImpacts:
         full = impact_report(self._wired(), sources)
         top = top_impacts(self._wired(), sources, 2)
         assert [r.score for r in top] == [r.score for r in full[:2]]
+
+
+# ---------------------------------------------------------------------------
+# Step 5 — service bridge: which resources drifted, and how heavily they weigh
+# ---------------------------------------------------------------------------
+
+class DriftAsset:
+    """Stand-in for an Asset row as service.drifted_source_weights reads it."""
+
+    def __init__(self, cloud_id, prev=None, now=None, asset_type='ec2'):
+        self.cloud_id = cloud_id
+        self.raw_data_prev = prev or {}
+        self.raw_data = now or {}
+        self.asset_type = asset_type
+
+
+def _keys_diff(old, new):
+    """Injected diff_fn stub: report any key whose value changed."""
+    return [{'field': k, 'old': old.get(k), 'new': new.get(k)}
+            for k in old if old.get(k) != new.get(k)]
+
+
+class TestDriftedSourceWeights:
+    def test_only_changed_assets_become_sources(self):
+        assets = [
+            DriftAsset('a', prev={'x': 1}, now={'x': 2}),   # changed → source
+            DriftAsset('b', prev={'x': 1}, now={'x': 1}),   # unchanged
+            DriftAsset('c', prev={}, now={'x': 9}),         # no prior snapshot
+        ]
+        weights = drifted_source_weights(assets, _keys_diff)
+        assert set(weights) == {'a'}
+
+    def test_flat_weight_without_a_grader(self):
+        assets = [DriftAsset('a', prev={'x': 1}, now={'x': 2})]
+        assert drifted_source_weights(assets, _keys_diff) == {'a': 1.0}
+
+    def test_grader_weights_by_severity(self):
+        assets = [
+            DriftAsset('crit', prev={'x': 1}, now={'x': 2}),
+            DriftAsset('low', prev={'x': 1}, now={'x': 2}),
+        ]
+        grade = lambda asset_type, changes: 'critical' if 'crit' in asset_type else 'low'
+        # asset_type carries the grade signal for this stub grader.
+        assets[0].asset_type, assets[1].asset_type = 'crit-type', 'low-type'
+        weights = drifted_source_weights(assets, _keys_diff, grade_fn=grade)
+        assert weights['crit'] == severity_weight('critical')
+        assert weights['low'] == severity_weight('low')
+        assert weights['crit'] > weights['low']
+
+    def test_asset_without_cloud_id_is_skipped(self):
+        a = DriftAsset(None, prev={'x': 1}, now={'x': 2})
+        assert drifted_source_weights([a], _keys_diff) == {}
+
+    def test_feeds_impact_report_end_to_end(self):
+        # A drifted subnet weighted critical, wired to a downstream instance:
+        # the whole thing flows through score.impact_report.
+        subnet = FakeAsset('subnet-0aaa11122')
+        inst = FakeAsset('i-0inst000000', {'subnet_id': 'subnet-0aaa11122'})
+        sources = drifted_source_weights(
+            [DriftAsset('subnet-0aaa11122', prev={'cidr': '10.0.0.0/24'},
+                        now={'cidr': '0.0.0.0/0'})],
+            _keys_diff,
+            grade_fn=lambda t, c: 'critical',
+        )
+        report = impact_report([subnet, inst], sources)
+        by_id = {r.cloud_id: r for r in report}
+        assert by_id['subnet-0aaa11122'].is_source
+        assert by_id['i-0inst000000'].score < by_id['subnet-0aaa11122'].score
+        assert by_id['i-0inst000000'].hops == 1
 
 
 class TestBlastReportAgainstFixtures(TestAgainstFixtures):

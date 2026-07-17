@@ -1,0 +1,69 @@
+{% load i18n %}
+{# htmx partial swapped into #main-content by the sidebar "Blast Radius" entry. #}
+
+<div class="space-y-5">
+
+  <div class="flex flex-wrap items-center gap-3">
+    <h2 class="font-bold text-slate-800 text-xl">{% trans "Blast Radius" %}</h2>
+    <span class="text-sm text-slate-500">{% trans "What the current drift can reach across the resource graph, ranked by impact" %}</span>
+  </div>
+
+  {# summary chips: how many drifts seed the radius, and how much collateral they reach #}
+  <div class="flex flex-wrap gap-2">
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-red-50 text-red-700 border border-red-200">
+      {% trans "Drift sources" %} <span class="tabular-nums">{{ source_count }}</span>
+    </span>
+    <span class="px-3 py-1 rounded-lg text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+      {% trans "Collateral reached" %} <span class="tabular-nums">{{ collateral }}</span>
+    </span>
+    {% if not weighted %}
+    <span class="px-3 py-1 rounded-lg text-sm text-slate-500 border border-slate-200 bg-slate-50">
+      {% trans "Install Drift Risk to weight by severity" %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+  <div class="space-y-2">
+    {% for row in rows %}
+    <div class="rounded-2xl border bg-white p-4 flex items-start justify-between gap-4
+                {% if row.is_source %}border-red-200{% else %}border-slate-200{% endif %}">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          {% if row.is_source %}
+          <span class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide bg-red-100 text-red-700">{% trans "drift" %}</span>
+          {% else %}
+          <span class="px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wide bg-slate-100 text-slate-600">{% blocktrans count hops=row.hops %}{{ hops }} hop{% plural %}{{ hops }} hops{% endblocktrans %}</span>
+          {% endif %}
+          <span class="font-semibold text-slate-800 truncate">{{ row.asset.name|default:row.cloud_id }}</span>
+          {% if row.asset %}<span class="text-xs text-slate-400">{{ row.asset.asset_type }}</span>{% endif %}
+        </div>
+        <div class="mt-0.5 text-xs text-slate-500">
+          {% if row.asset %}{{ row.asset.environment.system.name }} / {{ row.asset.environment.name }} · {% endif %}
+          <code class="text-slate-400">{{ row.cloud_id }}</code>
+        </div>
+      </div>
+      <div class="shrink-0 text-right">
+        <div class="text-lg font-bold tabular-nums text-slate-800">{{ row.score|floatformat:2 }}</div>
+        <div class="text-xs text-slate-400">{% trans "impact" %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if total > shown %}
+  <p class="text-xs text-slate-400 text-center">
+    {% blocktrans %}Showing the top {{ shown }} of {{ total }} impacted resources.{% endblocktrans %}
+  </p>
+  {% endif %}
+
+  {% else %}
+  <div class="rounded-2xl border border-emerald-200 bg-white p-8 text-center">
+    <div class="text-emerald-600 font-semibold">{% trans "No blast radius" %}</div>
+    <p class="mt-1 text-sm text-slate-500">{% trans "No resource has drifted, so nothing is propagating impact across the graph." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>if (window.lucide) lucide.createIcons();</script>
