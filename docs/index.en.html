@@ -360,6 +360,11 @@
         <p>Not every drift is equal. SyncVey grades each change by security impact — a security group opened to 0.0.0.0/0 is flagged critical, a tag tweak isn't. Then ask "Who changed this?" and it traces the change to the actor via CloudTrail. Opt in to a weekly Slack briefing and it lands in your channel every Monday. What changed, how bad, and who to talk to.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">🕸️</div>
+        <h3>See how far a drift reaches</h3>
+        <p>One drifted resource is rarely alone — other resources point at it. SyncVey walks the reference graph outward from each drift and ranks everything it can reach by severity-weighted, distance-decayed impact, so you fix the change that touches the most, first. A stateless plan structurally can't do this; it needs the live graph SyncVey already has.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon">🔁</div>
         <h3>Catch the rotation that never happened</h3>
         <p>A secret that hasn't rotated in 200 days produces no diff — nothing changed between two scans, and that is exactly the problem. SyncVey grades rotation on current state instead: disabled, never run, or past your age limit. It reads only the rotation metadata; the secret value is never fetched or stored.</p>

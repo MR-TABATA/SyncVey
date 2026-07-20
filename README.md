@@ -83,6 +83,7 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
+| **Blast radius** *(optional plugin)* | Walk the resource reference graph outward from each drift and rank every resource it can reach by severity-weighted, distance-decayed impact. Richer with the drift-risk plugin installed; detachable — remove the app and the feature disappears |
 | **Secret rotation drift** | Flag Secrets Manager secrets that *should* have rotated but didn't — rotation disabled, never run, or past the `SECRET_ROTATION_MAX_AGE_DAYS` limit (default 90). Graded on current state, so it surfaces even when nothing changed between two scans. Metadata only: the secret value is never read or stored |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
@@ -214,6 +215,7 @@ All views return rendered HTML (full pages or partials).
 /environments/<id>/drift/              Drift report
 /environments/<id>/drift/history/      Drift history (trend over time)
 /drift-risk/                           Drift risk & attribution (security triage)
+/blast-radius/                         Blast radius (drift impact across the reference graph; optional plugin)
 /drift-digest/                         Drift briefing (weekly Slack rollup preview)
 /environments/<id>/diagram/            Architecture diagram
 /environments/<id>/sync-s3/            Sync remote tfstate from S3
