@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     # Optional / detachable plugin apps (discovered via asset_manager.plugins).
     # Remove this line and the core hides the nav entry and 404s its routes.
     'syncvey_drift_risk.apps.DriftRiskConfig',
+    'syncvey_cli.apps.SyncveyCliConfig',
     'django_apscheduler',
 ]
 
