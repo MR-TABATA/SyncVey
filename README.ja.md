@@ -59,6 +59,7 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 | **ドリフト履歴** | 差分の推移を記録。スキャン/インポートのたびにスナップショットを保存し、推移グラフと各時点の差分を表示 |
 | **ドリフトのリスク評価・犯人特定** | ドリフトをセキュリティ影響度で採点（例: セキュリティグループが `0.0.0.0/0` に開放）し、誰がそのリソースを変更したかを CloudTrail で特定 |
 | **ドリフト・ブリーフィング** | システム単位の週次 Slack サマリ（任意）— 重大度の内訳、前週比のトレンド、危険な変更トップと実行者。`DRIFT_DIGEST_ENABLED` でオプトイン |
+| **コマンドライン** *(オプションのプラグイン)* | `manage.py syncvey scan / drift / status` で、ターミナルや CI からスキャンとドリフト確認を実行 — ダッシュボードと同じエンジンを駆動。`drift --exit-code` はドリフトがあればビルドを失敗させ、`--format json` はパイプラインに渡せる。着脱可能で、アプリを外せばコマンドも消える |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告（既定オフライン・任意で日次更新） |
 | **構成図** | 環境内のリソース関係を可視化 |
@@ -199,6 +200,34 @@ SyncVey は JSON REST API ではなく、htmx ベースのサーバーサイド�
 ```
 
 全ルート → [asset_manager/urls.py](asset_manager/urls.py)
+
+---
+
+## コマンドライン *(オプションのプラグイン)*
+
+`syncvey_cli` プラグインは `syncvey` 管理コマンドを追加し、オペレーターや CI
+パイプラインが Web UI を開かずにスキャン実行とドリフト確認をできるようにする。
+駆動するのはダッシュボードと同じスキャン/ドリフトのエンジンなので、「何をドリフト
+とみなすか」で両者が食い違うことはない。
+
+```bash
+# ライブ AWS スキャンを実行しドリフトのスナップショットを記録（全システム or 1つ）
+docker compose exec app python manage.py syncvey scan --system e-commerce
+
+# 現在のドリフトを表示。--format json でパイプラインに渡せる
+docker compose exec app python manage.py syncvey drift --env prod
+
+# ドリフトがあればビルドを失敗させる — CI ステップに差し込む
+docker compose exec app python manage.py syncvey drift --exit-code
+
+# システム/環境を資産数と最終スキャン時刻つきで一覧
+docker compose exec app python manage.py syncvey status
+```
+
+終了コードが CI の契約: `0` = 正常 / ドリフト無し、`1` = ドリフト検出
+（`drift --exit-code` 時のみ）、`2` = スキャンジョブ失敗、またはセレクタが何にも
+一致せず。他のプラグイン同様に着脱可能で、`INSTALLED_APPS` から `syncvey_cli`
+を外せばコマンドも消える。
 
 ---
 
