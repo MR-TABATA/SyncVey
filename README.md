@@ -81,6 +81,7 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **AWS scan** | Auto-discover 17+ resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
+| **Auto Scaling-aware drift** | Instances an Auto Scaling group launched or terminated are churn, not drift. SyncVey reads the `aws:autoscaling:groupName` tag it already scans — no extra API call or IAM — and keeps scale-out/in out of the drift count, shown transparently in their own section. Attribute changes on a persistent instance are still real drift. Toggle with `DRIFT_SUPPRESS_AUTOSCALING` |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |

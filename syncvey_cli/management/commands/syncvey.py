@@ -131,6 +131,7 @@ class Command(BaseCommand):
                     'environment': env_obj.name,
                     'changed':     d['changed'],
                     'added':       d['added'],
+                    'autoscaling': d['autoscaling'],
                     'unchanged':   d['unchanged'],
                 }
                 for sys_obj, env_obj, d in reports
@@ -154,10 +155,12 @@ class Command(BaseCommand):
             if n == 0:
                 self.stdout.write(f"{sys_obj.name} / {env_obj.name}: {self.style.SUCCESS('clean')}")
                 continue
+            asg = len(d['autoscaling'])
+            asg_note = f" [+{asg} autoscaling, not drift]" if asg else ""
             self.stdout.write(
                 f"{sys_obj.name} / {env_obj.name}: "
                 f"{self.style.WARNING(str(n) + ' drifted')} "
-                f"(changed={len(d['changed'])} added={len(d['added'])})"
+                f"(changed={len(d['changed'])} added={len(d['added'])}){asg_note}"
             )
             for item in d['changed']:
                 self.stdout.write(f"    ~ {item['type']} {item['name']} ({item['cloud_id']})")

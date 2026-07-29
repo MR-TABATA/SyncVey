@@ -43,6 +43,13 @@
         <span class="text-2xl font-black text-slate-800">{{ added|length }}</span>
         <span class="text-sm text-slate-500">{% trans "added" %}</span>
     </div>
+    {% if autoscaling %}
+    <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-violet-400 shrink-0"></span>
+        <span class="text-2xl font-black text-slate-800">{{ autoscaling|length }}</span>
+        <span class="text-sm text-slate-500">{% trans "autoscaling" %}</span>
+    </div>
+    {% endif %}
     <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shrink-0"></span>
         <span class="text-2xl font-black text-slate-400">{{ unchanged|length }}</span>
@@ -129,6 +136,35 @@
 </div>
 {% endif %}
 
+{# ── AUTO SCALING (managed — not counted as drift) ───────────────── #}
+{% if autoscaling %}
+<div class="mb-8">
+    <h3 class="text-xs font-bold uppercase tracking-widest text-violet-600 mb-1 flex items-center gap-2">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        {% trans "Auto Scaling" %} ({{ autoscaling|length }})
+    </h3>
+    <p class="text-xs text-slate-400 mb-3">{% trans "Owned by an Auto Scaling group — churn, not drift. Not counted above." %}</p>
+    <div class="space-y-2">
+        {% for item in autoscaling %}
+        {% asset_icon_url item.asset.provider item.asset.asset_type as icon_path %}
+        <div class="bg-white border border-violet-200 rounded-xl px-4 py-3 flex items-center gap-3">
+            {% if icon_path %}
+                <img src="{% static icon_path %}" class="w-5 h-5 shrink-0" alt="{{ item.asset.asset_type }}">
+            {% else %}
+                <i data-lucide="cloud" class="w-5 h-5 shrink-0 text-slate-400"></i>
+            {% endif %}
+            <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-violet-100 text-violet-700">{{ item.asset.asset_type }}</span>
+            <span class="font-semibold text-slate-800">{{ item.asset.name }}</span>
+            <span class="font-mono text-xs text-slate-400 truncate max-w-[200px]">{{ item.asset.cloud_id }}</span>
+            {% if item.group %}
+            <span class="ml-auto text-xs font-mono text-violet-600 shrink-0 truncate max-w-[220px]" title="{{ item.group }}">{{ item.group }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {# ── UNCHANGED (collapsible) ─────────────────────────────────────── #}
 {% if unchanged %}
 <details class="group">
@@ -158,7 +194,7 @@
 {% endif %}
 
 {# ── No data at all ──────────────────────────────────────────────── #}
-{% if not changed and not added and not unchanged %}
+{% if not changed and not added and not autoscaling and not unchanged %}
 <div class="text-center py-20 bg-white rounded-xl border border-dashed border-slate-200">
     <i data-lucide="file-search" class="w-10 h-10 text-slate-200 mx-auto mb-3"></i>
     <p class="text-sm font-medium text-slate-500 mb-1">{% trans "No resources in this environment." %}</p>

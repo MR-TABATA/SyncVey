@@ -92,6 +92,17 @@ class TestDrift(Base):
         _, code = _run('drift', '--system', 'nope')
         self.assertEqual(code, 2)
 
+    def test_asg_churn_does_not_fail_the_build(self):
+        # an ASG-owned first-sighting is churn, not drift — --exit-code must pass
+        _, env = self._env()
+        self._asset(env, 'i-asg', {}, {'instance_type': 't3.micro', 'autoscaling_group': 'web-asg'})
+        out, code = _run('drift', '--exit-code')
+        self.assertEqual(code, 0)
+        out_json, _ = _run('drift', '--format', 'json')
+        data = json.loads(out_json)
+        self.assertEqual(data[0]['added'], [])
+        self.assertEqual(len(data[0]['autoscaling']), 1)
+
 
 class TestScan(Base):
     def test_scan_creates_job_and_records_snapshot(self):

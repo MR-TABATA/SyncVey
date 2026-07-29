@@ -86,14 +86,18 @@ def drift_for(environment):
 
         {'changed': [{type, name, cloud_id, provider, changes:[...]}, ...],
          'added':   [{type, name, cloud_id, provider}, ...],
+         'autoscaling': [{type, name, cloud_id, provider}, ...],
          'unchanged': int}
 
     `added` = assets that have never had a previous snapshot (first sighting),
-    matching the core's ADDED semantics.
+    matching the core's ADDED semantics — except an ASG-owned first-sighting is
+    churn, not drift, so it lands in `autoscaling` instead. That keeps
+    `syncvey drift --exit-code` from failing a build on a routine scale-out.
     """
     from asset_manager.views import _compute_raw_diff
+    from asset_manager.autoscaling import is_autoscaling_churn
 
-    changed, added, unchanged = [], [], 0
+    changed, added, autoscaling, unchanged = [], [], [], 0
     assets = environment.assets.only(
         'asset_type', 'name', 'cloud_id', 'provider', 'raw_data', 'raw_data_prev',
     ).order_by('asset_type', 'name')
@@ -106,7 +110,10 @@ def drift_for(environment):
             'provider': asset.provider,
         }
         if not asset.raw_data_prev:
-            added.append(meta)
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append(meta)
+            else:
+                added.append(meta)
         else:
             diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
             if diff:
@@ -114,7 +121,8 @@ def drift_for(environment):
             else:
                 unchanged += 1
 
-    return {'changed': changed, 'added': added, 'unchanged': unchanged}
+    return {'changed': changed, 'added': added,
+            'autoscaling': autoscaling, 'unchanged': unchanged}
 
 
 def status_rows():
