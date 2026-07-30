@@ -232,6 +232,12 @@ DRIFT_DIGEST_ENABLED = _env_bool('DRIFT_DIGEST_ENABLED', False)
 # ローテーションが起きていない」ドリフトとして点灯する。2倍を超えると critical。
 SECRET_ROTATION_MAX_AGE_DAYS = int(os.getenv('SECRET_ROTATION_MAX_AGE_DAYS', '90') or '90')
 
+# Auto Scaling が所有するインスタンスの「登場」をドリフトとして数えない（cry-wolf
+# 対策）。既定ON＝スケールアウトで湧いた ASG インスタンスは added ではなく
+# autoscaling(churn)として別枠に。false で従来どおり added にカウント。属性変更は
+# 常に本物のドリフトとして扱う（抑制対象は「存在」次元のみ）。
+DRIFT_SUPPRESS_AUTOSCALING = _env_bool('DRIFT_SUPPRESS_AUTOSCALING', True)
+
 # Debug toolbar (Docker環境でも表示可能にする)
 INTERNAL_IPS = [
     '127.0.0.1',

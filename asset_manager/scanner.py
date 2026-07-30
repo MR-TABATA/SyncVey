@@ -57,6 +57,7 @@ def scan_ec2(session):
     for page in paginator.paginate():
         for reservation in page['Reservations']:
             for i in reservation['Instances']:
+                tags = _tags(i.get('Tags'))
                 results.append({
                     'id':                i['InstanceId'],
                     'ami':               i.get('ImageId', ''),
@@ -68,7 +69,11 @@ def scan_ec2(session):
                     'public_ip':         i.get('PublicIpAddress', ''),
                     'key_name':          i.get('KeyName', ''),
                     'instance_state':    i.get('State', {}).get('Name', ''),
-                    'tags':              _tags(i.get('Tags')),
+                    # EC2 stamps ASG-launched instances with this reserved tag —
+                    # surfaced explicitly so drift can tell churn from real adds
+                    # without a DescribeAutoScalingGroups call or extra IAM.
+                    'autoscaling_group': tags.get('aws:autoscaling:groupName', ''),
+                    'tags':              tags,
                     '_resource_type':    'aws_instance',
                     '_scan_source':      'boto3',
                 })
