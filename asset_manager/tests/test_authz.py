@@ -64,11 +64,20 @@ class TestCrossOrgIsolation:
         assert c.get(reverse('asset-detail', args=[asset_a.id])).status_code == 200
 
     def test_user_without_membership_sees_nothing(self):
-        """メンバーシップ無しユーザーは自組織が無い＝単一オブジェクトは 404。"""
+        """メンバーシップ無しユーザーは OrgRequiredMiddleware が入口で弾く。
+
+        ビューの org スコープ（404）まで届かず、その手前でログアウト＋
+        ログインへリダイレクトされる。どちらにせよ他組織の資産は見えない。
+        """
         _, _, _, asset_b = _make_org('orgB', 'b')
         user = User.objects.create_user(username='nobody', password='pw')
         c = Client(); c.force_login(user)
-        assert c.get(reverse('asset-detail', args=[asset_b.id])).status_code == 404
+
+        resp = c.get(reverse('asset-detail', args=[asset_b.id]))
+        assert resp.status_code == 302
+        assert resp.url.startswith('/login/')
+        # 弾かれるだけでなくセッションも落ちている（再訪しても素通りしない）。
+        assert '_auth_user_id' not in c.session
 
 
 class TestAuditLogAuth:
