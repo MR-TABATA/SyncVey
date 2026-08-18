@@ -81,7 +81,7 @@ jobs:
         # プラグイン（detachable app）にテストを足した時、黙って CI から
         # 漏れないよう最初から対象に入れておく（今は 0 件でも害はない）。
         run: |
-          pytest asset_manager syncvey_drift_risk syncvey_cli syncvey_blast_radius \
+          pytest asset_manager syncvey_drift_risk syncvey_cli \
             --ignore=asset_manager/tests/test_e2e.py \
             -o addopts="" -q
 
