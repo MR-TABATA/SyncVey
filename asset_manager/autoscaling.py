@@ -15,9 +15,10 @@ this. EC2 stamps every ASG-launched instance with the reserved tag
 `aws:autoscaling:groupName`, and we already read instance tags in the scanner.
 So ownership is right there in the data we've had all along.
 
-We suppress only the *existence* dimension (a first-sighting instance the
-autoscaler created). An actual attribute change on a persistent instance — a
-security group opened, an AMI swapped — is still real drift and still reported.
+We suppress only the *existence* dimension — an instance the autoscaler
+created appearing, and one it terminated vanishing. An actual attribute change
+on a persistent instance — a security group opened, an AMI swapped — is still
+real drift and still reported.
 """
 
 from django.conf import settings
@@ -56,8 +57,12 @@ def suppression_enabled():
 
 def is_autoscaling_churn(raw_data):
     """
-    True if a *first-sighting* resource (no previous snapshot) should be counted
-    as autoscaling churn instead of added drift. Callers apply this only to the
-    "added" branch — changes to an existing resource are never suppressed.
+    True if a resource *appearing or disappearing* should be counted as
+    autoscaling churn instead of drift.
+
+    Both directions belong to the same existence dimension: a scale-out makes
+    an instance show up, a scale-in makes one vanish, and neither is Terraform
+    drifting. Callers apply this to the "added" and "removed" branches only —
+    an attribute change on a persistent instance is never suppressed.
     """
     return suppression_enabled() and is_autoscaling_managed(raw_data)

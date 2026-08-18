@@ -520,6 +520,8 @@ def _upsert_asset(environment, region, attrs, result):
     provider = resolve_provider(resource_type)
     name = attrs.get('name') or cloud_id
 
+    result['seen_ids'].add(cloud_id)
+
     asset, created = Asset.objects.get_or_create(
         cloud_id=cloud_id,
         defaults={
@@ -539,8 +541,42 @@ def _upsert_asset(environment, region, attrs, result):
         asset.raw_data_prev    = asset.raw_data
         asset.raw_data         = attrs
         asset.last_imported_at = timezone.now()
-        asset.save(update_fields=['raw_data', 'raw_data_prev', 'last_imported_at'])
+        fields = ['raw_data', 'raw_data_prev', 'last_imported_at']
+        if asset.missing_since:
+            # 消えたと判定した資産がまた見えた。誤検知だったか、作り直された
+            # かのどちらか。どちらにせよ現存するので印を外す（自己修復）。
+            asset.missing_since = None
+            fields.append('missing_since')
+            result['reappeared'] += 1
+        asset.save(update_fields=fields)
         result['updated'] += 1
+
+
+def _mark_missing(environment, covered, seen_ids, result):
+    """Flag assets AWS no longer returns — but only where we actually looked.
+
+    `covered` holds the (region, resource_type) pairs whose scanner finished
+    without raising. Anything that errored is deliberately absent, so a
+    throttled API call, an expired credential or a missing IAM permission can
+    never be mistaken for "the customer deleted their whole fleet." Erring
+    toward under-reporting is the only safe direction here: a ghost row is a
+    nuisance, a ledger wiped by a transient error is a catastrophe.
+
+    Rows are not deleted, only stamped. A resource that shows up again clears
+    its own flag in _upsert_asset().
+    """
+    now = timezone.now()
+    for region, resource_type in covered:
+        marked = Asset.objects.filter(
+            environment=environment,
+            region=region,
+            # tfstate 取込で入った行は対象外。live scan が書いた行だけを見る
+            # （_scan_source は scanner だけが付ける印）。
+            raw_data___scan_source='boto3',
+            raw_data___resource_type=resource_type,
+            missing_since__isnull=True,
+        ).exclude(cloud_id__in=seen_ids).update(missing_since=now)
+        result['missing'] += marked
 
 
 def run_scan(system, environment):
@@ -548,10 +584,16 @@ def run_scan(system, environment):
     Scan all configured AWS regions for a system and upsert Assets.
 
     Returns:
-        {'scanned': int, 'created': int, 'updated': int, 'errors': list[str]}
+        {'scanned': int, 'created': int, 'updated': int,
+         'missing': int, 'reappeared': int, 'errors': list[str]}
     """
     regions = system.aws_scan_regions or ['ap-northeast-1']
-    result = {'scanned': 0, 'created': 0, 'updated': 0, 'errors': []}
+    result = {'scanned': 0, 'created': 0, 'updated': 0,
+              'missing': 0, 'reappeared': 0, 'errors': []}
+    # 消滅判定に使う作業用。エラー無く見終えた (region, resource_type) だけを
+    # covered に入れ、その範囲に限って「見つからなかった＝消えた」と判定する。
+    seen_ids, covered = set(), []
+    result['seen_ids'] = seen_ids
 
     for region in regions:
         try:
@@ -570,6 +612,7 @@ def run_scan(system, environment):
 
             for attrs in items:
                 _upsert_asset(environment, region, attrs, result)
+            covered.append((region, resource_type))
 
     # Global services — scanned once via a us-east-1 session.
     try:
@@ -582,7 +625,11 @@ def run_scan(system, environment):
                 continue
             for attrs in items:
                 _upsert_asset(environment, 'global', attrs, result)
+            covered.append(('global', resource_type))
     except Exception as e:
         result['errors'].append(f"global: session error — {e}")
 
+    _mark_missing(environment, covered, seen_ids, result)
+
+    del result['seen_ids']
     return result
