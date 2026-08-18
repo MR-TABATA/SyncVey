@@ -67,6 +67,23 @@
         </form>
     </div>
 
+    {% if missing_count %}
+    <!-- 消えた資産の通知。既定では伏せているので、黙って減ったように見せない。 -->
+    <div class="mb-3 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200">
+        <i data-lucide="cloud-off" class="w-4 h-4 text-red-500 shrink-0"></i>
+        <span class="text-sm text-red-800">
+            {% blocktrans count counter=missing_count %}{{ counter }} resource is no longer in AWS.{% plural %}{{ counter }} resources are no longer in AWS.{% endblocktrans %}
+        </span>
+        <a
+            hx-get="{% url 'asset-list' %}?{{ toggle_query }}{% if not show_missing %}&show_missing=1{% endif %}"
+            hx-target="#main-content"
+            class="ml-auto text-sm font-semibold text-red-700 hover:text-red-900 underline cursor-pointer shrink-0"
+        >
+            {% if show_missing %}{% trans "Hide them" %}{% else %}{% trans "Show them" %}{% endif %}
+        </a>
+    </div>
+    {% endif %}
+
     {% if assets %}
     <!-- Add button -->
     <div class="mb-3 flex justify-end">
