@@ -11,7 +11,8 @@ class DriftSnapshot(BaseModel):
 
     detail には描画に必要な差分の中身をそのまま保存する:
         {'changed': [{type, name, cloud_id, provider, changes:[...]}, ...],
-         'added':   [{type, name, cloud_id, provider}, ...]}
+         'added':   [{type, name, cloud_id, provider}, ...],
+         'removed': [{type, name, cloud_id, provider}, ...]}
     """
 
     class Source(models.TextChoices):
@@ -33,6 +34,9 @@ class DriftSnapshot(BaseModel):
     )
     changed_count   = models.PositiveIntegerField(default=0, verbose_name=_("Changed"))
     added_count     = models.PositiveIntegerField(default=0, verbose_name=_("Added"))
+    # AWS 側から消えたリソース。added の裏返しで、これが無いと台帳は
+    # 幽霊を溜め続ける（消滅は差分ゼロ＝unchanged として黙殺されていた）。
+    removed_count   = models.PositiveIntegerField(default=0, verbose_name=_("Removed"))
     unchanged_count = models.PositiveIntegerField(default=0, verbose_name=_("Unchanged"))
     detail          = models.JSONField(default=dict, blank=True, verbose_name=_("Detail"))
     detected_at     = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_("Detected At"))
@@ -47,7 +51,7 @@ class DriftSnapshot(BaseModel):
 
     @property
     def total_count(self):
-        return self.changed_count + self.added_count
+        return self.changed_count + self.added_count + self.removed_count
 
     @property
     def has_drift(self):

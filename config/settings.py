@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     # Optional / detachable plugin apps (discovered via asset_manager.plugins).
     # Remove this line and the core hides the nav entry and 404s its routes.
     'syncvey_drift_risk.apps.DriftRiskConfig',
+    'syncvey_cli.apps.SyncveyCliConfig',
     'django_apscheduler',
 ]
 
@@ -230,6 +231,12 @@ DRIFT_DIGEST_ENABLED = _env_bool('DRIFT_DIGEST_ENABLED', False)
 # 有効なのに最後のローテーションからこの日数を超えた secret は「起きるべき
 # ローテーションが起きていない」ドリフトとして点灯する。2倍を超えると critical。
 SECRET_ROTATION_MAX_AGE_DAYS = int(os.getenv('SECRET_ROTATION_MAX_AGE_DAYS', '90') or '90')
+
+# Auto Scaling が所有するインスタンスの「登場」をドリフトとして数えない（cry-wolf
+# 対策）。既定ON＝スケールアウトで湧いた ASG インスタンスは added ではなく
+# autoscaling(churn)として別枠に。false で従来どおり added にカウント。属性変更は
+# 常に本物のドリフトとして扱う（抑制対象は「存在」次元のみ）。
+DRIFT_SUPPRESS_AUTOSCALING = _env_bool('DRIFT_SUPPRESS_AUTOSCALING', True)
 
 # Debug toolbar (Docker環境でも表示可能にする)
 INTERNAL_IPS = [

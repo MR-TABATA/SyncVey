@@ -60,3 +60,10 @@ test-results/
 
 # Playwright MCP browser artifacts
 .playwright-mcp/
+
+# ========================
+# Private / confidential (NEVER commit)
+# ========================
+# Non-public roadmap, incl. paid-tier plans, posting schedule, positioning.
+# Must never reach the public repo. See .private/ROADMAP.md header.
+/.private/

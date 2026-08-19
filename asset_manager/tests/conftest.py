@@ -81,6 +81,9 @@ def logged_in_page(page, live_server, admin_user):
     page.fill("[name=password]", "testpass123")
     page.click("[type=submit]")
     page.wait_for_url(f"{live_server.url}/")
+    # wait_for_url は URL が一致した時点で返るため、直後に goto/evaluate を
+    # 重ねると遷移が確定しておらず実行コンテキストが壊れることがある。
+    page.wait_for_load_state("load")
     return page
 
 

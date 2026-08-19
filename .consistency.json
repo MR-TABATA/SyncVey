@@ -1,0 +1,28 @@
+{
+  "product": "SyncVey",
+
+  "_note": "Django 製の SyncVey に効く節だけ有効化した設定。設定に無い節は check_consistency.py が検査ごとスキップする。無効化した節と理由: versions(単一アプリ版が無い) / generated_site(docs/ は手書きで src+ビルダが無い) / lang_parity(docs は index.en/ja と別ファイルで data-en/ja 方式でない) / i18n(Django gettext .po で Swift .strings 形式でない・独自の asset_manager/i18n_check.py が別にある) / release_docs(GitHub リリース/タグが無い) / pro_gate(Pro ゲート未導入・Swift 前提)。",
+
+  "measured": {
+    "_comment": "同じ指標に別の値が残っていないかを見る（README EN/JA・LP 間のうっかり片側書き換え検出）。family で拾い、canonical 以外を不整合として落とす。バージョンを上げたら canonical を上げて全文書を揃える。",
+    "Python バージョン": {
+      "canonical": "Python 3\\.12",
+      "family": "Python 3\\.[0-9]+"
+    },
+    "PostgreSQL バージョン": {
+      "canonical": "PostgreSQL 18\\.3",
+      "family": "PostgreSQL [0-9]+\\.[0-9]+"
+    },
+    "htmx バージョン": {
+      "canonical": "htmx 1\\.9",
+      "family": "htmx [0-9]+\\.[0-9]+"
+    },
+    "スキャン対応リソース種別数": {
+      "note": "英語 '17+ resource types' と日本語 '17 種以上'。片方だけ数を変えたら検出する。",
+      "canonical": "17\\+ resource types|17 種以上",
+      "family": "[0-9]+\\+ resource types|[0-9]+ ?種以上"
+    }
+  },
+
+  "docs": ["README.md", "README.ja.md", "docs/index.en.html", "docs/index.ja.html"]
+}

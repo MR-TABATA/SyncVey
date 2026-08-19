@@ -140,20 +140,37 @@ def _get_env_drift_summary(environment) -> dict:
     環境カードのバッジ用。
     {'changed': N, 'added': N, 'total': N, 'has_data': bool}
     """
-    assets = environment.assets.only('raw_data', 'raw_data_prev', 'last_imported_at')
-    changed = added = 0
+    from .autoscaling import is_autoscaling_churn
+
+    assets = environment.assets.only(
+        'raw_data', 'raw_data_prev', 'last_imported_at', 'missing_since',
+    )
+    changed = added = removed = autoscaling = 0
     has_data = False
     for asset in assets:
         if asset.last_imported_at:
             has_data = True
-        if not asset.raw_data_prev:
-            added += 1
+        if asset.missing_since:
+            # AWS から消えた。ASG のスケールインなら churn（added の抑制と
+            # 対称）、それ以外は本物の removed ドリフト。
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling += 1
+            else:
+                removed += 1
+        elif not asset.raw_data_prev:
+            # An ASG-owned first-sighting is churn, not an add (cry-wolf fix).
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling += 1
+            else:
+                added += 1
         elif _compute_raw_diff(asset.raw_data_prev, asset.raw_data):
             # 生の != ではなく drift レポートと同じ判定にする。
             # スキーマ非対称(tfstate全属性 vs scan厳選)で raw_data != prev が
             # 常に真になり、バッジ件数が膨らむのを防ぐ。
             changed += 1
-    return {'changed': changed, 'added': added, 'total': changed + added, 'has_data': has_data}
+    return {'changed': changed, 'added': added, 'removed': removed,
+            'autoscaling': autoscaling,
+            'total': changed + added + removed, 'has_data': has_data}
 
 
 def _record_drift_snapshot(environment, source):
@@ -163,12 +180,14 @@ def _record_drift_snapshot(environment, source):
     資産が無い環境では何もしない。差分ゼロでも推移を残すため記録する。
     """
     from .models import DriftSnapshot
+    from .autoscaling import is_autoscaling_churn
 
     assets = environment.assets.only(
         'asset_type', 'name', 'cloud_id', 'provider', 'raw_data', 'raw_data_prev',
+        'missing_since',
     ).order_by('asset_type', 'name')
 
-    changed, added, unchanged = [], [], 0
+    changed, added, removed, autoscaling, unchanged = [], [], [], [], 0
     for asset in assets:
         meta = {
             'type':     asset.asset_type,
@@ -176,8 +195,20 @@ def _record_drift_snapshot(environment, source):
             'cloud_id': asset.cloud_id,
             'provider': asset.provider,
         }
-        if not asset.raw_data_prev:
-            added.append(meta)
+        if asset.missing_since:
+            # AWS から消えたリソース。ASG のスケールインは churn として
+            # 別枠に逃がす（スケールアウトを added から外したのと対称）。
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append(meta)
+            else:
+                removed.append(meta)
+        elif not asset.raw_data_prev:
+            # ASG-owned first-sighting = autoscaling churn, kept out of the drift
+            # counts but recorded so the history is honest about what happened.
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append(meta)
+            else:
+                added.append(meta)
         else:
             diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
             if diff:
@@ -185,7 +216,7 @@ def _record_drift_snapshot(environment, source):
             else:
                 unchanged += 1
 
-    if not (changed or added or unchanged):
+    if not (changed or added or removed or autoscaling or unchanged):
         return None
 
     snapshot = DriftSnapshot.objects.create(
@@ -193,8 +224,10 @@ def _record_drift_snapshot(environment, source):
         source=source,
         changed_count=len(changed),
         added_count=len(added),
+        removed_count=len(removed),
         unchanged_count=unchanged,
-        detail={'changed': changed, 'added': added},
+        detail={'changed': changed, 'added': added, 'removed': removed,
+                'autoscaling': autoscaling},
     )
     # 差分ゼロでも毎回1行積むため、env ごとに上限を超えた古い分を間引く
     DriftSnapshot.prune(environment)
@@ -614,6 +647,9 @@ def asset_list_view(request):
     asset_type_filter = request.GET.get('asset_type', '')
     system_id         = request.GET.get('system_id')
     environment_id    = request.GET.get('environment_id')
+    # AWS から消えた資産は既定で伏せる（台帳を「今あるもの」に保つ）。
+    # ?show_missing=1 で消えた分も並べて出せる。行自体は消していない。
+    show_missing      = request.GET.get('show_missing') == '1'
 
     try:
         assets = Asset.objects.select_related('environment', 'environment__system').all()
@@ -645,12 +681,27 @@ def asset_list_view(request):
     if asset_type_filter and asset_type_filter != 'ALL':
         assets = assets.filter(asset_type=asset_type_filter)
 
+    # 伏せる前に件数を数えて「N 件が消えています」と出せるようにする。
+    # 黙って減らすと台帳が壊れたように見えるため。
+    missing_count = assets.filter(missing_since__isnull=False).count()
+    if not show_missing:
+        assets = assets.filter(missing_since__isnull=True)
+
+    # 表示トグル用のリンク先。show_missing を落とした素のクエリを作り、
+    # テンプレート側で付け外しする（テンプレートで GET を編集できないため）。
+    base_params = request.GET.copy()
+    base_params.pop('show_missing', None)
+    toggle_query = base_params.urlencode()
+
     return render(request, '_asset_list.html', {
         'assets':               assets.order_by('-updated_at'),
         'selected_system':      selected_system,
         'selected_environment': selected_environment,
         'provider_choices':     get_provider_choices(),
         'active_asset_type':    asset_type_filter,
+        'missing_count':        missing_count,
+        'show_missing':         show_missing,
+        'toggle_query':         toggle_query,
     })
 
 
@@ -1566,18 +1617,36 @@ def drift_report_view(request, environment_id):
     環境単位の Drift レポート。
     - CHANGED : raw_data_prev と raw_data が異なる
     - ADDED   : raw_data_prev が空（= 前回インポート時に存在しなかった）
+    - REMOVED : AWS 側から消えた（missing_since が立っている）
     - UNCHANGED: 変化なし
     """
+    from .autoscaling import is_autoscaling_churn, autoscaling_group_of
+
     env    = _user_environment_or_404(request, environment_id)
     assets = env.assets.order_by('asset_type', 'name')
 
-    added     = []
-    changed   = []
-    unchanged = []
+    added       = []
+    changed     = []
+    removed     = []
+    autoscaling = []
+    unchanged   = []
 
     for asset in assets:
-        if not asset.raw_data_prev:
-            added.append({'asset': asset})
+        if asset.missing_since:
+            # 消滅も「存在」次元なので、ASG 由来なら churn 側へ。
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append({'asset': asset,
+                                    'group': autoscaling_group_of(asset.raw_data),
+                                    'gone': True})
+            else:
+                removed.append({'asset': asset})
+        elif not asset.raw_data_prev:
+            # ASG-owned first-sighting is churn, not drift — shown in its own
+            # section so it's transparent, not silently hidden.
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append({'asset': asset, 'group': autoscaling_group_of(asset.raw_data)})
+            else:
+                added.append({'asset': asset})
         else:
             diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
             if diff:
@@ -1589,6 +1658,8 @@ def drift_report_view(request, environment_id):
         'environment': env,
         'added':       added,
         'changed':     changed,
+        'removed':     removed,
+        'autoscaling': autoscaling,
         'unchanged':   unchanged,
     })
 
@@ -1629,6 +1700,7 @@ def drift_snapshot_detail_view(request, environment_id, snapshot_id):
         'snapshot':    snapshot,
         'changed':     detail.get('changed', []),
         'added':       detail.get('added', []),
+        'removed':     detail.get('removed', []),
     })
 
 

@@ -56,10 +56,13 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 | **AWSスキャン** | AssumeRole で対象アカウントの 18 種のリソース（コンピュート・DB・ストレージ・ネットワーク・メッセージング）を自動検出 |
 | **Terraform連携** | tfstate をアップロードして資産をインポート |
 | **ドリフト検知** | tfstate と AWS 実態の属性レベルの差分を検出 |
+| **Auto Scaling を考慮したドリフト** | Auto Scaling が起動/終了したインスタンスは「ドリフト」ではなく churn（増減）。既にスキャン済みの `aws:autoscaling:groupName` タグを読むだけ（追加のAPI呼び出しもIAMも不要）で、スケールアウト/インをドリフト件数から除外し、専用セクションに透過表示。永続インスタンスの属性変更は従来どおり本物のドリフト。`DRIFT_SUPPRESS_AUTOSCALING` で切替 |
+| **削除リソースの検出** | AWS から消えたリソースを台帳上で印付けし、*removed* ドリフトとして報告。行は削除せず残すので「何があって、いつ消えたか」を後から追える。判定はエラー無くスキャンできたリージョン・リソース種別に限定するため、API のスロットリングや資格情報切れを大量削除と取り違えることがない。再び現れれば印は自動的に外れる。Auto Scaling のスケールインは churn 扱いでドリフトに数えない |
 | **ドリフト履歴** | 差分の推移を記録。スキャン/インポートのたびにスナップショットを保存し、推移グラフと各時点の差分を表示 |
 | **ドリフトのリスク評価・犯人特定** | ドリフトをセキュリティ影響度で採点（例: セキュリティグループが `0.0.0.0/0` に開放）し、誰がそのリソースを変更したかを CloudTrail で特定 |
 | **シークレットのローテーション・ドリフト** | ローテーションされるべきなのにされていない Secrets Manager のシークレットを検出 — ローテーション無効・一度も実行されていない・`SECRET_ROTATION_MAX_AGE_DAYS`（既定 90 日）の上限超過。差分ではなく現在の状態を採点するため、2 回のスキャン間で何も変化していなくても表面化する。取得するのはメタデータのみで、シークレットの値は読み取らず保存もしない |
 | **ドリフト・ブリーフィング** | システム単位の週次 Slack サマリ（任意）— 重大度の内訳、前週比のトレンド、危険な変更トップと実行者。`DRIFT_DIGEST_ENABLED` でオプトイン |
+| **コマンドライン** *(オプションのプラグイン)* | `manage.py syncvey scan / drift / status` で、ターミナルや CI からスキャンとドリフト確認を実行 — ダッシュボードと同じエンジンを駆動。`drift --exit-code` はドリフトがあればビルドを失敗させ、`--format json` はパイプラインに渡せる。着脱可能で、アプリを外せばコマンドも消える |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告（既定オフライン・任意で日次更新） |
 | **構成図** | 環境内のリソース関係を可視化 |
@@ -203,6 +206,34 @@ SyncVey は JSON REST API ではなく、htmx ベースのサーバーサイド�
 
 ---
 
+## コマンドライン *(オプションのプラグイン)*
+
+`syncvey_cli` プラグインは `syncvey` 管理コマンドを追加し、オペレーターや CI
+パイプラインが Web UI を開かずにスキャン実行とドリフト確認をできるようにする。
+駆動するのはダッシュボードと同じスキャン/ドリフトのエンジンなので、「何をドリフト
+とみなすか」で両者が食い違うことはない。
+
+```bash
+# ライブ AWS スキャンを実行しドリフトのスナップショットを記録（全システム or 1つ）
+docker compose exec app python manage.py syncvey scan --system e-commerce
+
+# 現在のドリフトを表示。--format json でパイプラインに渡せる
+docker compose exec app python manage.py syncvey drift --env prod
+
+# ドリフトがあればビルドを失敗させる — CI ステップに差し込む
+docker compose exec app python manage.py syncvey drift --exit-code
+
+# システム/環境を資産数と最終スキャン時刻つきで一覧
+docker compose exec app python manage.py syncvey status
+```
+
+終了コードが CI の契約: `0` = 正常 / ドリフト無し、`1` = ドリフト検出
+（`drift --exit-code` 時のみ）、`2` = スキャンジョブ失敗、またはセレクタが何にも
+一致せず。他のプラグイン同様に着脱可能で、`INSTALLED_APPS` から `syncvey_cli`
+を外せばコマンドも消える。
+
+---
+
 ## データモデル
 
 ```
@@ -229,6 +260,16 @@ docker compose exec app python manage.py makemigrations
 docker compose logs -f app
 docker compose logs -f db
 ```
+
+---
+
+## プロジェクト
+
+| | |
+| --- | --- |
+| リリースと変更履歴 | [CHANGELOG.md](CHANGELOG.md) |
+| 脆弱性の報告 | [SECURITY.ja.md](SECURITY.ja.md) — 公開 Issue は使わないでください |
+| 開発への参加 | [CONTRIBUTING.ja.md](CONTRIBUTING.ja.md) |
 
 ---
 

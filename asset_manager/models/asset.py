@@ -41,6 +41,13 @@ class Asset(BaseModel):
     raw_data         = models.JSONField(default=dict, blank=True, verbose_name=_("Raw Data"))
     raw_data_prev    = models.JSONField(default=dict, blank=True, verbose_name=_("Previous Raw Data"))
     last_imported_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Imported At"))
+    # AWS 側から消えたと判定した時刻。スキャンが「そのリソース種別・その
+    # リージョンをエラーなく見終えた上で見つからなかった」時にだけ立てる。
+    # 行は消さない（ソフト削除）: 誤検知しても再出現で自動的に None へ戻り、
+    # 「いつ消えたか」が履歴に残る。
+    missing_since    = models.DateTimeField(
+        null=True, blank=True, db_index=True, verbose_name=_("Missing Since"),
+    )
     memo             = models.TextField(blank=True, null=True, verbose_name=_("Memo"))
 
     class Meta:
@@ -50,3 +57,8 @@ class Asset(BaseModel):
 
     def __str__(self):
         return f"[{self.asset_type}] {self.name}"
+
+    @property
+    def is_missing(self):
+        """AWS 側から消えている（台帳にだけ残っている）か。"""
+        return self.missing_since is not None
