@@ -17,6 +17,9 @@ urlpatterns = [
 if apps.is_installed('syncvey_drift_risk'):
     urlpatterns += [path('', include('syncvey_drift_risk.urls'))]
 
+if apps.is_installed('syncvey_blast_radius'):
+    urlpatterns += [path('', include('syncvey_blast_radius.urls'))]
+
 if settings.DEBUG:
     urlpatterns = [
         path('__debug__/', include('debug_toolbar.urls')),
