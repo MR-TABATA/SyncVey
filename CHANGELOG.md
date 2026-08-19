@@ -8,6 +8,26 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- Blast radius *(plugin)* — walk the resource reference graph outward from each
+  drift and rank everything it reaches by severity-weighted, distance-decayed
+  impact. Recovers the dependency graph from scanned attribute values, scoped
+  per environment so identical IDs in different environments never wire
+  together. Detachable like the other plugins (#15)
+- CI gate for unreviewed translations — `makemessages` never leaves a new
+  string blank; it copies the nearest existing translation and marks the guess
+  `#, fuzzy`. From there the string either silently falls back to English or
+  ships visibly wrong, and neither is visible to a reviewer reading the diff in
+  the source language. The gate fails the build on fuzzy or empty entries (#13)
+
+### Fixed
+
+- 50 translatable strings had never been extracted into the Japanese catalogue
+  and rendered in English inside the Japanese UI — 21 drift-risk templates,
+  13 drift-risk Python strings, and 17 in the dashboard hero band. All reviewed
+  and translated by hand (#14)
+
 ## [0.1.0] — 2026-08-19
 
 First tagged release. SyncVey has been usable for a while; this marks the point
