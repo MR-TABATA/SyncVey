@@ -139,6 +139,23 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # --- 翻訳カタログ（DB もパッケージも不要・純 stdlib） --------------------
+  i18n:
+    name: No unreviewed translations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # fuzzy（機械推測のまま未レビュー）と空の msgstr でビルドを落とす。
+      # 同じ判定は test_i18n_catalog.py にも入っているが、あちらは
+      # Postgres と依存一式が要る。こちらは数秒で返る早期シグナル。
+      - name: Fail on fuzzy or empty translations
+        run: python -m asset_manager.i18n_check
+
   # --- ドキュメント整合性（DB 不要・数秒） ---------------------------------
   consistency:
     name: doc consistency
