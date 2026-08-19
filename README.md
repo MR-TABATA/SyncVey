@@ -81,9 +81,12 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **AWS scan** | Auto-discover 17+ resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
+| **Auto Scaling-aware drift** | Instances an Auto Scaling group launched or terminated are churn, not drift. SyncVey reads the `aws:autoscaling:groupName` tag it already scans — no extra API call or IAM — and keeps scale-out/in out of the drift count, shown transparently in their own section. Attribute changes on a persistent instance are still real drift. Toggle with `DRIFT_SUPPRESS_AUTOSCALING` |
+| **Deleted-resource detection** | A resource that vanishes from AWS is flagged in the ledger and reported as *removed* drift — the row is kept, not deleted, so you can still see what was there and when it went. Marking only happens for the regions and resource types that scanned cleanly, so a throttled API call or an expired credential can never be mistaken for a mass deletion. If the resource comes back, the flag clears itself. Auto Scaling scale-in counts as churn, not drift |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
+| **Command line** *(optional plugin)* | Drive scan and drift from a terminal or CI with `manage.py syncvey scan / drift / status` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
 | **Architecture diagram** | Visualize resource relationships within an environment |
@@ -229,6 +232,34 @@ Full route list: [asset_manager/urls.py](asset_manager/urls.py)
 
 ---
 
+## Command line *(optional plugin)*
+
+The `syncvey_cli` plugin adds a `syncvey` management command so an operator — or
+a CI pipeline — can trigger a scan and read drift without opening the web UI. It
+drives the same scan/drift engine the dashboard does, so it can never disagree
+about what counts as drift.
+
+```bash
+# Run a live AWS scan and record a drift snapshot (all systems, or one)
+docker compose exec app python manage.py syncvey scan --system e-commerce
+
+# Print the current drift; add --format json to feed a pipeline
+docker compose exec app python manage.py syncvey drift --env prod
+
+# Fail the build on any drift — drop this into a CI step
+docker compose exec app python manage.py syncvey drift --exit-code
+
+# List systems / environments with asset counts and last-scan time
+docker compose exec app python manage.py syncvey status
+```
+
+Exit codes are the CI contract: `0` = ok / no drift, `1` = drift found
+(only with `drift --exit-code`), `2` = a scan job failed or the selector
+matched nothing. Detachable like the other plugins — remove
+`syncvey_cli` from `INSTALLED_APPS` and the command disappears.
+
+---
+
 ## Data model
 
 ```
@@ -255,6 +286,16 @@ docker compose exec app python manage.py makemigrations
 docker compose logs -f app
 docker compose logs -f db
 ```
+
+---
+
+## Project
+
+| | |
+| --- | --- |
+| Releases and changes | [CHANGELOG.md](CHANGELOG.md) |
+| Reporting a vulnerability | [SECURITY.md](SECURITY.md) — please don't use a public issue |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 ---
 

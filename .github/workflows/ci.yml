@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同じブランチへ続けて push した時、古い実行は捨てる。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # settings.py は DATABASE_URL 必須。SECRET_KEY はテスト中なら未設定でも
+  # 起動するが、本番と同じ経路（DEBUG=False）を通すため明示する。
+  SECRET_KEY: ci-not-a-real-secret
+  DEBUG: "False"
+  # DEBUG=False の既定は Cookie Secure。CI は平文 HTTP なので明示的に外す
+  # （外さないと live_server 相手のログインでセッションが保持されない）。
+  SESSION_COOKIE_SECURE: "False"
+  CSRF_COOKIE_SECURE: "False"
+  # 外向き通信を伴う任意機能は CI では止めておく。
+  EOL_REFRESH_ENABLED: "false"
+  DRIFT_DIGEST_ENABLED: "false"
+
+jobs:
+  # --- 単体・結合（Playwright 不要な全部） ---------------------------------
+  tests:
+    name: tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 は Dockerfile/README が謳う出荷版。3.13 は開発ホストが使う版で、
+        # 出荷版との乖離を早く見つけるために一緒に回す。
+        python-version: ["3.12", "3.13"]
+
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: syncvey_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/syncvey_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        # -o addopts="" で pytest.ini の Playwright 用フラグ
+        # (--screenshot/--output) を落とす。E2E は別ジョブ。
+        # プラグイン（detachable app）にテストを足した時、黙って CI から
+        # 漏れないよう最初から対象に入れておく（今は 0 件でも害はない）。
+        run: |
+          pytest asset_manager syncvey_drift_risk syncvey_cli \
+            --ignore=asset_manager/tests/test_e2e.py \
+            -o addopts="" -q
+
+  # --- E2E（Playwright。ブラウザを入れるぶん重いので分離） -----------------
+  e2e:
+    name: e2e (playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: syncvey_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/syncvey_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Install Playwright browser
+        run: playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pytest asset_manager/tests/test_e2e.py -q
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # --- ドキュメント整合性（DB 不要・数秒） ---------------------------------
+  consistency:
+    name: doc consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # release_docs の検査がタグを読むため、履歴とタグを取る。
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check docs / LP / i18n consistency
+        run: python scripts/check_consistency.py

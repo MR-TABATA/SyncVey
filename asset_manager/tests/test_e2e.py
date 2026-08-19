@@ -18,6 +18,8 @@ E2E UIテスト（Playwright）。
 import pytest
 from unittest.mock import patch
 
+from asset_manager.views import _SAMPLE_META
+
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
@@ -286,15 +288,38 @@ class TestSecretWarning:
         assert 'Sensitive data detected' not in resp.text()
 
 
+def _htmx_load(page, live_server, url):
+    """ダッシュボードを開き、htmx で url を #main-content に差し込む。
+
+    以前は goto → networkidle → evaluate と書いていたが、読み込みが確定する
+    前に評価してしまい数回に1回
+    "Execution context was destroyed, most likely because of a navigation."
+    で落ちていた。wait_for_function はコンテキストが壊れても再評価されるので、
+    ajax の発火ごとその中に入れて htmx が載るまで自然に待たせる。
+    """
+    page.goto(f"{live_server.url}/")
+    page.wait_for_load_state("load")
+    page.wait_for_function(
+        """url => {
+            if (!window.htmx) return false;
+            htmx.ajax('GET', url, {target: '#main-content', swap: 'innerHTML'});
+            return true;
+        }""",
+        arg=url,
+    )
+
+
+# ビューアの検証に使うサンプル名。かつては 'ecsite-prod.tfstate' がベタ書き
+# されていたが、そのファイルはサンプル一式に存在せず、3 つのテストが黙って
+# 404 を踏み続けていた。実在する一覧の先頭から採って二度と腐らせない。
+SAMPLE_FILENAME = next(iter(_SAMPLE_META))
+
+
 class TestSampleLibrary:
 
     def _open_sample_list(self, page, live_server):
         """サイドバーの Sample Library をクリックして一覧を開く。"""
-        page.goto(f"{live_server.url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("""
-            htmx.ajax('GET', '/samples/', {target: '#main-content', swap: 'innerHTML'})
-        """)
+        _htmx_load(page, live_server, '/samples/')
         # HTMX でコンテンツが差し込まれるまで待つ（Import Sample ボタンが目印）
         page.wait_for_selector("button:has-text('Import Sample')", timeout=15_000)
 
@@ -315,12 +340,7 @@ class TestSampleLibrary:
     def test_sample_viewer_shows_json(self, logged_in_page, live_server):
         """「View File」でJSONビューアが開き、tfstateの中身が見えること。"""
         page = logged_in_page
-        page.goto(f"{live_server.url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("""
-            htmx.ajax('GET', '/samples/ecsite-prod.tfstate/view/',
-                      {target: '#main-content', swap: 'innerHTML'})
-        """)
+        _htmx_load(page, live_server, f'/samples/{SAMPLE_FILENAME}/view/')
         # コードブロックが現れること
         page.wait_for_selector("#json-content", timeout=10_000)
         json_text = page.locator("#json-content").inner_text()
@@ -331,31 +351,21 @@ class TestSampleLibrary:
     def test_sample_viewer_has_download_link(self, logged_in_page, live_server):
         """JSONビューアにダウンロードリンクが存在すること。"""
         page = logged_in_page
-        page.goto(f"{live_server.url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("""
-            htmx.ajax('GET', '/samples/ecsite-prod.tfstate/view/',
-                      {target: '#main-content', swap: 'innerHTML'})
-        """)
+        _htmx_load(page, live_server, f'/samples/{SAMPLE_FILENAME}/view/')
         page.wait_for_selector("#json-content", timeout=10_000)
-        download_link = page.locator(f"a[href*='/samples/ecsite-prod.tfstate/download/']")
+        download_link = page.locator(f"a[href*='/samples/{SAMPLE_FILENAME}/download/']")
         assert download_link.is_visible()
 
     def test_sample_download_triggers_file(self, logged_in_page, live_server):
         """ダウンロードリンクをクリックするとファイルが降ってくること。"""
         page = logged_in_page
-        page.goto(f"{live_server.url}/")
-        page.wait_for_load_state("networkidle")
-        page.evaluate("""
-            htmx.ajax('GET', '/samples/ecsite-prod.tfstate/view/',
-                      {target: '#main-content', swap: 'innerHTML'})
-        """)
+        _htmx_load(page, live_server, f'/samples/{SAMPLE_FILENAME}/view/')
         page.wait_for_selector("#json-content", timeout=10_000)
 
         with page.expect_download() as dl_info:
-            page.click(f"a[href*='/samples/ecsite-prod.tfstate/download/']")
+            page.click(f"a[href*='/samples/{SAMPLE_FILENAME}/download/']")
         download = dl_info.value
-        assert download.suggested_filename == "ecsite-prod.tfstate"
+        assert download.suggested_filename == SAMPLE_FILENAME
 
     def test_sample_import_creates_assets(self, logged_in_page, live_server):
         """「Import Sample」ボタンで資産がDBに作成されること。"""

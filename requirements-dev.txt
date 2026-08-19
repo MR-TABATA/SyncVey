@@ -5,3 +5,6 @@ moto[all]
 pytest
 pytest-django
 pytest-playwright
+# pytest.ini の `env =` (DJANGO_ALLOW_ASYNC_UNSAFE) を解釈するのに必要。
+# 無いと設定が黙って無視され、E2E が SynchronousOnlyOperation で全滅する。
+pytest-env

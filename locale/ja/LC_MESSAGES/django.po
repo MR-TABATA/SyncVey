@@ -1400,6 +1400,43 @@ msgstr "確認"
 msgid "Back to Sign In"
 msgstr "ログインに戻る"
 
+# --- 削除リソースの検出（prune） ---
+#: templates/_drift_report.html templates/_drift_snapshot.html
+#: templates/_drift_history.html templates/_environment_list.html
+msgid "removed"
+msgstr "削除"
+
+#: templates/_drift_report.html
+msgid ""
+"Present in the ledger but no longer returned by AWS. The row is kept — if "
+"the resource shows up again, this clears itself."
+msgstr ""
+"台帳には在るが AWS からは返って来なくなったもの。行は残してあるので、再び現れ"
+"れば自動的に元に戻る。"
+
+#: templates/_drift_report.html
+#, python-format
+msgid "Gone since %(when)s"
+msgstr "%(when)s に消失"
+
+#: templates/_drift_snapshot.html
+msgid "Gone from AWS"
+msgstr "AWS から消失"
+
+#: templates/_asset_list.html
+#, python-format
+msgid "%(counter)s resource is no longer in AWS."
+msgid_plural "%(counter)s resources are no longer in AWS."
+msgstr[0] "%(counter)s 件のリソースが AWS 上に存在しません。"
+
+#: templates/_asset_list.html
+msgid "Show them"
+msgstr "表示する"
+
+#: templates/_asset_list.html
+msgid "Hide them"
+msgstr "隠す"
+
 #~ msgid "Company Name"
 #~ msgstr "会社名"
 
