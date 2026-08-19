@@ -289,6 +289,16 @@ docker compose logs -f db
 
 ---
 
+## Project
+
+| | |
+| --- | --- |
+| Releases and changes | [CHANGELOG.md](CHANGELOG.md) |
+| Reporting a vulnerability | [SECURITY.md](SECURITY.md) — please don't use a public issue |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+---
+
 ## License
 
 [MIT](LICENSE)

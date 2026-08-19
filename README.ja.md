@@ -262,6 +262,16 @@ docker compose logs -f db
 
 ---
 
+## プロジェクト
+
+| | |
+| --- | --- |
+| リリースと変更履歴 | [CHANGELOG.md](CHANGELOG.md) |
+| 脆弱性の報告 | [SECURITY.ja.md](SECURITY.ja.md) — 公開 Issue は使わないでください |
+| 開発への参加 | [CONTRIBUTING.ja.md](CONTRIBUTING.ja.md) |
+
+---
+
 ## ライセンス
 
 [MIT](LICENSE)
