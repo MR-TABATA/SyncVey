@@ -360,6 +360,11 @@
         <p>Not every drift is equal. SyncVey grades each change by security impact — a security group opened to 0.0.0.0/0 is flagged critical, a tag tweak isn't. Then ask "Who changed this?" and it traces the change to the actor via CloudTrail. Opt in to a weekly Slack briefing and it lands in your channel every Monday. What changed, how bad, and who to talk to.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-icon">🔁</div>
+        <h3>Catch the rotation that never happened</h3>
+        <p>A secret that hasn't rotated in 200 days produces no diff — nothing changed between two scans, and that is exactly the problem. SyncVey grades rotation on current state instead: disabled, never run, or past your age limit. It reads only the rotation metadata; the secret value is never fetched or stored.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon">🔑</div>
         <h3>Run with least-privilege IAM</h3>
         <p>No broad ReadOnlyAccess. SyncVey ships with a custom IAM policy scoped to the exact read permissions needed for scanning — nothing more, nothing less.</p>

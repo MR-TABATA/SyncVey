@@ -77,14 +77,15 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 
 | Feature | Description |
 |---------|-------------|
-| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, CloudFront, Route 53 resources — and more |
-| **AWS scan** | Auto-discover 17+ resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
+| **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, Secrets Manager, CloudFront, Route 53 resources — and more |
+| **AWS scan** | Auto-discover 18 resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
 | **Terraform integration** | Import assets by uploading a tfstate file |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Auto Scaling-aware drift** | Instances an Auto Scaling group launched or terminated are churn, not drift. SyncVey reads the `aws:autoscaling:groupName` tag it already scans — no extra API call or IAM — and keeps scale-out/in out of the drift count, shown transparently in their own section. Attribute changes on a persistent instance are still real drift. Toggle with `DRIFT_SUPPRESS_AUTOSCALING` |
 | **Deleted-resource detection** | A resource that vanishes from AWS is flagged in the ledger and reported as *removed* drift — the row is kept, not deleted, so you can still see what was there and when it went. Marking only happens for the regions and resource types that scanned cleanly, so a throttled API call or an expired credential can never be mistaken for a mass deletion. If the resource comes back, the flag clears itself. Auto Scaling scale-in counts as churn, not drift |
 | **Drift history** | Track drift over time — every scan/import records a snapshot, with a trend chart and per-snapshot diff |
 | **Drift risk & attribution** | Grade drift by security impact (e.g. a security group opened to `0.0.0.0/0`) and trace *who* changed a resource via CloudTrail |
+| **Secret rotation drift** | Flag Secrets Manager secrets that *should* have rotated but didn't — rotation disabled, never run, or past the `SECRET_ROTATION_MAX_AGE_DAYS` limit (default 90). Graded on current state, so it surfaces even when nothing changed between two scans. Metadata only: the secret value is never read or stored |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
 | **Command line** *(optional plugin)* | Drive scan and drift from a terminal or CI with `manage.py syncvey scan / drift / status` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
