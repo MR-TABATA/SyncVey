@@ -61,7 +61,9 @@ def build_digest(system, days=7, attribute=True, top_n=5):
             .order_by('-detected_at').first()
         )
         if latest:
-            total_now += latest.changed_count + latest.added_count
+            # total_count は removed も含む。ここで手計算すると、区分が
+            # 増えるたびに数え落とす（実際 removed_count で落とした）。
+            total_now += latest.total_count
             for item in (latest.detail or {}).get('changed', []):
                 result = assess(item.get('type', ''), item.get('changes', []))
                 severity_counts[result['severity']] += 1
@@ -82,7 +84,7 @@ def build_digest(system, days=7, attribute=True, top_n=5):
         )
         if prev:
             has_prev = True
-            total_prev += prev.changed_count + prev.added_count
+            total_prev += prev.total_count
 
     top.sort(key=lambda t: SEVERITY_ORDER[t['severity']], reverse=True)
     top = top[:top_n]

@@ -397,13 +397,15 @@ def _get_dashboard_signals(org=None):
             DriftSnapshot.objects
             .filter(environment__system__organization=org)
             .order_by('environment_id', '-detected_at')
-            .values('environment_id', 'changed_count', 'added_count')
+            .values('environment_id', 'changed_count', 'added_count', 'removed_count')
         )
         latest_by_env = {}   # env_id -> total_count（最新）
         prev_by_env   = {}   # env_id -> total_count（2番目に新しい）
         for r in rows:
             env_id = r['environment_id']
-            total  = r['changed_count'] + r['added_count']
+            # DriftSnapshot.total_count と同じ内訳にすること。ここは .values()
+            # で回すためプロパティを使えず、追従漏れが起きやすい。
+            total  = r['changed_count'] + r['added_count'] + r['removed_count']
             if env_id not in latest_by_env:
                 latest_by_env[env_id] = total
             elif env_id not in prev_by_env:

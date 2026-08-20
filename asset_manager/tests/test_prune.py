@@ -345,3 +345,42 @@ class TestDriftReportRendersRemoved(TestCase):
         resp = self.client.get(f'/environments/{self.env.id}/drift/')
         self.assertEqual(len(resp.context['removed']), 0)
         self.assertEqual(len(resp.context['autoscaling']), 1)
+
+
+# ---------------------------------------------------------------------------
+# removed を「総数」に数え落とさない
+# ---------------------------------------------------------------------------
+
+class TestRemovedCountsTowardTotals(TestCase):
+    """DriftSnapshot の集計を .values() や手計算で回している箇所は、区分が
+    増えるたびに数え落とす。実際 removed_count 追加時にヒーロー帯と週次
+    ブリーフィングの両方が落としていた。"""
+
+    def setUp(self):
+        from asset_manager.models import DriftSnapshot
+        self.system, self.env = _make_env()
+        # 削除だけが起きた環境（changed も added もゼロ）
+        DriftSnapshot.objects.create(
+            environment=self.env, source='scan',
+            changed_count=0, added_count=0, removed_count=3, unchanged_count=5,
+            detail={'changed': [], 'added': [],
+                    'removed': [{'type': 'EC2', 'name': 'gone', 'cloud_id': 'i-gone',
+                                 'provider': 'AWS'}]},
+        )
+
+    def test_snapshot_total_includes_removed(self):
+        from asset_manager.models import DriftSnapshot
+        snap = DriftSnapshot.objects.get(environment=self.env)
+        self.assertEqual(snap.total_count, 3)
+        self.assertTrue(snap.has_drift)
+
+    def test_dashboard_hero_counts_removed(self):
+        """削除だけの環境で「ドリフトなし」と言わないこと。"""
+        from asset_manager.views import _get_dashboard_signals
+        signals = _get_dashboard_signals(self.system.organization)
+        self.assertEqual(signals['drift_current'], 3)
+
+    def test_weekly_digest_counts_removed(self):
+        from syncvey_drift_risk.digest import build_digest
+        digest = build_digest(self.system, attribute=False)
+        self.assertEqual(digest['total_now'], 3)
