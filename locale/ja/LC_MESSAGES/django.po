@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-10 11:33+0000\n"
+"POT-Creation-Date: 2026-08-20 11:22+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -207,11 +207,11 @@ msgid "Elastic Beanstalk"
 msgstr "Elastic Beanstalk"
 
 #: asset_manager/models/application.py:87 asset_manager/models/asset.py:20
-#: asset_manager/models/drift.py:26 asset_manager/models/system.py:87
+#: asset_manager/models/drift.py:27 asset_manager/models/system.py:87
 #: asset_manager/notifications.py:89 templates/_all_applications.html:49
 #: templates/_application_list.html:49 templates/_asset_card.html:40
-#: templates/_asset_create_form.html:67 templates/_asset_list.html:93
-#: templates/_asset_list.html:211
+#: templates/_asset_create_form.html:67 templates/_asset_list.html:110
+#: templates/_asset_list.html:228
 msgid "Environment"
 msgstr "環境"
 
@@ -283,7 +283,7 @@ msgid "Version"
 msgstr "バージョン"
 
 #: asset_manager/models/application.py:134 templates/_asset_card.html:32
-#: templates/_asset_list.html:90 templates/_asset_list.html:177
+#: templates/_asset_list.html:107 templates/_asset_list.html:194
 #: templates/_audit_log.html:24 templates/_audit_log.html:72
 #: templates/_audit_log.html:187
 msgid "Type"
@@ -318,8 +318,8 @@ msgid "Cloud ID"
 msgstr "クラウドID"
 
 #: asset_manager/models/asset.py:39 templates/_asset_card.html:36
-#: templates/_asset_create_form.html:58 templates/_asset_list.html:92
-#: templates/_asset_list.html:207
+#: templates/_asset_create_form.html:58 templates/_asset_list.html:109
+#: templates/_asset_list.html:224
 msgid "Region"
 msgstr "リージョン"
 
@@ -339,15 +339,20 @@ msgstr "前回RAWデータ"
 msgid "Last Imported At"
 msgstr "最終インポート日時"
 
-#: asset_manager/models/asset.py:44
+#: asset_manager/models/asset.py:49
+msgid "Missing Since"
+msgstr "消失日時"
+
+
+#: asset_manager/models/asset.py:51
 msgid "Memo"
 msgstr "メモ"
 
-#: asset_manager/models/asset.py:47
+#: asset_manager/models/asset.py:54
 msgid "Asset"
 msgstr "資産"
 
-#: asset_manager/models/asset.py:48
+#: asset_manager/models/asset.py:55
 msgid "Assets"
 msgstr "資産一覧"
 
@@ -359,49 +364,55 @@ msgstr "監査ログ"
 msgid "Audit logs"
 msgstr "監査ログ一覧"
 
-#: asset_manager/models/drift.py:18
+#: asset_manager/models/drift.py:19
 msgid "AWS Scan"
 msgstr "AWSスキャン"
 
-#: asset_manager/models/drift.py:19
+#: asset_manager/models/drift.py:20
 msgid "tfstate Import"
 msgstr "tfstate 取込"
 
-#: asset_manager/models/drift.py:20
+#: asset_manager/models/drift.py:21
 msgid "S3 Sync"
 msgstr "S3 同期"
 
-#: asset_manager/models/drift.py:32 asset_manager/models/eol.py:17
+#: asset_manager/models/drift.py:33 asset_manager/models/eol.py:17
 msgid "Source"
 msgstr "取得元"
 
-#: asset_manager/models/drift.py:34 templates/_drift_report.html:64
-#: templates/_drift_snapshot.html:52
+#: asset_manager/models/drift.py:35 templates/_drift_report.html:76
+#: templates/_drift_snapshot.html:57
 msgid "Changed"
 msgstr "変更"
 
-#: asset_manager/models/drift.py:35 templates/_drift_report.html:111
-#: templates/_drift_snapshot.html:97
+#: asset_manager/models/drift.py:36 templates/_drift_report.html:123
+#: templates/_drift_snapshot.html:102
 msgid "Added"
 msgstr "追加"
 
-#: asset_manager/models/drift.py:36 templates/_drift_report.html:138
+#: asset_manager/models/drift.py:39 templates/_audit_log.html:141
+#: templates/_audit_log.html:220 templates/_drift_report.html:149
+#: templates/_drift_snapshot.html:128
+msgid "Removed"
+msgstr "削除"
+
+#: asset_manager/models/drift.py:40 templates/_drift_report.html:210
 msgid "Unchanged"
 msgstr "変更なし"
 
-#: asset_manager/models/drift.py:37
+#: asset_manager/models/drift.py:41
 msgid "Detail"
 msgstr "詳細"
 
-#: asset_manager/models/drift.py:38
+#: asset_manager/models/drift.py:42
 msgid "Detected At"
 msgstr "検出日時"
 
-#: asset_manager/models/drift.py:41
+#: asset_manager/models/drift.py:45
 msgid "Drift Snapshot"
 msgstr "ドリフトスナップショット"
 
-#: asset_manager/models/drift.py:42
+#: asset_manager/models/drift.py:46
 msgid "Drift Snapshots"
 msgstr "ドリフトスナップショット一覧"
 
@@ -577,7 +588,7 @@ msgstr "Slack ドリフト通知に使う言語。"
 #: asset_manager/models/system.py:35 templates/_application_list.html:13
 #: templates/_asset_list.html:17 templates/_diagram.html:8
 #: templates/_drift_history.html:10 templates/_drift_report.html:10
-#: templates/_environment_list.html:13 templates/_environment_list.html:218
+#: templates/_environment_list.html:13 templates/_environment_list.html:221
 #: templates/_system_list.html:18 templates/dashboard.html:40
 #: templates/dashboard.html:49 templates/dashboard.html:184
 msgid "Systems"
@@ -706,32 +717,32 @@ msgstr "AI / ML"
 msgid "Security"
 msgstr "セキュリティ"
 
-#: asset_manager/views.py:623
+#: asset_manager/views.py:661
 msgid "DB tables not created. Run `python manage.py migrate`."
 msgstr ""
 "DBテーブルが作成されていません。`python manage.py migrate` を実行してくださ"
 "い。"
 
-#: asset_manager/views.py:841
+#: asset_manager/views.py:894
 msgid "No file selected."
 msgstr "ファイルが選択されていません。"
 
-#: asset_manager/views.py:845
+#: asset_manager/views.py:898
 msgid "Only .tfstate or .json files are accepted."
 msgstr ".tfstate または .json ファイルのみ受け付けます。"
 
-#: asset_manager/views.py:851
+#: asset_manager/views.py:904
 msgid "Failed to parse JSON. Please verify the file is a valid .tfstate."
 msgstr ""
 "JSONの解析に失敗しました。ファイルが有効な .tfstate であることを確認してくだ"
 "さい。"
 
-#: asset_manager/views.py:853
+#: asset_manager/views.py:906
 #, python-format
 msgid "File read error: %(err)s"
 msgstr "ファイル読み込みエラー: %(err)s"
 
-#: asset_manager/views.py:873
+#: asset_manager/views.py:926
 msgid ""
 "Could not auto-detect system or environment name. Please fill in System Name "
 "and Environment Name manually."
@@ -739,159 +750,219 @@ msgstr ""
 "システム名または環境名を自動判定できませんでした。システム名と環境名を手動で"
 "入力してください。"
 
-#: asset_manager/views.py:899
+#: asset_manager/views.py:952
 msgid "Session expired. Please upload the file again."
 msgstr "セッションが切れました。ファイルを再度アップロードしてください。"
 
-#: asset_manager/views.py:921
+#: asset_manager/views.py:974
 #, python-format
 msgid "An error occurred during processing: %(err)s"
 msgstr "処理中にエラーが発生しました: %(err)s"
 
-#: asset_manager/views.py:931
+#: asset_manager/views.py:984
 #, python-format
 msgid "%(count)d asset(s) registered/updated from %(filename)s."
 msgstr "%(filename)s から %(count)d 件の資産を登録/更新しました。"
 
-#: asset_manager/views.py:970 asset_manager/views.py:1020
+#: asset_manager/views.py:1023 asset_manager/views.py:1073
 msgid "System name is required."
 msgstr "システム名は必須です。"
 
-#: asset_manager/views.py:972 asset_manager/views.py:1024
+#: asset_manager/views.py:1025 asset_manager/views.py:1077
 msgid "This system name is already in use."
 msgstr "このシステム名はすでに使用されています。"
 
-#: asset_manager/views.py:974 asset_manager/views.py:1026
+#: asset_manager/views.py:1027 asset_manager/views.py:1079
 msgid "This code is already in use."
 msgstr "このコードはすでに使用されています。"
 
-#: asset_manager/views.py:989
+#: asset_manager/views.py:1042
 msgid "15 min"
 msgstr "15分"
 
-#: asset_manager/views.py:990
+#: asset_manager/views.py:1043
 msgid "30 min"
 msgstr "30分"
 
-#: asset_manager/views.py:991
+#: asset_manager/views.py:1044
 msgid "1 hour"
 msgstr "1時間"
 
-#: asset_manager/views.py:992
+#: asset_manager/views.py:1045
 msgid "6 hours"
 msgstr "6時間"
 
-#: asset_manager/views.py:993
+#: asset_manager/views.py:1046
 msgid "24 hours"
 msgstr "24時間"
 
-#: asset_manager/views.py:1022
+#: asset_manager/views.py:1075
 msgid "Code is required."
 msgstr "コードは必須です。"
 
-#: asset_manager/views.py:1031
+#: asset_manager/views.py:1084
 msgid "Webhook URL must be an https://hooks.slack.com/… address."
 msgstr ""
 "Webhook URL は https://hooks.slack.com/… のアドレスである必要があります。"
 
-#: asset_manager/views.py:1098 asset_manager/views.py:1141
+#: asset_manager/views.py:1151 asset_manager/views.py:1194
 msgid "Environment name is required."
 msgstr "環境名は必須です。"
 
-#: asset_manager/views.py:1100 asset_manager/views.py:1143
+#: asset_manager/views.py:1153 asset_manager/views.py:1196
 msgid "This environment name already exists."
 msgstr "この環境名はすでに存在します。"
 
-#: asset_manager/views.py:1211
+#: asset_manager/views.py:1264
 msgid "Asset name is required."
 msgstr "資産名は必須です。"
 
-#: asset_manager/views.py:1217
+#: asset_manager/views.py:1270
 msgid "The specified environment does not exist."
 msgstr "指定された環境が存在しません。"
 
-#: asset_manager/views.py:1246
+#: asset_manager/views.py:1299
 #, python-format
 msgid "Asset \"%(name)s\" has been registered."
 msgstr "資産「%(name)s」を登録しました。"
 
-#: asset_manager/views.py:1657
+#: asset_manager/views.py:1731
 msgid "Incorrect username or password."
 msgstr "ユーザー名またはパスワードが正しくありません。"
 
-#: asset_manager/views.py:1680
+#: asset_manager/views.py:1754
 msgid "認証コードが正しくありません"
 msgstr "認証コードが正しくありません"
 
-#: asset_manager/views.py:1730
+#: asset_manager/views.py:1804
 msgid "Saved"
 msgstr "保存しました"
 
-#: asset_manager/views.py:1746
+#: asset_manager/views.py:1820
 msgid "Current password is incorrect"
 msgstr "現在のパスワードが正しくありません"
 
-#: asset_manager/views.py:1748
+#: asset_manager/views.py:1822
 msgid "New password must be at least 8 characters"
 msgstr "新しいパスワードは8文字以上にしてください"
 
-#: asset_manager/views.py:1750
+#: asset_manager/views.py:1824
 msgid "New passwords do not match"
 msgstr "新しいパスワードが一致しません"
 
-#: asset_manager/views.py:1760
+#: asset_manager/views.py:1834
 msgid "Password changed"
 msgstr "パスワードを変更しました"
 
-#: asset_manager/views.py:1788
+#: asset_manager/views.py:1862
 msgid "Your session has expired. Please try again."
 msgstr "セッションが切れました。再度やり直してください。"
 
-#: asset_manager/views.py:1794
+#: asset_manager/views.py:1868
 msgid "The verification code is incorrect"
 msgstr "認証コードが正しくありません"
 
-#: asset_manager/views.py:1805
+#: asset_manager/views.py:1879
 msgid "Two-factor authentication enabled"
 msgstr "2段階認証が有効になりました"
 
-#: asset_manager/views.py:1816 asset_manager/views.py:1833
+#: asset_manager/views.py:1890 asset_manager/views.py:1907
 msgid "Password is incorrect"
 msgstr "パスワードが正しくありません"
 
-#: asset_manager/views.py:1872
+#: asset_manager/views.py:1946
 msgid "Cannot change the role of the last owner"
 msgstr "最後のオーナーのロールは変更できません"
 
-#: asset_manager/views.py:1879
+#: asset_manager/views.py:1953
 msgid "Updated"
 msgstr "変更しました"
 
-#: asset_manager/views.py:1954
+#: asset_manager/views.py:2028
 msgid ""
 "AWS credentials are not configured. Enter a Role ARN in the System settings."
 msgstr ""
 "AWS認証情報が設定されていません。System設定で Role ARN を入力してください。"
 
-#: asset_manager/views.py:2006
+#: asset_manager/views.py:2080
 msgid "This environment is not configured with an S3 backend."
 msgstr "この環境はS3バックエンドに設定されていません。"
 
-#: asset_manager/views.py:2008
+#: asset_manager/views.py:2082
 msgid "Please set the S3 bucket and key."
 msgstr "S3 BucketとKeyを設定してください。"
 
-#: asset_manager/views.py:2013
+#: asset_manager/views.py:2087
 msgid "Failed to fetch from S3"
 msgstr "S3からの取得に失敗しました"
 
-#: asset_manager/views.py:2017
+#: asset_manager/views.py:2091
 msgid "tfstate contains sensitive information"
 msgstr "tfstateに機密情報が含まれています"
 
-#: asset_manager/views.py:2026
+#: asset_manager/views.py:2100
 msgid "Import error"
 msgstr "インポートエラー"
+
+#: syncvey_blast_radius/apps.py:29
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:7
+msgid "Blast Radius"
+msgstr "影響波及範囲"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:8
+msgid ""
+"What the current drift can reach across the resource graph, ranked by impact"
+msgstr "いま起きているドリフトがリソースの参照グラフ上でどこまで届くかを、影響度順に表示"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:14
+msgid "Drift sources"
+msgstr "ドリフト起点"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:17
+msgid "Collateral reached"
+msgstr "波及先"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:21
+msgid "Install Drift Risk to weight by severity"
+msgstr "ドリフトリスクを導入すると重大度で重み付けされます"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:34
+msgid "drift"
+msgstr "ドリフト"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:36
+#, python-format
+msgid "%(hops)s hop"
+msgid_plural "%(hops)s hops"
+msgstr[0] "%(hops)s ホップ"
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:48
+msgid "impact"
+msgstr "影響度"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:56
+#, python-format
+msgid "Showing the top %(shown)s of %(total)s impacted resources."
+msgstr "影響を受けた %(total)s 件のうち、上位 %(shown)s 件を表示しています。"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:62
+msgid "No blast radius"
+msgstr "波及なし"
+
+
+#: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:63
+msgid ""
+"No resource has drifted, so nothing is propagating impact across the graph."
+msgstr "ドリフトしているリソースが無いため、グラフ上に波及しているものはありません。"
+
 
 #: syncvey_drift_risk/apps.py:26
 #: syncvey_drift_risk/templates/syncvey_drift_risk/_risk_list.html:7
@@ -1017,7 +1088,9 @@ msgstr "過去90日間の CloudTrail 記録がありません"
 #: syncvey_drift_risk/templates/syncvey_drift_risk/_risk_list.html:8
 msgid ""
 "Changed resources and overdue secret rotation, graded by security impact"
-msgstr "変更されたリソースと期限超過のシークレットローテーションを、セキュリティ影響度で採点"
+msgstr ""
+"変更されたリソースと期限超過のシークレットローテーションを、セキュリティ影響"
+"度で採点"
 
 #: syncvey_drift_risk/templates/syncvey_drift_risk/_risk_list.html:71
 msgid "Who changed this?"
@@ -1094,8 +1167,8 @@ msgstr "リポジトリ"
 msgid "Updated:"
 msgstr "更新:"
 
-#: templates/_asset_create_form.html:4 templates/_asset_list.html:80
-#: templates/_asset_list.html:230
+#: templates/_asset_create_form.html:4 templates/_asset_list.html:97
+#: templates/_asset_list.html:247
 msgid "Add Resource"
 msgstr "リソースを追加"
 
@@ -1407,22 +1480,36 @@ msgstr "全てのプロバイダー"
 msgid "Search"
 msgstr "検索"
 
-#: templates/_asset_list.html:89
+#: templates/_asset_list.html:75
+#, python-format
+msgid "%(counter)s resource is no longer in AWS."
+msgid_plural "%(counter)s resources are no longer in AWS."
+msgstr[0] "%(counter)s 件のリソースが AWS 上に存在しません。"
+
+#: templates/_asset_list.html:82
+msgid "Hide them"
+msgstr "隠す"
+
+#: templates/_asset_list.html:82
+msgid "Show them"
+msgstr "表示する"
+
+#: templates/_asset_list.html:106
 msgid "Name"
 msgstr "資産名"
 
-#: templates/_asset_list.html:99 templates/_asset_list.html:153
+#: templates/_asset_list.html:116 templates/_asset_list.html:170
 #, python-format
 msgid "Delete \"%(name)s\"?"
 msgstr "「%(name)s」を削除しますか？"
 
-#: templates/_asset_list.html:140 templates/_asset_list.html:170
+#: templates/_asset_list.html:157 templates/_asset_list.html:187
 #: templates/_environment_list.html:133 templates/_profile.html:195
 #: templates/_system_list.html:68 templates/dashboard.html:263
 msgid "Delete"
 msgstr "削除"
 
-#: templates/_asset_list.html:222
+#: templates/_asset_list.html:239
 msgid "No resources found."
 msgstr "リソースが見つかりません。"
 
@@ -1462,10 +1549,6 @@ msgstr "変更内容"
 #: templates/_audit_log.html:139 templates/_audit_log.html:218
 msgid "Created"
 msgstr "新規作成"
-
-#: templates/_audit_log.html:141 templates/_audit_log.html:220
-msgid "Removed"
-msgstr "削除"
 
 #: templates/_audit_log.html:233
 #, python-format
@@ -1518,8 +1601,8 @@ msgstr "比較対象のスナップショットがまだありません"
 msgid "Review drift"
 msgstr "ドリフトを確認"
 
-#: templates/_dashboard_hero.html:44 templates/_drift_report.html:54
-#: templates/_drift_snapshot.html:42
+#: templates/_dashboard_hero.html:44 templates/_drift_report.html:66
+#: templates/_drift_snapshot.html:47
 msgid "No drift detected"
 msgstr "ドリフトは検出されませんでした"
 
@@ -1606,15 +1689,22 @@ msgstr "変更"
 msgid "added"
 msgstr "追加"
 
-#: templates/_drift_history.html:78
+# --- 削除リソースの検出（prune） ---
+#: templates/_drift_history.html:43 templates/_drift_history.html:77
+#: templates/_drift_report.html:49 templates/_drift_snapshot.html:39
+#: templates/_environment_list.html:199
+msgid "removed"
+msgstr "削除"
+
+#: templates/_drift_history.html:83
 msgid "no drift"
 msgstr "ドリフトなし"
 
-#: templates/_drift_history.html:88
+#: templates/_drift_history.html:93
 msgid "No drift history yet."
 msgstr "ドリフト履歴はまだありません。"
 
-#: templates/_drift_history.html:89
+#: templates/_drift_history.html:94
 msgid "Run a scan or import a tfstate to start tracking drift over time."
 msgstr "スキャンまたは tfstate 取込で、ドリフトの推移を記録できます。"
 
@@ -1626,40 +1716,72 @@ msgstr "ドリフトレポート"
 msgid "History"
 msgstr "履歴"
 
-#: templates/_drift_report.html:49
+#: templates/_drift_report.html:55
+msgid "autoscaling"
+msgstr "Auto Scaling"
+
+
+#: templates/_drift_report.html:61
 msgid "unchanged"
 msgstr "変更なし"
 
-#: templates/_drift_report.html:80 templates/_drift_snapshot.html:67
+#: templates/_drift_report.html:92 templates/_drift_snapshot.html:72
 msgid "fields"
 msgstr "フィールド"
 
-#: templates/_drift_report.html:125 templates/_drift_snapshot.html:111
+#: templates/_drift_report.html:137 templates/_drift_snapshot.html:116
 msgid "New resource"
 msgstr "新規リソース"
 
-#: templates/_drift_report.html:140
+#: templates/_drift_report.html:152
+msgid ""
+"Present in the ledger but no longer returned by AWS. The row is kept — if "
+"the resource shows up again, this clears itself."
+msgstr ""
+"台帳には在るが AWS からは返って来なくなったもの。行は残してあるので、再び現れ"
+"れば自動的に元に戻る。"
+
+#: templates/_drift_report.html:167
+#, python-format
+msgid "Gone since %(when)s"
+msgstr "%(when)s に消失"
+
+#: templates/_drift_report.html:180
+msgid "Auto Scaling"
+msgstr "Auto Scaling"
+
+
+#: templates/_drift_report.html:182
+msgid "Owned by an Auto Scaling group — churn, not drift. Not counted above."
+msgstr "Auto Scaling グループが所有するリソース。ドリフトではなく増減（churn）として扱い、上の件数には含めていません。"
+
+
+#: templates/_drift_report.html:212
 msgid "click to expand"
 msgstr "クリックで展開"
 
-#: templates/_drift_report.html:153 templates/_scan_result.html:18
+#: templates/_drift_report.html:225 templates/_scan_result.html:18
 msgid "No changes"
 msgstr "変更なし"
 
-#: templates/_drift_report.html:164
+#: templates/_drift_report.html:236
 msgid "No resources in this environment."
 msgstr "この環境にはリソースがありません。"
 
-#: templates/_drift_report.html:165
+#: templates/_drift_report.html:237
 msgid "Import a tfstate file to get started."
 msgstr "tfstate ファイルをインポートして始めましょう。"
 
-#: templates/_drift_snapshot.html:121
+#: templates/_drift_snapshot.html:142
+msgid "Gone from AWS"
+msgstr "AWS から消失"
+
+#: templates/_drift_snapshot.html:152
 msgid "No drift was detected in this snapshot."
 msgstr "このスナップショットではドリフトは検出されませんでした。"
 
 #: templates/_environment_create_form.html:4
-#: templates/_environment_list.html:26 templates/_environment_list.html:232
+#: templates/_environment_list.html:26 templates/_environment_list.html:235
 msgid "Add Environment"
 msgstr "環境を追加"
 
@@ -1713,11 +1835,11 @@ msgstr "まだ tfstate がインポートされていません"
 msgid "No changes since last import"
 msgstr "前回のインポートから変更なし"
 
-#: templates/_environment_list.html:198
+#: templates/_environment_list.html:201
 msgid "View drift →"
 msgstr "ドリフトを表示 →"
 
-#: templates/_environment_list.html:223
+#: templates/_environment_list.html:226
 msgid "No environments found."
 msgstr "環境データがありません。"
 
@@ -2126,82 +2248,3 @@ msgstr "確認"
 #: templates/totp_verify.html:66
 msgid "Back to Sign In"
 msgstr "ログインに戻る"
-
-# --- 削除リソースの検出（prune） ---
-#: templates/_drift_report.html templates/_drift_snapshot.html
-#: templates/_drift_history.html templates/_environment_list.html
-msgid "removed"
-msgstr "削除"
-
-#: templates/_drift_report.html
-msgid ""
-"Present in the ledger but no longer returned by AWS. The row is kept — if "
-"the resource shows up again, this clears itself."
-msgstr ""
-"台帳には在るが AWS からは返って来なくなったもの。行は残してあるので、再び現れ"
-"れば自動的に元に戻る。"
-
-#: templates/_drift_report.html
-#, python-format
-msgid "Gone since %(when)s"
-msgstr "%(when)s に消失"
-
-#: templates/_drift_snapshot.html
-msgid "Gone from AWS"
-msgstr "AWS から消失"
-
-#: templates/_asset_list.html
-#, python-format
-msgid "%(counter)s resource is no longer in AWS."
-msgid_plural "%(counter)s resources are no longer in AWS."
-msgstr[0] "%(counter)s 件のリソースが AWS 上に存在しません。"
-
-#: templates/_asset_list.html
-msgid "Show them"
-msgstr "表示する"
-
-#: templates/_asset_list.html
-msgid "Hide them"
-msgstr "隠す"
-
-#~ msgid "Company Name"
-#~ msgstr "会社名"
-
-#~ msgid "Synchronized Survey"
-#~ msgstr "Synchronized Survey"
-
-#~ msgid "なし / その他"
-#~ msgstr "なし / その他"
-
-#~ msgid "ライブラリ"
-#~ msgstr "ライブラリ"
-
-#~ msgid "ミドルウェア"
-#~ msgstr "ミドルウェア"
-
-#~ msgid "ツール"
-#~ msgstr "ツール"
-
-#~ msgid "オーナー"
-#~ msgstr "オーナー"
-
-#~ msgid "インフラ管理者"
-#~ msgstr "インフラ管理者"
-
-#~ msgid "アプリ管理者"
-#~ msgstr "アプリ管理者"
-
-#~ msgid "閲覧者"
-#~ msgstr "閲覧者"
-
-#~ msgid "Production (本番)"
-#~ msgstr "本番 (Production)"
-
-#~ msgid "Staging (ステージング)"
-#~ msgstr "ステージング (Staging)"
-
-#~ msgid "Development (開発)"
-#~ msgstr "開発 (Development)"
-
-#~ msgid "QA (テスト)"
-#~ msgstr "QA (テスト)"
