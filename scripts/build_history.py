@@ -216,6 +216,17 @@ def collect():
         key=lambda r: r['date'],
     )
 
+    if _git(['rev-parse', '--is-shallow-repository']) == 'true':
+        # A shallow clone (CI's default) makes `git log` report one commit, and
+        # the page silently ships "1 day, 1 commit". That reached production
+        # once; refuse rather than publish a lie.
+        raise RuntimeError(
+            'the repository is a shallow clone, so commit history is not '
+            'available and the statistics would be wrong.\n'
+            '  In CI, check out with `fetch-depth: 0`. Locally, run '
+            '`git fetch --unshallow`.'
+        )
+
     first = datetime.date.fromisoformat(
         _git(['log', '--reverse', '--format=%ad', '--date=short']).split('\n')[0])
 
