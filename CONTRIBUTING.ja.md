@@ -42,6 +42,29 @@ docker compose exec app pytest
 `moto` が AWS をモックし、`pytest-django` と `pytest-playwright` が
 ユニット・E2E テストをカバーします。
 
+## 翻訳
+
+UI は日本語と英語で提供している。翻訳対象の文字列を追加・変更したら、
+抽出して訳すこと（やらないと CI が落ちる）:
+
+```bash
+docker compose exec app python manage.py makemessages -l ja --no-obsolete
+# "#, fuzzy" が付いたエントリは必ず中身を読む。既存の近い文字列から機械が
+# 推測してコピーしたもので、しばしば間違っている（"Auto Scaling" が
+# "自動スキャン" になった実例あり）。msgstr を直してから fuzzy 行を消す。
+docker compose exec app python manage.py compilemessages -l ja
+```
+
+gettext は 2 通りの黙り方をするので、CI でも 2 つのゲートを回している:
+
+| ゲート | 捕まえるもの |
+| --- | --- |
+| `python -m asset_manager.i18n_check` | カタログに在るが `#, fuzzy` または `msgstr` が空のエントリ |
+| `python3 scripts/check_i18n_extraction.py` | コードに在るのにカタログへ抽出すらされていない文字列 |
+
+後者は使い捨てのコピーに対して `makemessages` を走らせ msgid 集合を比べるので、
+作業ツリーを汚さない。
+
 ## Git 運用
 
 - **ブランチ:** `feature/` または `fix/` プレフィックスを使用してください。

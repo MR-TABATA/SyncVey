@@ -42,6 +42,29 @@ docker compose exec app pytest
 
 `moto` mocks AWS; `pytest-django` and `pytest-playwright` cover unit and E2E tests.
 
+## Translations
+
+The UI ships in English and Japanese. If you add or change a translatable
+string, run the extraction and translate it — CI fails otherwise:
+
+```bash
+docker compose exec app python manage.py makemessages -l ja --no-obsolete
+# Review every "#, fuzzy" entry. Those are machine guesses copied from the
+# nearest existing string and they are frequently wrong ("Auto Scaling" once
+# came out as "自動スキャン"). Fix the msgstr, then delete the fuzzy line.
+docker compose exec app python manage.py compilemessages -l ja
+```
+
+Two gates run in CI, because gettext fails silently in two different ways:
+
+| Gate | Catches |
+| --- | --- |
+| `python -m asset_manager.i18n_check` | Entries in the catalogue that are `#, fuzzy` or have an empty `msgstr` |
+| `python3 scripts/check_i18n_extraction.py` | Strings in the code that were never extracted into the catalogue at all |
+
+The second one runs `makemessages` against a throwaway copy and compares msgid
+sets, so it never leaves your working tree modified.
+
 ## Git workflow
 
 - **Branches:** use a `feature/` or `fix/` prefix.
