@@ -29,6 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 既定は浅いクローン（1 コミット）。このスクリプトは初コミットの
+          # 日付とコミット総数を git 履歴から数えるので、浅いままだと
+          # 「開発日数 1・コミット 1」という嘘の統計を生成して公開する。
+          # 実際に一度公開してしまった。
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
