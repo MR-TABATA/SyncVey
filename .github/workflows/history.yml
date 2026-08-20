@@ -1,0 +1,55 @@
+name: history
+
+# 開発の記録ページ（docs/history.{ja,en}.html）は「マージ済み PR」から
+# 生成するので、マージした瞬間に必ず古くなる。
+#
+# だからこれは「古かったら落とす」ゲートにしていない。ゲートにすると
+# マージのたびに main が赤くなり、赤を消すためだけの手作業が毎回発生する。
+# 代わりに main への push で再生成し、変化があった時だけコミットする。
+#
+# フェーズ未登録の PR があってもスクリプトは失敗せず、「最近の変更」節に
+# PR タイトルのまま出る。ページが取りこぼすことはなく、要約を書きたく
+# なった時に PHASES へ移せばいい。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 直列化する。連続マージで 2 つの実行が同じファイルを push し合うのを防ぐ。
+concurrency:
+  group: history-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild the history page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/build_history.py
+
+      - name: Commit if it changed
+        run: |
+          if git diff --quiet -- docs/history.ja.html docs/history.en.html; then
+            echo "No change — the page already matches the merged history."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/history.ja.html docs/history.en.html
+          # [skip ci] 付きで積む。テストや E2E を回す意味のない差分だし、
+          # この push でこのワークフロー自体が再帰的に走るのも避けたい
+          # （2 回目は差分ゼロで止まるが、無駄には変わりない）。
+          git commit -m "docs: rebuild the development-history page [skip ci]"
+          git push
