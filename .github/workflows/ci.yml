@@ -139,9 +139,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # --- 翻訳カタログ（DB もパッケージも不要・純 stdlib） --------------------
+  # --- 翻訳カタログ -------------------------------------------------------
+  # gettext が黙って失敗する道は 2 本あり、別々のチェックで塞ぐ。
+  #   1. カタログに「在るが未レビュー」… fuzzy / 空 msgstr
+  #   2. カタログに「そもそも無い」  … makemessages を通していない文字列
+  # 2 は 1 のチェックでは原理的に見えない。実際 #14 で 50 件、#25 で 15 件、
+  # どちらも人間が日本語画面の英語に気づいて発覚した。
   i18n:
-    name: No unreviewed translations
+    name: Translation catalogue
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -149,12 +154,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
-      # fuzzy（機械推測のまま未レビュー）と空の msgstr でビルドを落とす。
-      # 同じ判定は test_i18n_catalog.py にも入っているが、あちらは
-      # Postgres と依存一式が要る。こちらは数秒で返る早期シグナル。
+      # 純 stdlib・数秒。依存を入れる前に走らせて早く落とす。
       - name: Fail on fuzzy or empty translations
         run: python -m asset_manager.i18n_check
+
+      # 抽出漏れの検出には makemessages（= Django + xgettext）が要る。
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install gettext
+        run: sudo apt-get update && sudo apt-get install -y gettext
+
+      - name: Fail on translatable strings that were never extracted
+        run: python3 scripts/check_i18n_extraction.py
 
   # --- ドキュメント整合性（DB 不要・数秒） ---------------------------------
   consistency:
