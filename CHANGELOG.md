@@ -8,6 +8,11 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-20
+
+Adds blast-radius impact analysis, closes a drift-counting bug that hid deleted
+resources, and puts both halves of the translation problem behind CI gates.
+
 ### Added
 
 - Blast radius *(plugin)* — walk the resource reference graph outward from each
@@ -20,13 +25,38 @@ While the major version is `0`, minor releases may change behaviour.
   `#, fuzzy`. From there the string either silently falls back to English or
   ships visibly wrong, and neither is visible to a reviewer reading the diff in
   the source language. The gate fails the build on fuzzy or empty entries (#13)
+- CI gate for strings that were never extracted — the gate above can only judge
+  entries that are *in* the catalogue. A string wrapped in `{% trans %}` that
+  `makemessages` was never run against is absent entirely, so nothing flags it
+  and it renders in English. This one runs `makemessages` against a throwaway
+  copy and compares msgid sets. Both of this repo's translation holes (50
+  strings, then 15) were found by a human noticing English on a Japanese
+  screen; this catches them on the branch that introduces them (#26)
 
 ### Fixed
 
+- **Deleted resources were missing from the drift totals.** The `removed`
+  category added in 0.1.0 updated `DriftSnapshot.total_count`, but two places
+  built the total by hand and were never updated: the dashboard hero band
+  reported "no drift detected" for an environment where resources had been
+  deleted, and the weekly Slack briefing under-counted both the total and the
+  week-over-week trend. Both exist to make deletions noticeable, so silently
+  dropping them was the worst possible failure (#24)
 - 50 translatable strings had never been extracted into the Japanese catalogue
   and rendered in English inside the Japanese UI — 21 drift-risk templates,
   13 drift-risk Python strings, and 17 in the dashboard hero band. All reviewed
   and translated by hand (#14)
+- 15 more never-extracted strings, found while taking screenshots: the whole
+  blast-radius screen, the Auto Scaling section of the drift report, and the
+  `Missing Since` field. Extraction produced three fuzzy guesses that were all
+  wrong — `Auto Scaling` had become `自動スキャン` ("Auto Scan") — which is
+  exactly the failure the fuzzy gate exists for (#25)
+
+### Infrastructure
+
+- Folded the standalone i18n workflow into the main CI workflow. It triggered
+  on every push to every branch with no concurrency group, so a single pull
+  request ran it eight times while CI ran once (#23)
 
 ## [0.1.0] — 2026-08-19
 
@@ -111,5 +141,6 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MR-TABATA/SyncVey/releases/tag/v0.1.0
