@@ -19,7 +19,15 @@ else (dates, sizes, counts, the bar chart) is measured at build time.
 
     python3 scripts/build_history.py
 
-Re-run it after merging anything you want listed, and commit the two HTML files.
+In normal operation nobody runs this by hand: `.github/workflows/history.yml`
+re-runs it on every push to main and commits the result if it changed. Run it
+locally when you have just written a summary in PHASES/SUMMARIES and want to see
+how it reads.
+
+A merged pull request that is not listed in PHASES is not an error — it lands in
+a trailing "recent changes" section using its own title as the summary. The page
+is therefore never missing work; it just reads better once someone writes a line
+for it.
 """
 
 from __future__ import annotations
@@ -95,7 +103,7 @@ PHASES = [
         'were resolved and they landed. Doing so surfaced two more problems — deleted resources '
         'were being dropped from the drift totals, and fifteen strings were still rendering in '
         'English — and both were closed.',
-        [13, 14, 15, 23, 24, 25, 26, 27],
+        [13, 14, 15, 23, 24, 25, 26, 27, 28],
     ),
 ]
 
@@ -160,6 +168,8 @@ SUMMARIES = {
          'A CI gate for strings never extracted into the catalogue — a hole the existing gate could not see'),
     27: ('v0.2.0 の変更内容を CHANGELOG に記録',
          'Logged the v0.2.0 changes in the changelog'),
+    28: ('開発の記録ページを追加。ja/en を 1 つのデータ源から生成し、数値は git と GitHub API から計測する',
+         'Added this development-history page — both languages from one source, every number measured from git and the GitHub API'),
 }
 
 # Pull requests that sat open long enough to be worth explaining.
@@ -206,14 +216,27 @@ def collect():
         key=lambda r: r['date'],
     )
 
+    first = datetime.date.fromisoformat(
+        _git(['log', '--reverse', '--format=%ad', '--date=short']).split('\n')[0])
+
+    # The page has to be a pure function of merged work, or the workflow that
+    # rebuilds it on every push to main would churn forever: its own commit
+    # would change the commit count, which changes the page, which is another
+    # commit. So the auto-rebuild commits are excluded from the count, and the
+    # end of the span comes from the last merged pull request rather than from
+    # the last commit.
+    commits = int(_git([
+        'rev-list', '--count', 'HEAD',
+        f'--invert-grep', '--grep=^docs: rebuild the development-history page',
+    ]))
+    last = max((pr['merged'] for pr in by_number.values()), default=first)
+
     return {
         'prs':      by_number,
         'releases': releases,
-        'commits':  int(_git(['rev-list', '--count', 'HEAD'])),
-        'first':    datetime.date.fromisoformat(_git(['log', '--reverse', '--format=%ad',
-                                                      '--date=short']).split('\n')[0]),
-        'last':     datetime.date.fromisoformat(_git(['log', '-1', '--format=%ad',
-                                                      '--date=short'])),
+        'commits':  commits,
+        'first':    first,
+        'last':     last,
     }
 
 
@@ -375,6 +398,8 @@ STRINGS = {
         ],
         'open_days': '作成から {n} 日',
         'week_label': '{m}/{d}',
+        'recent_title': '最近の変更',
+        'recent_lead': 'まだフェーズに割り当てていないもの。要約は PR のタイトルをそのまま使っている。build_history.py の PHASES に入れると、書き下ろした一行に差し替わる。',
     },
     'en': {
         'lang': 'en', 'other': 'history.ja.html', 'index': 'index.en.html',
@@ -398,6 +423,8 @@ STRINGS = {
         ],
         'open_days': 'open {n} days',
         'week_label': '{m}/{d}',
+        'recent_title': 'Recent changes',
+        'recent_lead': 'Not yet grouped into a phase, so the summary is just the pull request title. Adding it to PHASES in build_history.py replaces this with a written one.',
     },
 }
 
@@ -468,10 +495,20 @@ def render(lang, data):
         add(f'<span>{s["week_label"].format(m=start.month, d=start.day)}</span>')
     add('</div></div></div></section>')
 
-    # phases
+    # phases (+ a trailing catch-all so a newly merged pull request always
+    # shows up, even before anyone writes a summary for it)
     shown_releases = set()
+    placed = {n for _a, _jt, _et, _jl, _el, numbers in PHASES for n in numbers}
+    leftover = sorted(set(prs) - placed)
+    phases = list(PHASES)
+    if leftover:
+        phases.append((
+            'recent', s['recent_title'], s['recent_title'],
+            s['recent_lead'], s['recent_lead'], leftover,
+        ))
+
     add('<section><div class="container">')
-    for anchor, ja_t, en_t, ja_lead, en_lead, numbers in PHASES:
+    for anchor, ja_t, en_t, ja_lead, en_lead, numbers in phases:
         listed = [prs[n] for n in numbers if n in prs]
         if not listed:
             continue
@@ -535,8 +572,12 @@ def main():
     placed = {n for _a, _jt, _et, _jl, _el, numbers in PHASES for n in numbers}
     missing = sorted(set(data['prs']) - placed)
     if missing:
-        print(f'warning: merged pull requests not placed in any phase, so they will not '
-              f'appear: {missing}\n  Add them to PHASES in {Path(__file__).name}.',
+        # Not an error. These land in the trailing "recent changes" section with
+        # their pull-request title as the summary, so the page is never missing
+        # work — it just reads less well until someone writes a line for them.
+        print(f'note: {len(missing)} pull request(s) not yet placed in a phase, shown '
+              f'under "recent changes": {missing}\n'
+              f'  Give them a summary in PHASES/SUMMARIES in {Path(__file__).name}.',
               file=sys.stderr)
 
     for lang in ('ja', 'en'):
@@ -544,7 +585,7 @@ def main():
         path.write_text(render(lang, data), encoding='utf-8')
         print(f'wrote {path.relative_to(REPO_ROOT)}')
 
-    return 1 if missing else 0
+    return 0
 
 
 if __name__ == '__main__':

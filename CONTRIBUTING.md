@@ -65,6 +65,20 @@ Two gates run in CI, because gettext fails silently in two different ways:
 The second one runs `makemessages` against a throwaway copy and compares msgid
 sets, so it never leaves your working tree modified.
 
+## Development history page
+
+`docs/history.{ja,en}.html` is generated, not written. A workflow rebuilds it on
+every push to `main` and commits the result, so merged work appears there on its
+own — a pull request with no entry in `PHASES` still shows up under "recent
+changes" with its title as the summary.
+
+To give it a proper one-line summary, edit `PHASES` / `SUMMARIES` in
+`scripts/build_history.py` (both languages live there, side by side) and run:
+
+```bash
+python3 scripts/build_history.py
+```
+
 ## Git workflow
 
 - **Branches:** use a `feature/` or `fix/` prefix.

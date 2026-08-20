@@ -67,3 +67,6 @@ test-results/
 # Non-public roadmap, incl. paid-tier plans, posting schedule, positioning.
 # Must never reach the public repo. See .private/ROADMAP.md header.
 /.private/
+
+# Slack 用の下書きとスクリーンショット置き場（公開物ではない）
+/shots/

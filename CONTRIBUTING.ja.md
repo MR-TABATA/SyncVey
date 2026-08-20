@@ -65,6 +65,19 @@ gettext は 2 通りの黙り方をするので、CI でも 2 つのゲートを
 後者は使い捨てのコピーに対して `makemessages` を走らせ msgid 集合を比べるので、
 作業ツリーを汚さない。
 
+## 開発の記録ページ
+
+`docs/history.{ja,en}.html` は手書きではなく生成物。`main` への push ごとに
+ワークフローが再生成してコミットするので、マージした内容は放っておいても
+載る（`PHASES` に未登録の PR は「最近の変更」節に PR タイトルのまま出る）。
+
+書き下ろした一行要約を付けたい場合は `scripts/build_history.py` の
+`PHASES` / `SUMMARIES`（日英が並んで 1 箇所にある）を編集して実行する:
+
+```bash
+python3 scripts/build_history.py
+```
+
 ## Git 運用
 
 - **ブランチ:** `feature/` または `fix/` プレフィックスを使用してください。
