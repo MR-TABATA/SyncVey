@@ -251,10 +251,10 @@ class EolSnapshotAdmin(admin.ModelAdmin):
 
 @admin.register(DriftSnapshot)
 class DriftSnapshotAdmin(admin.ModelAdmin):
-    list_display    = ('environment', 'source', 'changed_count', 'added_count', 'unchanged_count', 'detected_at')
+    list_display    = ('environment', 'source', 'changed_count', 'added_count', 'removed_count', 'unchanged_count', 'detected_at')
     list_filter     = ('source', 'environment__env_type')
     search_fields   = ('environment__name', 'environment__system__name')
-    readonly_fields = ('environment', 'source', 'changed_count', 'added_count', 'unchanged_count', 'detail', 'detected_at')
+    readonly_fields = ('environment', 'source', 'changed_count', 'added_count', 'removed_count', 'unchanged_count', 'detail', 'detected_at')
 
     def has_add_permission(self, request):
         return False
