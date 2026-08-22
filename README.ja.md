@@ -140,6 +140,65 @@ docker compose exec app python manage.py seed   # 任意: サンプルデータ�
 
 ---
 
+## AWS アカウント無しで試す
+
+ローカルの AWS エミュレータ（[LocalStack](https://localstack.cloud/)）に対して、本物のスキャンを実行できます。台帳もドリフトレポートもダッシュボードも動きます。AWS アカウント・資格情報・課金はいずれも不要です。
+
+**1.** `.env` のお試しモードのブロックをコメント解除します。
+
+```bash
+AWS_ENDPOINT_URL=http://localstack:4566
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+```
+
+**2.** エミュレータ付きで起動し、ダミーのリソースを作ってスキャンします。
+
+```bash
+docker compose --profile demo up -d
+docker compose exec app python scripts/seed_localstack.py
+docker compose exec app python manage.py syncvey scan --system "Demo System"
+```
+
+http://localhost:8000/ を開けば、スキャンされたリソースが台帳に入っています。
+
+**3.** わざとドリフトを起こして、もう一度見てみます。
+
+```bash
+docker compose exec app python -c "
+import boto3
+s = boto3.Session(region_name='ap-northeast-1')
+q = s.client('sqs')
+q.delete_queue(QueueUrl=q.get_queue_url(QueueName='demo-jobs')['QueueUrl'])
+ec2 = s.client('ec2')
+ec2.stop_instances(InstanceIds=[ec2.describe_instances()['Reservations'][0]['Instances'][0]['InstanceId']])
+"
+docker compose exec app python manage.py syncvey scan --system "Demo System"
+docker compose exec app python manage.py syncvey drift --system "Demo System"
+```
+
+```
+Demo System / Production: 2 drifted (changed=1 added=0 removed=1)
+    ~ EC2 i-9538ffc109d6e7b6b (i-9538ffc109d6e7b6b)
+        instance_state: running -> stopped
+    - SQS demo-jobs (arn:aws:sqs:ap-northeast-1:000000000000:demo-jobs)
+```
+
+### 動くもの・動かないもの
+
+LocalStack の無償版は AWS の一部しか実装していないため、18 本のスキャナのうち 10 本がデータを返します。残り 8 本は該当サービスのエラーを報告し、スキャン自体は続行します。エラーになったスキャナは削除検出の対象から意図的に外れるので、**読めなかったサービスが「誰かが全部消した」と誤判定されることはありません**。
+
+| LocalStack でスキャンできる | LocalStack 有償版のみ |
+|---|---|
+| EC2, VPC, EBS, S3, Lambda, DynamoDB, SNS, SQS, Secrets Manager, Route 53 | RDS, ECS, ALB, ElastiCache, EFS, EKS, API Gateway v2, CloudFront |
+
+- **「誰が変えたか」はここでは動きません。** 変更者の特定は CloudTrail のイベント履歴を読むため、無償版では取得できず、ドリフト行に実行者が出ません。
+- **イメージタグを `localstack/localstack:4` に固定しているのは意図的です。** `:latest` は LocalStack の認証トークンが必須になり、トークン無しでは起動直後に終了します。
+
+実 AWS に戻すときは、上の 3 行をコメントに戻して `docker compose up -d` を実行してください。
+
+---
+
 ## AWSスキャンのセットアップ
 
 各対象 AWS アカウントに ReadOnly の IAM Role を作成し、その ARN を SyncVey に登録します。

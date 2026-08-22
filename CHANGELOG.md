@@ -8,6 +8,30 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- Try it without an AWS account — a `demo` Compose profile starts a local AWS
+  emulator (LocalStack), `scripts/seed_localstack.py` fills it with fake
+  resources, and the normal scan/drift path runs against it. No account, no
+  credentials, no bill. Ten of the eighteen scanners work on the emulator's
+  free edition; the other eight report an error per service and the scan
+  carries on, which is exactly the behaviour deleted-resource detection relies
+  on. The image tag is pinned to `localstack/localstack:4` because `:latest`
+  now requires an auth token and exits without one. README documents what does
+  and does not work, CloudTrail attribution included
+
+### Fixed
+
+- **The CLI reported a deleted resource as an addition.** `syncvey drift`
+  classified assets on `raw_data_prev` alone, and a resource that disappears
+  from AWS never gets one — so a deletion printed as `+ added`, the exact
+  opposite of what happened. Same class as the 0.2.0 fix: the core grew a
+  `removed` category and a hand-written copy of the classification was left
+  behind, this time in the CLI plugin. It now branches on `missing_since`
+  first, like `_record_drift_snapshot` and the drift report do, and an
+  ASG-owned disappearance stays churn rather than failing a build. Found by
+  running the scanner against the emulator above
+
 ## [0.2.0] — 2026-08-20
 
 Adds blast-radius impact analysis, closes a drift-counting bug that hid deleted
