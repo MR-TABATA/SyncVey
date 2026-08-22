@@ -41,31 +41,13 @@ logger = logging.getLogger(__name__)
 # Drift detection helpers
 # ---------------------------------------------------------------------------
 
-# raw_data のうち diff 表示から除外するキー
-# （Terraform 内部フィールド・AWS 側が自動更新する動的パラメータ）
-_DIFF_EXCLUDE = frozenset({
-    # Terraform 内部
-    '_resource_type', '_scan_source', 'tags_all', 'timeouts', 'tags',
-    # 識別子（変わらない）
-    'arn', 'id',
-    # ECS — AWS が自動更新する動的値
-    'running_count', 'pending_count',
-    'deployment_maximum_percent', 'deployment_minimum_healthy_percent',
-    'deployments',
-    # RDS — 自動バックアップ・メンテナンス系
-    'latest_restorable_time', 'status',
-    'pending_modified_values', 'read_replica_db_instance_identifiers',
-    # EC2 — 起動・停止で変わる値
-    'launch_time', 'state_transition_reason',
-    'state_reason',
-    # 汎用タイムスタンプ
-    'last_modified', 'last_modified_time', 'created_time',
-    'created_at', 'updated_at',
-    # DynamoDB / ElastiCache / EFS / Route53 — AWS が自動更新する動的値
-    'item_count', 'table_status', 'cache_cluster_status',
-    'lifecycle_state', 'number_of_mount_targets', 'record_count',
-    'size_in_bytes',
-})
+# ドリフト判定そのものは drift.py に一本化されている。ここでの再輸出は、
+# 既に `asset_manager.views` から取っているプラグイン（drift-risk /
+# blast-radius）の import を壊さないため。
+from .drift import (  # noqa: F401,E402
+    _DIFF_EXCLUDE, _compute_raw_diff, classify,
+    CHANGED, ADDED, REMOVED, AUTOSCALING, UNCHANGED,
+)
 
 # tfstate / Boto3 レスポンスから除去するシークレット系キー名（部分一致）
 _SECRET_KEY_PATTERNS = (
@@ -109,68 +91,25 @@ def _scrub_secrets(attrs: dict) -> dict:
     return scrubbed
 
 
-def _compute_raw_diff(old: dict, new: dict) -> list:
-    """
-    old / new の raw_data を比較し、変更フィールドのリストを返す。
-    [{'field': str, 'old': str, 'new': str}, ...]
-
-    キーは「両方に存在するもの」の積集合(&)だけを比較する。
-    tfstate インポートは全属性(50+キー)を保存する一方、ライブスキャン
-    (scanner.py)は厳選した互換キー(~11)のみを出力するため、和集合(|)で
-    比較すると scanner が出さない tfstate 固有キーが全て「削除」と誤検知
-    される。実ドリフトは共通キー上で起きるので積集合で比較するのが正しい。
-    新規/削除リソースの検出は raw_data_prev の有無で別途行う(drift_report_view)。
-    """
-    changes = []
-    keys = (set(old.keys()) & set(new.keys())) - _DIFF_EXCLUDE
-    for key in sorted(keys):
-        ov = old.get(key)
-        nv = new.get(key)
-        if ov != nv:
-            changes.append({
-                'field': key,
-                'old': str(ov) if ov is not None else '',
-                'new': str(nv) if nv is not None else '',
-            })
-    return changes
-
-
 def _get_env_drift_summary(environment) -> dict:
     """
     環境カードのバッジ用。
     {'changed': N, 'added': N, 'total': N, 'has_data': bool}
     """
-    from .autoscaling import is_autoscaling_churn
-
     assets = environment.assets.only(
         'raw_data', 'raw_data_prev', 'last_imported_at', 'missing_since',
     )
-    changed = added = removed = autoscaling = 0
+    counts = {CHANGED: 0, ADDED: 0, REMOVED: 0, AUTOSCALING: 0, UNCHANGED: 0}
     has_data = False
     for asset in assets:
         if asset.last_imported_at:
             has_data = True
-        if asset.missing_since:
-            # AWS から消えた。ASG のスケールインなら churn（added の抑制と
-            # 対称）、それ以外は本物の removed ドリフト。
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling += 1
-            else:
-                removed += 1
-        elif not asset.raw_data_prev:
-            # An ASG-owned first-sighting is churn, not an add (cry-wolf fix).
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling += 1
-            else:
-                added += 1
-        elif _compute_raw_diff(asset.raw_data_prev, asset.raw_data):
-            # 生の != ではなく drift レポートと同じ判定にする。
-            # スキーマ非対称(tfstate全属性 vs scan厳選)で raw_data != prev が
-            # 常に真になり、バッジ件数が膨らむのを防ぐ。
-            changed += 1
-    return {'changed': changed, 'added': added, 'removed': removed,
-            'autoscaling': autoscaling,
-            'total': changed + added + removed, 'has_data': has_data}
+        category, _changes = classify(asset)
+        counts[category] += 1
+    return {'changed': counts[CHANGED], 'added': counts[ADDED],
+            'removed': counts[REMOVED], 'autoscaling': counts[AUTOSCALING],
+            'total': counts[CHANGED] + counts[ADDED] + counts[REMOVED],
+            'has_data': has_data}
 
 
 def _record_drift_snapshot(environment, source):
@@ -180,7 +119,6 @@ def _record_drift_snapshot(environment, source):
     資産が無い環境では何もしない。差分ゼロでも推移を残すため記録する。
     """
     from .models import DriftSnapshot
-    from .autoscaling import is_autoscaling_churn
 
     assets = environment.assets.only(
         'asset_type', 'name', 'cloud_id', 'provider', 'raw_data', 'raw_data_prev',
@@ -195,26 +133,19 @@ def _record_drift_snapshot(environment, source):
             'cloud_id': asset.cloud_id,
             'provider': asset.provider,
         }
-        if asset.missing_since:
-            # AWS から消えたリソース。ASG のスケールインは churn として
-            # 別枠に逃がす（スケールアウトを added から外したのと対称）。
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append(meta)
-            else:
-                removed.append(meta)
-        elif not asset.raw_data_prev:
-            # ASG-owned first-sighting = autoscaling churn, kept out of the drift
-            # counts but recorded so the history is honest about what happened.
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append(meta)
-            else:
-                added.append(meta)
+        category, diff = classify(asset)
+        if category == CHANGED:
+            changed.append({**meta, 'changes': diff})
+        elif category == ADDED:
+            added.append(meta)
+        elif category == REMOVED:
+            removed.append(meta)
+        elif category == AUTOSCALING:
+            # 出現も消滅も、ASG 由来ならドリフト件数から外す。ただし履歴には
+            # 残す（黙って隠すのではなく、churn だったと言えるようにする）。
+            autoscaling.append(meta)
         else:
-            diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
-            if diff:
-                changed.append({**meta, 'changes': diff})
-            else:
-                unchanged += 1
+            unchanged += 1
 
     if not (changed or added or removed or autoscaling or unchanged):
         return None
@@ -1622,7 +1553,7 @@ def drift_report_view(request, environment_id):
     - REMOVED : AWS 側から消えた（missing_since が立っている）
     - UNCHANGED: 変化なし
     """
-    from .autoscaling import is_autoscaling_churn, autoscaling_group_of
+    from .autoscaling import autoscaling_group_of
 
     env    = _user_environment_or_404(request, environment_id)
     assets = env.assets.order_by('asset_type', 'name')
@@ -1634,27 +1565,21 @@ def drift_report_view(request, environment_id):
     unchanged   = []
 
     for asset in assets:
-        if asset.missing_since:
-            # 消滅も「存在」次元なので、ASG 由来なら churn 側へ。
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append({'asset': asset,
-                                    'group': autoscaling_group_of(asset.raw_data),
-                                    'gone': True})
-            else:
-                removed.append({'asset': asset})
-        elif not asset.raw_data_prev:
-            # ASG-owned first-sighting is churn, not drift — shown in its own
-            # section so it's transparent, not silently hidden.
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append({'asset': asset, 'group': autoscaling_group_of(asset.raw_data)})
-            else:
-                added.append({'asset': asset})
+        category, diff = classify(asset)
+        if category == CHANGED:
+            changed.append({'asset': asset, 'changes': diff})
+        elif category == ADDED:
+            added.append({'asset': asset})
+        elif category == REMOVED:
+            removed.append({'asset': asset})
+        elif category == AUTOSCALING:
+            # churn は隠さず専用セクションに出す。消えた側は取り消し線を
+            # 出せるよう gone を立てる。
+            autoscaling.append({'asset': asset,
+                                'group': autoscaling_group_of(asset.raw_data),
+                                'gone': bool(asset.missing_since)})
         else:
-            diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
-            if diff:
-                changed.append({'asset': asset, 'changes': diff})
-            else:
-                unchanged.append({'asset': asset})
+            unchanged.append({'asset': asset})
 
     return render(request, '_drift_report.html', {
         'environment': env,

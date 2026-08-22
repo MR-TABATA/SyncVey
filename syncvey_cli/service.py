@@ -6,10 +6,11 @@ command class so it can be unit-tested without argparse in the way.
 
 Everything here imports the *core* scan/drift engine (a plugin may depend on
 the core; the core never depends on a plugin). In particular the drift
-computation is the core's own `_compute_raw_diff` / `_record_drift_snapshot`,
-so the CLI's answer to "what drifted?" is byte-for-byte the dashboard's — the
-subtle intersection-diff rule (scan emits ~11 keys, tfstate 50+, so only shared
-keys are compared) lives in one place and the CLI inherits it.
+classification is the core's own `asset_manager.drift.classify`, so the CLI's
+answer to "what drifted?" is byte-for-byte the dashboard's — both the
+existence rules (appeared / disappeared / ASG churn) and the subtle
+intersection-diff rule (scan emits ~11 keys, tfstate 50+, so only shared keys
+are compared) live in one place and the CLI inherits them.
 """
 
 from django.db.models import Count, Q
@@ -101,11 +102,14 @@ def drift_for(environment):
     alike land in `autoscaling`. That keeps `syncvey drift --exit-code` from
     failing a build on a routine capacity move.
 
-    The branch order mirrors the core's `_record_drift_snapshot` and
-    `drift_report_view`: existence first, attributes second.
+    The decision itself is not made here: `asset_manager.drift.classify` owns
+    it, and the dashboard, the snapshot writer and this function all ask the
+    same function. That is the whole point — this plugin answering the question
+    on its own is exactly how a deleted resource came to be reported as added.
     """
-    from asset_manager.views import _compute_raw_diff
-    from asset_manager.autoscaling import is_autoscaling_churn
+    from asset_manager.drift import (
+        classify, CHANGED, ADDED, REMOVED, AUTOSCALING,
+    )
 
     changed, added, removed, autoscaling, unchanged = [], [], [], [], 0
     assets = environment.assets.only(
@@ -120,24 +124,17 @@ def drift_for(environment):
             'cloud_id': asset.cloud_id,
             'provider': asset.provider,
         }
-        if asset.missing_since:
-            # AWS から消えた資産。スケールインは churn として別枠に逃がす
-            # （スケールアウトを added から外したのと対称）。
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append(meta)
-            else:
-                removed.append(meta)
-        elif not asset.raw_data_prev:
-            if is_autoscaling_churn(asset.raw_data):
-                autoscaling.append(meta)
-            else:
-                added.append(meta)
+        category, diff = classify(asset)
+        if category == CHANGED:
+            changed.append({**meta, 'changes': diff})
+        elif category == ADDED:
+            added.append(meta)
+        elif category == REMOVED:
+            removed.append(meta)
+        elif category == AUTOSCALING:
+            autoscaling.append(meta)
         else:
-            diff = _compute_raw_diff(asset.raw_data_prev, asset.raw_data)
-            if diff:
-                changed.append({**meta, 'changes': diff})
-            else:
-                unchanged += 1
+            unchanged += 1
 
     return {'changed': changed, 'added': added, 'removed': removed,
             'autoscaling': autoscaling, 'unchanged': unchanged}
