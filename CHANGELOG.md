@@ -8,6 +8,20 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Changed
+
+- **One place decides what drift is.** The classification — appeared,
+  disappeared, changed, Auto Scaling churn, and the order those are judged in —
+  was hand-written in four callers: the environment badge, the snapshot writer,
+  the drift report and the CLI. Every time the core learned a category, some
+  copies kept the old answer: `removed` shipped in 0.1.0, two copies caught up
+  in #24, and the fourth was still calling a deleted resource an addition until
+  the fix earlier in this release. The rule now lives in `asset_manager/drift.py`
+  as `classify()`; the four callers ask it and keep only their own output shape
+  (counts, JSON, template rows). No behaviour change — a new test asserts all
+  four report identical numbers for the same environment, so a fifth copy is a
+  failing build rather than a bug report
+
 ### Added
 
 - Try it without an AWS account — a `demo` Compose profile starts a local AWS
