@@ -122,7 +122,10 @@ class Command(BaseCommand):
             for env_obj in service.resolve_environments(sys_obj, env):
                 reports.append((sys_obj, env_obj, service.drift_for(env_obj)))
 
-        total_drift = sum(len(d['changed']) + len(d['added']) for _, _, d in reports)
+        total_drift = sum(
+            len(d['changed']) + len(d['added']) + len(d['removed'])
+            for _, _, d in reports
+        )
 
         if format == 'json':
             payload = [
@@ -131,6 +134,7 @@ class Command(BaseCommand):
                     'environment': env_obj.name,
                     'changed':     d['changed'],
                     'added':       d['added'],
+                    'removed':     d['removed'],
                     'autoscaling': d['autoscaling'],
                     'unchanged':   d['unchanged'],
                 }
@@ -151,7 +155,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("No drift. All environments match their last snapshot."))
             return
         for sys_obj, env_obj, d in reports:
-            n = len(d['changed']) + len(d['added'])
+            n = len(d['changed']) + len(d['added']) + len(d['removed'])
             if n == 0:
                 self.stdout.write(f"{sys_obj.name} / {env_obj.name}: {self.style.SUCCESS('clean')}")
                 continue
@@ -160,7 +164,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{sys_obj.name} / {env_obj.name}: "
                 f"{self.style.WARNING(str(n) + ' drifted')} "
-                f"(changed={len(d['changed'])} added={len(d['added'])}){asg_note}"
+                f"(changed={len(d['changed'])} added={len(d['added'])} "
+                f"removed={len(d['removed'])}){asg_note}"
             )
             for item in d['changed']:
                 self.stdout.write(f"    ~ {item['type']} {item['name']} ({item['cloud_id']})")
@@ -168,6 +173,8 @@ class Command(BaseCommand):
                     self.stdout.write(f"        {ch['field']}: {ch['old']} -> {ch['new']}")
             for item in d['added']:
                 self.stdout.write(f"    + {item['type']} {item['name']} ({item['cloud_id']})")
+            for item in d['removed']:
+                self.stdout.write(f"    - {item['type']} {item['name']} ({item['cloud_id']})")
 
     # -- status -------------------------------------------------------------
 

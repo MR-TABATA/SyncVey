@@ -165,6 +165,65 @@ docker compose exec app python manage.py seed   # optional: loads sample data
 
 ---
 
+## Try it without an AWS account
+
+Run a real scan — ledger, drift report, dashboard — against a local AWS emulator ([LocalStack](https://localstack.cloud/)). No AWS account, no credentials, no bill.
+
+**1.** Uncomment the demo block in `.env`:
+
+```bash
+AWS_ENDPOINT_URL=http://localstack:4566
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+```
+
+**2.** Start the stack with the emulator, create some fake resources, and scan them:
+
+```bash
+docker compose --profile demo up -d
+docker compose exec app python scripts/seed_localstack.py
+docker compose exec app python manage.py syncvey scan --system "Demo System"
+```
+
+Open http://localhost:8000/ and the scanned resources are in the ledger.
+
+**3.** Make something drift, then look again:
+
+```bash
+docker compose exec app python -c "
+import boto3
+s = boto3.Session(region_name='ap-northeast-1')
+q = s.client('sqs')
+q.delete_queue(QueueUrl=q.get_queue_url(QueueName='demo-jobs')['QueueUrl'])
+ec2 = s.client('ec2')
+ec2.stop_instances(InstanceIds=[ec2.describe_instances()['Reservations'][0]['Instances'][0]['InstanceId']])
+"
+docker compose exec app python manage.py syncvey scan --system "Demo System"
+docker compose exec app python manage.py syncvey drift --system "Demo System"
+```
+
+```
+Demo System / Production: 2 drifted (changed=1 added=0 removed=1)
+    ~ EC2 i-9538ffc109d6e7b6b (i-9538ffc109d6e7b6b)
+        instance_state: running -> stopped
+    - SQS demo-jobs (arn:aws:sqs:ap-northeast-1:000000000000:demo-jobs)
+```
+
+### What works, and what doesn't
+
+LocalStack's free edition implements a subset of AWS, so 10 of the 18 scanners return data. The other 8 report an error for their service and the scan carries on — a scanner that failed is deliberately excluded from deleted-resource detection, so a service SyncVey could not read is never mistaken for a fleet someone deleted.
+
+| Scans against LocalStack | Paid LocalStack tier only |
+|---|---|
+| EC2, VPC, EBS, S3, Lambda, DynamoDB, SNS, SQS, Secrets Manager, Route 53 | RDS, ECS, ALB, ElastiCache, EFS, EKS, API Gateway v2, CloudFront |
+
+- **"Who changed this?" does not work here.** Attribution reads CloudTrail event history, which the free edition does not provide, so drift rows show no actor.
+- **The image tag is pinned to `localstack/localstack:4` on purpose.** `:latest` now requires a LocalStack auth token and exits immediately without one.
+
+To point SyncVey back at real AWS, comment those three lines out again and run `docker compose up -d`.
+
+---
+
 ## Setting up AWS scan
 
 Create a read-only IAM Role in each target AWS account and register its ARN in SyncVey.

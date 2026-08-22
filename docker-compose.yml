@@ -19,6 +19,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # ローカル AWS エミュレータ。`--profile demo` を付けた時だけ起動する。
+  # AWS アカウントも課金も無しで SyncVey を試すための導線（README 参照）。
+  # タグは 4 系に固定すること: :latest は 2026 年版から認証トークン必須になり、
+  # LOCALSTACK_AUTH_TOKEN が無いと exit code 55 で即死する。
+  localstack:
+    image: localstack/localstack:4
+    container_name: syncvey-localstack
+    profiles: ["demo"]
+    ports:
+      - "${LOCALSTACK_PORT_EXTERNAL:-4566}:4566"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   app:
     build: .
     container_name: syncvey-app

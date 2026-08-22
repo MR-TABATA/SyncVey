@@ -86,20 +86,31 @@ def drift_for(environment):
 
         {'changed': [{type, name, cloud_id, provider, changes:[...]}, ...],
          'added':   [{type, name, cloud_id, provider}, ...],
+         'removed': [{type, name, cloud_id, provider}, ...],
          'autoscaling': [{type, name, cloud_id, provider}, ...],
          'unchanged': int}
 
+    `removed` = assets the scanner stopped seeing (`missing_since` stamped).
+    They never get a `raw_data_prev`, so without this branch a resource deleted
+    from AWS would be reported as a *first sighting* — the exact opposite of
+    what happened.
+
     `added` = assets that have never had a previous snapshot (first sighting),
-    matching the core's ADDED semantics — except an ASG-owned first-sighting is
-    churn, not drift, so it lands in `autoscaling` instead. That keeps
-    `syncvey drift --exit-code` from failing a build on a routine scale-out.
+    matching the core's ADDED semantics. Both existence changes are churn
+    rather than drift when the asset is ASG-owned, so scale-out and scale-in
+    alike land in `autoscaling`. That keeps `syncvey drift --exit-code` from
+    failing a build on a routine capacity move.
+
+    The branch order mirrors the core's `_record_drift_snapshot` and
+    `drift_report_view`: existence first, attributes second.
     """
     from asset_manager.views import _compute_raw_diff
     from asset_manager.autoscaling import is_autoscaling_churn
 
-    changed, added, autoscaling, unchanged = [], [], [], 0
+    changed, added, removed, autoscaling, unchanged = [], [], [], [], 0
     assets = environment.assets.only(
         'asset_type', 'name', 'cloud_id', 'provider', 'raw_data', 'raw_data_prev',
+        'missing_since',
     ).order_by('asset_type', 'name')
 
     for asset in assets:
@@ -109,7 +120,14 @@ def drift_for(environment):
             'cloud_id': asset.cloud_id,
             'provider': asset.provider,
         }
-        if not asset.raw_data_prev:
+        if asset.missing_since:
+            # AWS から消えた資産。スケールインは churn として別枠に逃がす
+            # （スケールアウトを added から外したのと対称）。
+            if is_autoscaling_churn(asset.raw_data):
+                autoscaling.append(meta)
+            else:
+                removed.append(meta)
+        elif not asset.raw_data_prev:
             if is_autoscaling_churn(asset.raw_data):
                 autoscaling.append(meta)
             else:
@@ -121,7 +139,7 @@ def drift_for(environment):
             else:
                 unchanged += 1
 
-    return {'changed': changed, 'added': added,
+    return {'changed': changed, 'added': added, 'removed': removed,
             'autoscaling': autoscaling, 'unchanged': unchanged}
 
 
