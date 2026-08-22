@@ -4,10 +4,12 @@ from unittest import mock
 
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 
 from asset_manager.models import (
     Asset, DriftSnapshot, Environment, Organization, ScanJob, System,
 )
+from syncvey_cli import service
 
 
 def _run(*args):
@@ -91,6 +93,50 @@ class TestDrift(Base):
         self._env()
         _, code = _run('drift', '--system', 'nope')
         self.assertEqual(code, 2)
+
+    def test_removed_asset_is_reported_as_removed_not_added(self):
+        # A resource the scanner stopped seeing carries missing_since and never
+        # gets a raw_data_prev. Classifying on raw_data_prev alone called that a
+        # first sighting, so a deletion printed as "+ added" — the opposite of
+        # what happened. Existence must be judged before attributes.
+        _, env = self._env()
+        asset = self._asset(env, 'sqs-1', {}, {'name': 'queue'})
+        Asset.objects.filter(pk=asset.pk).update(missing_since=timezone.now())
+        out, code = _run('drift', '--exit-code')
+        self.assertIn('removed=1', out)
+        self.assertIn('added=0', out)
+        self.assertIn('- SG sqs-1', out)
+        self.assertEqual(code, 1)
+
+        data = json.loads(_run('drift', '--format', 'json')[0])
+        self.assertEqual(data[0]['added'], [])
+        self.assertEqual(data[0]['removed'][0]['cloud_id'], 'sqs-1')
+
+    def test_removed_matches_the_core_snapshot_counts(self):
+        # The CLI's answer must stay byte-for-byte the dashboard's: same asset,
+        # same numbers out of the core's own snapshot writer.
+        from asset_manager.views import _record_drift_snapshot
+
+        _, env = self._env()
+        asset = self._asset(env, 'sqs-1', {}, {'name': 'queue'})
+        Asset.objects.filter(pk=asset.pk).update(missing_since=timezone.now())
+        snapshot = _record_drift_snapshot(env, DriftSnapshot.Source.SCAN)
+        drift = service.drift_for(env)
+        self.assertEqual(len(drift['removed']), snapshot.removed_count)
+        self.assertEqual(len(drift['added']), snapshot.added_count)
+
+    def test_scale_in_is_churn_not_a_removal(self):
+        # Symmetric to scale-out: an ASG-owned resource disappearing is capacity
+        # moving, not drift, so it must not fail the build either.
+        _, env = self._env()
+        asset = self._asset(env, 'i-asg', {}, {'instance_type': 't3.micro',
+                                               'autoscaling_group': 'web-asg'})
+        Asset.objects.filter(pk=asset.pk).update(missing_since=timezone.now())
+        _, code = _run('drift', '--exit-code')
+        self.assertEqual(code, 0)
+        data = json.loads(_run('drift', '--format', 'json')[0])
+        self.assertEqual(data[0]['removed'], [])
+        self.assertEqual(len(data[0]['autoscaling']), 1)
 
     def test_asg_churn_does_not_fail_the_build(self):
         # an ASG-owned first-sighting is churn, not drift — --exit-code must pass
