@@ -1,14 +1,16 @@
 # Developer live-reload override (optional).
 #
-# End users do NOT need this — `docker compose up` runs the self-contained image.
+# End users do NOT need this — `docker compose up` pulls the published image.
 # For development, copy this file to docker-compose.override.yml; Compose merges it
-# automatically and mounts your working tree so code changes are picked up without
-# rebuilding the image:
+# automatically, builds from your working tree instead of pulling, and mounts the
+# tree so code changes are picked up without rebuilding:
 #
 #     cp docker-compose.override.yml.example docker-compose.override.yml
 #
 services:
   app:
+    # 公開イメージではなく、この作業ツリーからビルドする。
+    build: .
     volumes:
       - .:/app
       - /app/.venv  # keep the image's virtualenv; don't shadow it with the host

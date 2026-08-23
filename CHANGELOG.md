@@ -39,7 +39,7 @@ the truth on screen and the opposite on the command line.
   on. The image tag is pinned to `localstack/localstack:4` because `:latest`
   now requires an auth token and exits without one. README documents what does
   and does not work, CloudTrail attribution included
-- Published Docker images — `v*` tags build `mrtabata/syncvey` for amd64 and
+- Published Docker images — `v*` tags build `jiniie/syncvey` for amd64 and
   arm64 and push it to Docker Hub. Until now the only install path was a
   `git clone`, which nothing counts: release Source code archives are not
   measured either, so "how many downloads?" had no answer that could exist.

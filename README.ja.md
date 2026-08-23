@@ -122,6 +122,12 @@ AWS_SCAN_REGIONS=ap-northeast-1,ap-northeast-3
 docker compose up -d
 ```
 
+公開イメージ（[`jiniie/syncvey`](https://hub.docker.com/r/jiniie/syncvey)、amd64 / arm64）を取得して起動します。ビルドもコンパイルも走りません。
+
+> **ソースからビルドする場合:** `docker-compose.override.yml.example` を `docker-compose.override.yml` にコピーしてください。作業ツリーからイメージをビルドし、ツリーをマウントしてライブリロードします（＝開発用の構成）。
+>
+> **版を固定する場合:** `.env` に `SYNCVEY_IMAGE=jiniie/syncvey:0.2.0` を設定します。
+
 > **Tip:** VS Code を使うなら Dev Containers で開くと環境が自動構築されます。
 
 ### 3. マイグレーション＆（任意で）サンプルデータ投入
