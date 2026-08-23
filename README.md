@@ -147,11 +147,11 @@ AWS_SCAN_REGIONS=ap-northeast-1,ap-northeast-3
 docker compose up -d
 ```
 
-This pulls the published image ([`mrtabata/syncvey`](https://hub.docker.com/r/mrtabata/syncvey), amd64 and arm64) — there is nothing to build and nothing to compile.
+This pulls the published image ([`jiniie/syncvey`](https://hub.docker.com/r/jiniie/syncvey), amd64 and arm64) — there is nothing to build and nothing to compile.
 
 > **Building from source instead:** copy `docker-compose.override.yml.example` to `docker-compose.override.yml`. It builds the image from your working tree and mounts the tree for live reload — that is the development setup.
 >
-> **Pinning a version:** set `SYNCVEY_IMAGE=mrtabata/syncvey:0.2.0` in `.env`.
+> **Pinning a version:** set `SYNCVEY_IMAGE=jiniie/syncvey:0.2.0` in `.env`.
 
 > **Tip:** If you use VS Code, open the repo in Dev Containers — the environment is built automatically.
 

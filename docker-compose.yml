@@ -40,7 +40,7 @@ services:
     # ソースからビルドしたい時は docker-compose.override.yml.example を参照
     # （`build: .` を足すと、こちらが優先される）。
     # 版を固定したい時は .env の SYNCVEY_IMAGE で上書きする。
-    image: ${SYNCVEY_IMAGE:-mrtabata/syncvey:latest}
+    image: ${SYNCVEY_IMAGE:-jiniie/syncvey:latest}
     container_name: syncvey-app
     env_file: .env
     ports:
