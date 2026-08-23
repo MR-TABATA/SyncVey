@@ -8,6 +8,12 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-23
+
+Makes the project something you can try without an AWS account, and something
+whose adoption can actually be measured. Also fixes a drift report that told
+the truth on screen and the opposite on the command line.
+
 ### Changed
 
 - **One place decides what drift is.** The classification — appeared,
@@ -33,6 +39,17 @@ While the major version is `0`, minor releases may change behaviour.
   on. The image tag is pinned to `localstack/localstack:4` because `:latest`
   now requires an auth token and exits without one. README documents what does
   and does not work, CloudTrail attribution included
+- Published Docker images — `v*` tags build `mrtabata/syncvey` for amd64 and
+  arm64 and push it to Docker Hub. Until now the only install path was a
+  `git clone`, which nothing counts: release Source code archives are not
+  measured either, so "how many downloads?" had no answer that could exist.
+  A pull request that touches the Dockerfile builds the image without pushing,
+  so a broken build surfaces on the branch instead of on release day (#33)
+- Metrics collection — `scripts/metrics.py report` prints Docker pulls, release
+  asset downloads and GitHub traffic in one place, and says which figures do
+  not exist yet rather than printing a confident zero. A scheduled job stores
+  the traffic numbers daily in a private Gist, because GitHub keeps only the
+  last 14 days and a day not collected is gone for good (#33)
 
 ### Fixed
 
@@ -179,6 +196,7 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MR-TABATA/SyncVey/releases/tag/v0.1.0
