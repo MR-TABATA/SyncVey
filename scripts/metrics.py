@@ -17,7 +17,7 @@
 環境変数:
     METRICS_TOKEN / GITHUB_TOKEN   GitHub API 用（未設定なら `gh auth token`）
     GIST_ID                        snapshot の保存先（非公開 Gist の ID）
-    DOCKERHUB_NAMESPACE            Docker Hub のユーザー名（未設定なら pull 数は出さない）
+    DOCKERHUB_NAMESPACE            Docker Hub のユーザー名（既定 'mrtabata'）
 """
 
 import argparse
@@ -30,7 +30,7 @@ import urllib.request
 from datetime import date, datetime, timezone
 
 REPO = os.getenv('METRICS_REPO', 'MR-TABATA/SyncVey')
-DOCKER_NAMESPACE = os.getenv('DOCKERHUB_NAMESPACE', '')
+DOCKER_NAMESPACE = os.getenv('DOCKERHUB_NAMESPACE', 'mrtabata')
 DOCKER_IMAGE = os.getenv('DOCKERHUB_IMAGE', 'syncvey')
 GIST_FILENAME = 'syncvey-metrics.json'
 
