@@ -406,6 +406,9 @@ STRINGS = {
             '「作成から N 日」は、書かれてからマージされるまで開いていた期間。'
             '長いものは他の作業を先に通していたか、衝突の解消が必要だったもの。',
             '区切りと一行要約は後から付けた解釈で、それ以外の数値はすべて生成時に計測している。',
+            '最初の 2 週間（6/05〜6/16）に PR が 1 件も無いのは、いまのリポジトリを 6/17 に'
+            '作り直したため。その間の作業はコミットとして残っているが、当時の PR は旧リポジトリ'
+            'と一緒に消えた。開発日数と週ごとのグラフは git の最初のコミットから数えている。',
         ],
         'open_days': '作成から {n} 日',
         'week_label': '{m}/{d}',
@@ -431,6 +434,10 @@ STRINGS = {
             'merged. The long ones were waiting behind other work, or needed conflicts resolved.',
             'The phase grouping and the one-line summaries are editorial. Every number on this '
             'page is measured at build time.',
+            'The first two weeks (5-16 June) carry no pull requests because this repository was '
+            're-created on 17 June: that work survives as commits, but the pull requests went '
+            'with the old repository. Elapsed days and the weekly chart count from the first '
+            'commit in git.',
         ],
         'open_days': 'open {n} days',
         'week_label': '{m}/{d}',
