@@ -8,7 +8,8 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 構成ドリフトを検出し、アプリケーション情報（言語・フレームワーク・依存パッケージ）を環境別に
 追跡します。`docker compose up` 一発で起動。
 
-> 機能紹介ページ → **[https://mr-tabata.github.io/SyncVey/](https://mr-tabata.github.io/SyncVey/)**
+> 機能紹介ページ → **[https://syncvey.com/](https://syncvey.com/)**
+> 開発の記録 → **[https://syncvey.com/history.ja.html](https://syncvey.com/history.ja.html)** — マージされた PR を時系列で。日付も規模も git と GitHub API から計測している。
 
 ---
 
