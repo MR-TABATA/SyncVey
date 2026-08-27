@@ -8,6 +8,34 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-08-27
+
+Starting the app is now a pull, not a build.
+
+### Changed
+
+- **`docker compose up -d` starts from the published image instead of building
+  one.** It used to run apt and pip on the user's machine — several minutes
+  before the first screen, on a laptop that has no reason to compile anything.
+  Compose now points at `jiniie/syncvey:latest` (amd64 and arm64, published on
+  `v*` tags), so starting the app is a pull. `SYNCVEY_IMAGE` in `.env` pins a
+  version. It also gives the project its first countable install: a `git clone`
+  is not measured by anything, and release Source code archives are not either
+- **Building from source became the developer path**, where it belongs.
+  `cp docker-compose.override.yml.example docker-compose.override.yml` gives
+  `build: .` plus the working-tree mount — the old behaviour with live reload.
+  README (both languages) and the landing page say which of the two you get (#34)
+
+### Documentation
+
+- The development-history page explains why its first two weeks carry no pull
+  requests: this repository was re-created on 17 June, and the work before that
+  survives as commits while the pull requests went with the old repository.
+  Elapsed days and the weekly chart count from the first commit in git
+- That page had been reachable only from the landing page's own navigation.
+  It now has an entry from the README (both languages) and from the download
+  page, and the site has a `sitemap.xml` and `robots.txt` (#36)
+
 ## [0.3.0] — 2026-08-23
 
 Makes the project something you can try without an AWS account, and something
