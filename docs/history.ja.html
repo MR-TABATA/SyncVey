@@ -122,8 +122,8 @@
 <p>マージされたプルリクエストを時系列で並べたもの。日付・規模・件数は git と GitHub API から取得しており、手で書いていない。</p>
 <div class="stats">
 <div class="stat"><div class="stat-value">80</div><div class="stat-label">開発日数</div></div>
-<div class="stat"><div class="stat-value">34</div><div class="stat-label">マージ済み PR</div></div>
-<div class="stat"><div class="stat-value">49</div><div class="stat-label">コミット</div></div>
+<div class="stat"><div class="stat-value">35</div><div class="stat-label">マージ済み PR</div></div>
+<div class="stat"><div class="stat-value">50</div><div class="stat-label">コミット</div></div>
 <div class="stat"><div class="stat-value">2</div><div class="stat-label">リリース</div></div>
 </div></div></header>
 <section><div class="container"><div class="chart-wrap">
@@ -140,7 +140,7 @@
 <div class="bar-col"><span class="bar-n">0</span><div class="bar zero" style="height:0%"></div></div>
 <div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
 <div class="bar-col"><span class="bar-n">15</span><div class="bar" style="height:100%"></div></div>
-<div class="bar-col"><span class="bar-n">4</span><div class="bar" style="height:27%"></div></div>
+<div class="bar-col"><span class="bar-n">5</span><div class="bar" style="height:33%"></div></div>
 </div><div class="chart-axis">
 <span>6/5</span>
 <span>6/12</span>
@@ -400,6 +400,12 @@
 <div class="entry-diff"><span class="add">+362</span> <span class="del">-0</span></div>
 </div>
 <div class="entry">
+<div class="entry-meta">2026-08-23<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/34">#34</a></div>
+<div class="entry-body"><h3>feat(dist): start from the published image instead of building</h3><p>feat(dist): start from the published image instead of building</p>
+</div>
+<div class="entry-diff"><span class="add">+31</span> <span class="del">-9</span></div>
+</div>
+<div class="entry">
 <div class="entry-meta">2026-08-23<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/35">#35</a></div>
 <div class="entry-body"><h3>docs: cut 0.3.0</h3><p>docs: cut 0.3.0</p>
 </div>
@@ -411,6 +417,7 @@
 <li>日付は GitHub 上でマージされた日（UTC）。</li>
 <li>「作成から N 日」は、書かれてからマージされるまで開いていた期間。長いものは他の作業を先に通していたか、衝突の解消が必要だったもの。</li>
 <li>区切りと一行要約は後から付けた解釈で、それ以外の数値はすべて生成時に計測している。</li>
+<li>最初の 2 週間（6/05〜6/16）に PR が 1 件も無いのは、いまのリポジトリを 6/17 に作り直したため。その間の作業はコミットとして残っているが、当時の PR は旧リポジトリと一緒に消えた。開発日数と週ごとのグラフは git の最初のコミットから数えている。</li>
 </ul></div>
 </div></section>
 <footer><div class="container"><p>© 2026 SyncVey &nbsp;·&nbsp; <a href="https://github.com/MR-TABATA/SyncVey">GitHub</a></p></div></footer>
