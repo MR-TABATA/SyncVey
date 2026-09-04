@@ -164,7 +164,7 @@
             <span class="font-semibold text-slate-800 line-through decoration-slate-300">{{ item.asset.name }}</span>
             <span class="font-mono text-xs text-slate-400 truncate max-w-[220px]">{{ item.asset.cloud_id }}</span>
             <span class="ml-auto text-xs font-semibold text-red-600 shrink-0">
-                {% blocktrans with when=item.asset.missing_since|date:"Y-m-d H:i" %}Gone since {{ when }}{% endblocktrans %}
+                {% blocktrans with when=item.asset.missing_since|date:"Y-m-d H:i T" %}Gone since {{ when }}{% endblocktrans %}
             </span>
         </div>
         {% endfor %}

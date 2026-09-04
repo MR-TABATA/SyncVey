@@ -40,7 +40,7 @@
     <div class="flex flex-row-reverse items-end gap-1 h-24">
         {% for s in snapshots %}
         <div class="flex-1 min-w-[3px] flex flex-col justify-end h-full group/bar relative"
-             title="{{ s.detected_at|date:'Y-m-d H:i' }} — {{ s.changed_count }} {% trans 'changed' %}, {{ s.added_count }} {% trans 'added' %}, {{ s.removed_count }} {% trans 'removed' %}">
+             title="{{ s.detected_at|date:'Y-m-d H:i T' }} — {{ s.changed_count }} {% trans 'changed' %}, {{ s.added_count }} {% trans 'added' %}, {{ s.removed_count }} {% trans 'removed' %}">
             <div class="rounded-t-sm transition-colors {% if s.has_drift %}bg-blue-400 group-hover/bar:bg-blue-600{% else %}bg-slate-200 group-hover/bar:bg-slate-300{% endif %}"
                  style="height: {% widthratio s.total_count peak 100 %}%; min-height: 3px;"></div>
         </div>
@@ -57,7 +57,7 @@
             hx-target="#main-content"
             hx-swap="innerHTML">
         <div class="flex flex-col">
-            <span class="text-sm font-semibold text-slate-700">{{ s.detected_at|date:"Y-m-d H:i" }}</span>
+            <span class="text-sm font-semibold text-slate-700">{{ s.detected_at|date:"Y-m-d H:i T" }}</span>
             <span class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ s.get_source_display }}</span>
         </div>
         <div class="ml-auto flex items-center gap-4">
