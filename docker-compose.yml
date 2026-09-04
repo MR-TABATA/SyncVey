@@ -51,6 +51,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      # 画面に出す時刻のタイムゾーン。コンテナは何も渡さなければ UTC なので、
+      # ホストのものを渡す（TZ=Asia/Tokyo docker compose up、または .env）。
+      # 保存されている値は UTC のまま。変わるのは表示だけ。
+      TZ: ${TZ:-UTC}
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py createsuperuser --noinput || true &&

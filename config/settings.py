@@ -191,7 +191,19 @@ LANGUAGES = [
 
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
-TIME_ZONE = 'UTC'
+# **画面に出す時刻のタイムゾーン。**
+#
+# 中身は今までどおり UTC で持つ（USE_TZ = True）。変えるのは表示だけで、
+# 保存されている値には触らない。
+#
+# ここが UTC 固定だと、JST の利用者には 9 時間ずれた時刻が、**ずれていると
+# 分からない形**で出る（画面のどこにも UTC と書いていない）。ドリフト検知は
+# 「いつ変わったか」が本体で、AWS のコンソールや CloudTrail と突き合わせる
+# ときに、ラベルのない 9 時間はそのまま読み違いになる。
+#
+# コンテナは何も渡さなければ UTC なので、docker compose がホストの TZ を
+# 渡す。TZ=Asia/Tokyo docker compose up、または .env に TZ を置く。
+TIME_ZONE = os.environ.get('TZ', 'UTC')
 
 USE_I18N = True
 

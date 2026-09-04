@@ -75,6 +75,6 @@
 {% endif %}
 
 <div class="flex justify-between items-center text-xs text-slate-400">
-    <span>{% trans "Created:" %} {{ asset.created_at|date:"Y-m-d H:i" }}</span>
-    <span>{% trans "Updated:" %} {{ asset.updated_at|date:"Y-m-d H:i" }}</span>
+    <span>{% trans "Created:" %} {{ asset.created_at|date:"Y-m-d H:i T" }}</span>
+    <span>{% trans "Updated:" %} {{ asset.updated_at|date:"Y-m-d H:i T" }}</span>
 </div>

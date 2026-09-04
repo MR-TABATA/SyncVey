@@ -8,6 +8,25 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Changed
+
+- **Times are shown in your timezone, and say which one.** `TIME_ZONE` was
+  pinned to `UTC` and nothing on screen said so, so a drift snapshot taken at
+  09:10 in Tokyo read as `2026-09-04 00:10` — the right instant, displayed in a
+  way that looks like the wrong one. Drift detection is about *when* something
+  changed, and these timestamps get lined up against the AWS console and
+  CloudTrail; an unlabelled nine-hour gap is a misreading waiting to happen.
+
+  `docker compose` now passes the host's `TZ` through, so
+  `TZ=Asia/Tokyo docker compose up` shows local time, and every absolute
+  timestamp carries its zone: `2026-09-04 09:10 JST`. It still defaults to UTC
+  when `TZ` is unset — unambiguous beats guessing.
+
+  **Stored data is untouched.** Everything is still kept in UTC (`USE_TZ` was
+  already on); only the display changed. A test walks the templates and fails if
+  a new time-of-day format ships without its zone.
+
+
 ## [0.4.0] — 2026-08-27
 
 Starting the app is now a pull, not a build.
