@@ -8,6 +8,11 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-04
+
+Times now say which timezone they are in.
+
+
 ### Changed
 
 - **Times are shown in your timezone, and say which one.** `TIME_ZONE` was
