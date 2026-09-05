@@ -70,3 +70,6 @@ test-results/
 
 # Slack 用の下書きとスクリーンショット置き場（公開物ではない）
 /shots/
+
+# Claude Code へのローカル指示（各自の手元のもの。共有しない）
+CLAUDE.md
