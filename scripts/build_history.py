@@ -209,11 +209,12 @@ def collect():
 
 
 def group_by_version(data):
-    """[(ja_title, en_title, tag_or_none, [commit, ...]), ...] in chronological
-    order. A bucket runs up to and including the commit a tag points at, and
-    is titled after that tag — so "v0.1.0" is everything that had landed by
-    the time v0.1.0 shipped, first commit included. Whatever is left after
-    the last tag (commits not yet released) becomes its own trailing bucket."""
+    """[(ja_title, en_title, tag_or_none, [commit, ...]), ...], newest first —
+    both the version buckets and the commits inside each one. A bucket runs
+    up to and including the commit a tag points at, and is titled after that
+    tag — so "v0.1.0" is everything that had landed by the time v0.1.0
+    shipped, first commit included. Whatever is left after the last tag
+    (commits not yet released) becomes its own leading "Unreleased" bucket."""
     commits = data['commits']
     tag_shas = {sha: tag for tag, sha in data['tags']}
     groups = []
@@ -227,7 +228,8 @@ def group_by_version(data):
     if bucket:
         ja_t, en_t = UNRELEASED_TITLE
         groups.append((ja_t, en_t, None, bucket))
-    return groups
+    return [(ja_t, en_t, tag, list(reversed(listed)))
+            for ja_t, en_t, tag, listed in reversed(groups)]
 
 
 def weekly_counts(commits, first, last):
@@ -470,7 +472,8 @@ def render(lang, data, groups):
     add('<section><div class="container">')
     for ja_t, en_t, tag, listed in groups:
         title = (ja_t, en_t)[idx]
-        lo, hi = listed[0]['date'], listed[-1]['date']
+        lo = min(c['date'] for c in listed)
+        hi = max(c['date'] for c in listed)
         span = f'{lo:%Y-%m-%d}' if lo == hi else f'{lo:%Y-%m-%d} – {hi:%Y-%m-%d}'
         anchor = tag or 'unreleased'
         add(f'<div class="version" id="{e(anchor)}"><div class="version-head">')
