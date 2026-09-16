@@ -1,225 +1,153 @@
 #!/usr/bin/env python3
 """Generate the development-history page (`docs/history.{ja,en}.html`).
 
-The site ships one file per language, which means any hand-written page has two
-copies of the same content drifting apart the moment one side is edited — the
-exact failure `scripts/check_consistency.py` exists to catch. So this page is
-generated: the narrative lives here once, as (ja, en) pairs, and both files come
-out of the same run.
+This used to read merged pull requests (`gh pr list`). That silently drops
+any commit that lands by a direct push to `main` — and that is exactly what
+happened here: three commits in a row (one of them the v0.6.0 cut) never got
+an entry, no matter how many times the rebuild workflow ran, because none of
+them went through a PR. Reading from `git log` instead means every commit
+gets a place on the page regardless of how it landed. cli2ui's history page
+(github.com/MR-TABATA/cli2ui) was converted the same way first; this follows
+the same shape.
 
-Facts come from git and the GitHub API rather than from memory:
+Facts come from git at build time:
 
-    * merged pull requests   -> `gh pr list`
-    * commit count and dates -> `git`
-    * releases               -> `gh release list`
+    * commit list, dates, sha       -> `git log`
+    * lines added/removed           -> `git log --shortstat`
+    * version boundaries            -> `git tag` (peeled to the commit each
+                                        tag actually points at)
 
-The phase grouping and the one-line summaries are editorial — they are the part
-a machine cannot derive — so they are spelled out in PHASES below. Everything
-else (dates, sizes, counts, the bar chart) is measured at build time.
+The bilingual text is the one thing a machine cannot derive: a commit
+message here is written in whichever language was natural at the time, never
+both. COMMITS below pairs every commit's sha with a ja/en translation written
+by hand. A commit that lands without an entry here is not an error — it is
+shown using its own raw subject line on both pages until someone adds a
+translated pair.
+
+The workflow's own "docs: rebuild the development-history page" commits are
+excluded outright (EXCLUDE_GREP below) — they are not work, and including
+them would mean every rebuild adds an entry for itself.
 
     python3 scripts/build_history.py
 
-In normal operation nobody runs this by hand: `.github/workflows/history.yml`
-re-runs it on every push to main and commits the result if it changed. Run it
-locally when you have just written a summary in PHASES/SUMMARIES and want to see
-how it reads.
-
-A merged pull request that is not listed in PHASES is not an error — it lands in
-a trailing "recent changes" section using its own title as the summary. The page
-is therefore never missing work; it just reads better once someone writes a line
-for it.
+`.github/workflows/history.yml` re-runs this on every push to main and
+commits the result if it changed.
 """
 
 from __future__ import annotations
 
 import datetime
 import html
-import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REPO = 'MR-TABATA/SyncVey'
-START = datetime.date(2026, 6, 5)   # first commit
+
+PR_SUFFIX_RE = re.compile(r'\s*\(#(\d+)\)\s*$')
+EXCLUDE_GREP = '^docs: rebuild the development-history page'
 
 
 # ---------------------------------------------------------------------------
-# Editorial layer — the part that is judgement, not data
+# Editorial layer — the one thing a machine cannot derive: a translation of
+# each commit's subject into the language it was not written in. (sha, ja, en)
+# A PR reference embedded in the raw subject (" (#N)") is stripped before
+# translation and re-attached as a separate link at build time, so it is not
+# duplicated here.
 # ---------------------------------------------------------------------------
 
-# (anchor, ja title, en title, ja lead, en lead, [pr numbers])
-PHASES = [
-    (
-        'foundation',
-        '土台をつくる', 'Laying the foundation',
-        '資産台帳・AWS スキャン・tfstate 取込・構成図まで、まず動くものを一気に作った時期。'
-        '最初の PR が「任意機能を疎結合にするプラグイン機構」だったのは偶然ではなく、'
-        '後から機能を足しても本体が太らないようにするため。',
-        'The stretch that produced something that runs end to end: the asset ledger, the AWS '
-        'scan, tfstate import, the diagram. It is not an accident that the first pull request '
-        'was a plugin seam — optional features had to be able to arrive later without the core '
-        'swelling to meet them.',
-        [1],
-    ),
-    (
-        'drift',
-        'ドリフトを深める', 'Going deeper on drift',
-        '「差分が出る」だけでは使えない。推移が追えること、危険度が分かること、'
-        '誰がやったか辿れること。ドリフト検知を一段ずつ実用に寄せた。',
-        '"It reports a diff" is not yet useful. This is where drift detection grew the things '
-        'that make a diff actionable: a history to compare against, a severity grade, and a '
-        'name attached to the change.',
-        [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    ),
-    (
-        'reach',
-        '届く範囲を広げる', 'Widening the reach',
-        'ダッシュボードの外へ。CI から叩ける CLI、日本語 UI の穴埋め、'
-        'そして「Auto Scaling の増減で騒がない」という、現場で使うなら避けて通れない調整。',
-        'Out beyond the dashboard: a CLI a pipeline can call, the holes in the Japanese UI, and '
-        'the adjustment nobody can skip if the tool is going to run against a real account — '
-        'not treating Auto Scaling churn as drift.',
-        [16, 17],
-    ),
-    (
-        'ground',
-        '足場を固める → v0.1.0', 'Firming up the ground → v0.1.0',
-        'テストが通るかは手元でしか分からず、リリースもゼロ、脆弱性の報告先も無かった。'
-        '機能を足す前に、その状態を先に潰した。'
-        '同じ期間に「AWS から消えたリソースが台帳に残り続ける」実バグも直している。',
-        'Whether the tests passed was knowable only on one laptop; there were no releases and '
-        'nowhere to report a vulnerability. That got closed out before any more features went '
-        'in — alongside a real bug: resources deleted in AWS lingered in the ledger forever.',
-        [18, 19, 20, 21, 22],
-    ),
-    (
-        'backlog',
-        '積み残しを回収 → v0.2.0', 'Clearing the backlog → v0.2.0',
-        '7月に書いたまま開きっぱなしだった 3 本を、衝突を解いて片付けた。'
-        'その過程で「削除されたリソースがドリフト総数から抜け落ちる」不具合と、'
-        '未翻訳のまま出ていた 15 文字列が見つかり、どちらも塞いだ。',
-        'Three pull requests written in July had been sitting open; this is where the conflicts '
-        'were resolved and they landed. Doing so surfaced two more problems — deleted resources '
-        'were being dropped from the drift totals, and fifteen strings were still rendering in '
-        'English — and both were closed.',
-        [13, 14, 15, 23, 24, 25, 26, 27, 28],
-    ),
+COMMITS: list[tuple[str, str, str]] = [
+    ('6a81d23', 'SyncVey — 自己ホスト型の AWS 資産台帳、Terraform ドリフト検知付き', 'SyncVey — self-hosted AWS asset ledger with Terraform drift detection'),
+    ('a6ac99e', 'fix: 組織スコープの認可を強化', 'fix: organization-scope authorization hardening'),
+    ('ce2a434', 'docs: ドキュメントを英語主＋日本語（.ja.md）従に統一し、AWS 手順のリンク切れを修正', 'docs: standardize docs as English-primary + Japanese (.ja.md) secondary, fix broken AWS setup links'),
+    ('0a93b43', 'ux: チップ溢れ修正・環境カードのアクションをケバブ集約・サイドバーをモバイル対応', 'ux: fix chip overflow, collapse environment-card actions into a kebab menu, make the sidebar mobile-friendly'),
+    ('8bfcd54', 'chore(seed): デモデータを完全英語化し、superuser=管理専用モデルを維持', 'chore(seed): fully English demo data, keeping superuser as the admin-only model'),
+    ('db76750', 'feat(lp): ブランド準拠の 404 ページを追加（言語自動判定・橋メタファー）', 'feat(lp): add an on-brand 404 page (auto language detection, a bridge metaphor)'),
+    ('1fa4be3', 'improve(audit-log): レスポンシブなカードレイアウト＋変更列を分かりやすく', 'improve(audit-log): responsive card layout + clearer change column'),
+    ('7b79bde', 'ux(assets): リソース一覧をテーブル→カードのレスポンシブ切り替えに', 'ux(assets): responsive table→card split for resource list'),
+    ('416e36e', 'fix(lp): ダウンロードページの導入手順を修正', 'fix(lp): repair install steps on the download page'),
+    ('bedc512', 'fix(docker): クローン直後でもどこでも動く自己完結構成に', 'fix(docker): make a clean clone run anywhere, self-contained'),
+    ('3d0becf', 'docs(lp): ダウンロードページにデモ用ログイン情報を表示', 'docs(lp): show the demo login on the download page'),
+    ('cfea9f8', 'chore(lp): サイトを syncvey.com のカスタムドメインへ向ける', 'chore(lp): point the site at the syncvey.com custom domain'),
+    ('a229d2f', 'fix(drift): 共通キーのみを比較し、誤検知を無くす', 'fix(drift): compare only shared keys to kill false positives'),
+    ('be751f9', 'feat: ライブスキャン対象の拡張 + ドリフト履歴・推移', 'feat: expand live-scan coverage + drift history and trend'),
+    ('806dfa3', 'docs: README/LP にスキャン対象拡大とドリフト履歴を反映', 'docs: reflect scan-coverage expansion + drift history in README/LP'),
+    ('046b026', 'feat(core): 任意機能のフィーチャーフラグ＋プラグイン発見の継ぎ目', 'feat(core): optional-feature flags + plugin discovery seam'),
+    ('97b5ae3', 'feat(drift): 環境ごとに DriftSnapshot 履歴の保持件数を制限', 'feat(drift): cap DriftSnapshot history per environment'),
+    ('e25a7d5', 'fix(i18n): ドリフト履歴文字列の fuzzy な日本語訳を修正', 'fix(i18n): correct fuzzy ja translations for drift-history strings'),
+    ('51d6139', 'test(drift): ドリフト履歴ビューの描画をテストし、EFS アイコンの欠落も解消', 'test(drift): cover drift-history view render + close EFS icon gap'),
+    ('d013047', 'docs(lp): ランディングページを実際のスキャン範囲に合わせ、EOL/2FA も明記', 'docs(lp): align landing page with actual scan coverage + surface EOL/2FA'),
+    ('93cb166', 'feat(dashboard): ヒーロー行を追加 — ドリフト推移・EOL・鮮度', 'feat(dashboard): hero-signal row — drift trend, EOL, freshness'),
+    ('788e737', 'feat(drift-risk): セキュリティリスクでの選別＋ CloudTrail による変更者特定プラグイン', 'feat(drift-risk): security-risk triage + CloudTrail attribution plugin'),
+    ('66b4291', 'docs: drift-risk 機能を README とランディングページに記載', 'docs: document drift-risk feature in README + landing page'),
+    ('ea9f77c', 'feat(drift-digest): 週次ドリフト・ブリーフィング＋プラグイン用の定期ジョブの継ぎ目', 'feat(drift-digest): weekly drift briefing + plugin scheduled-job seam'),
+    ('7656b24', 'docs: 週次ドリフト・ブリーフィングを README とランディングページに記載', 'docs: document the weekly drift briefing in README + landing page'),
+    ('bb5905d', 'feat(survey): ダウンロード時アンケートで流入経路と目的を取得', 'feat(survey): capture attribution + intent on the download survey'),
+    ('749e24b', 'feat(drift-risk): されるべきなのにされていない Secrets Manager のローテーションを検出', "feat(drift-risk): flag Secrets Manager rotation that should have happened but didn't"),
+    ('f08dbb2', 'feat(cli): 着脱可能な `syncvey` コマンドラインプラグインを追加', 'feat(cli): add a detachable `syncvey` command-line plugin'),
+    ('56ba789', 'feat(drift): Auto Scaling の増減をオオカミ少年扱いしないように', "feat(drift): don't cry wolf on Auto Scaling churn"),
+    ('e829634', 'chore: 非公開ロードマップ用に /.private/ を gitignore', 'chore: gitignore /.private/ for the non-public roadmap'),
+    ('8026520', 'chore: 設定駆動のドキュメント整合性チェッカーを追加', 'chore: add config-driven doc-consistency checker'),
+    ('a2a2fe6', 'chore(ci): テストスイートを GitHub Actions で実行', 'chore(ci): run the test suite on GitHub Actions'),
+    ('dd597e5', 'feat(scan): AWS から消えたリソースを検出', 'feat(scan): detect resources that disappeared from AWS'),
+    ('36f3fdb', 'docs: v0.1.0 に先立ち SECURITY.md と CHANGELOG.md を追加', 'docs: add SECURITY.md and CHANGELOG.md ahead of v0.1.0'),
+    ('9316d02', 'ci(i18n): 未レビューの翻訳でビルドを失敗させる', 'ci(i18n): fail the build on unreviewed translations'),
+    ('6edea30', 'docs(i18n): 抽出されていなかった 50 文字列を翻訳し、ローテーションドリフトを記載', 'docs(i18n): translate the 50 never-extracted strings + document rotation drift'),
+    ('4f153e8', 'feat(blast-radius): 参照グラフとドリフトの波及（ステップ 1〜3）', 'feat(blast-radius): reference graph + drift propagation (steps 1–3)'),
+    ('83c689b', 'chore(ci): i18n チェックを CI に統合し、v0.1.0 以降の変更を記録', 'chore(ci): fold the i18n check into CI and log v0.1.0+ changes'),
+    ('32a0f2f', 'fix(drift): 削除されたリソースをドリフト総数に数える', 'fix(drift): count removed resources in the drift totals'),
+    ('5a5174f', 'i18n(ja): 影響波及範囲・Auto Scaling・Missing Since の文字列を翻訳', 'i18n(ja): translate blast-radius, Auto Scaling and missing-since strings'),
+    ('d4cb488', 'ci(i18n): 一度も抽出されていない文字列でビルドを失敗させる', 'ci(i18n): fail the build on strings that were never extracted'),
+    ('cde3045', 'docs: v0.2.0 の変更を CHANGELOG に記録', 'docs: log v0.2.0 in the changelog'),
+    ('b1f9374', 'docs: 生成される開発の記録ページを追加', 'docs: add a generated development-history page'),
+    ('421bceb', 'ci: main への push で開発の記録ページを自動的に再生成', 'ci: rebuild the development-history page automatically on main'),
+    ('57ea059', 'fix(ci): 記録ページの再生成時にフル履歴を checkout するように', 'fix(ci): check out full history when rebuilding the history page'),
+    ('ce55d90', 'feat(demo): LocalStack オンランプ — AWS アカウント無しで試せる（CLI の削除ドリフトの修正も併せて）', 'feat(demo): LocalStack on-ramp — try it without an AWS account (+ fix removed drift in the CLI)'),
+    ('bfaff43', 'refactor(drift): 「ドリフトとは何か」の判定を 1 か所に集約', 'refactor(drift): decide what drift is in one place'),
+    ('0690290', 'chore(metrics): イメージを Docker Hub に公開し、期限切れになるトラフィック数を保持', 'chore(metrics): publish the image to Docker Hub and keep the traffic numbers that expire'),
+    ('4302f0e', 'docs: 0.3.0 をカット', 'docs: cut 0.3.0'),
+    ('c275698', 'feat(dist): ビルドせず公開済みイメージから起動するように', 'feat(dist): start from the published image instead of building'),
+    ('7b24b7a', 'docs: 開発の記録ページへの入口を足し、最初の 2 週間の空白を説明する', "docs: add an entry point to the development-history page, and explain the first two weeks' gap"),
+    ('2b58c8f', '0.4.0: 起動が pull になったことを記録する', '0.4.0: record that startup now pulls instead of building'),
+    ('b00782d', '導入の手前からアンケートを外す', 'Remove the survey from just before onboarding'),
+    ('3aa6b50', '時刻を自分のタイムゾーンで、どこのものか分かる形で出す', "Show timestamps in your own timezone, labelled so it's clear whose clock they're on"),
+    ('a2debb3', '0.5.0: 版上げと CHANGELOG', '0.5.0: version bump and CHANGELOG'),
+    ('342a23f', 'CLAUDE.md を git 管理から外す', 'Stop tracking CLAUDE.md in git'),
+    ('1bdc2e3', '配布ポリシーに EBS/EFS/SNS/SQS の読み取り権限を足す', 'Add read access for EBS/EFS/SNS/SQS to the distribution policy'),
+    ('79e5fb8', 'ダッシュボードのヒーロー 3 枚を同じ骨組みに揃え、htmx 断片の直接アクセスを包む', "Align the dashboard's three hero cards on the same skeleton, and guard direct access to htmx fragments"),
+    ('45cc9e0', 'v0.6.0 の CHANGELOG を確定し、README/LP のスクリーンショットを撮り直す', 'Finalize the v0.6.0 CHANGELOG, and re-take the README/LP screenshots'),
 ]
 
-# pr number -> (ja one-liner, en one-liner)
-SUMMARIES = {
-    1:  ('フィーチャーフラグ＋プラグイン機構。任意機能を疎結合な Django アプリとして着脱可能にした',
-         'Feature flags and a plugin seam — optional features became detachable Django apps'),
-    2:  ('ドリフト履歴が無限に伸びるのを環境ごとの保持件数で止めた',
-         'Capped drift history per environment so the table stops growing forever'),
-    3:  ('ドリフト履歴の日本語訳が fuzzy のまま出ていたのを修正',
-         'Fixed fuzzy Japanese translations that had shipped for the drift-history strings'),
-    4:  ('ドリフト履歴ビューのテストを追加、EFS のアイコン欠けも解消',
-         'Covered the drift-history view with tests and closed an EFS icon gap'),
-    5:  ('LP の記述を実装（EOL・2FA）に合わせた',
-         'Aligned the landing page with what EOL and 2FA actually do'),
-    6:  ('ダッシュボードにヒーロー行。ドリフト推移・EOL・スキャン鮮度を一目で',
-         'A hero row on the dashboard — drift trend, EOL, and scan freshness at a glance'),
-    7:  ('ドリフトをセキュリティ影響度で採点し、CloudTrail で変更者を特定（プラグイン）',
-         'Grade drift by security impact and trace who changed it via CloudTrail (plugin)'),
-    8:  ('drift-risk を README と LP に記載',
-         'Documented drift-risk in the README and landing page'),
-    9:  ('週次ドリフト・ブリーフィング。プラグインが定期ジョブを生やす継ぎ目も用意',
-         'A weekly drift briefing, plus the seam that lets a plugin register a scheduled job'),
-    10: ('週次ブリーフィングを README と LP に記載',
-         'Documented the weekly briefing in the README and landing page'),
-    11: ('ダウンロード時アンケートで流入経路と目的を取得',
-         'Captured referral source and intent on the download survey'),
-    12: ('「されるべきなのにされていない」シークレットのローテーションを検出。差分ではなく現在の状態を採点する',
-         'Flag secret rotation that should have happened but did not — graded on standing state, not on a diff'),
-    13: ('未レビュー（fuzzy・空）の翻訳でビルドを落とす CI ゲート',
-         'A CI gate that fails the build on unreviewed translations — fuzzy or empty'),
-    14: ('makemessages を一度も通っていなかった 50 文字列を翻訳',
-         'Translated 50 strings that makemessages had never been run against'),
-    15: ('影響波及範囲。ドリフトを起点に参照グラフを辿り、届く範囲を影響度順に出す（プラグイン）',
-         'Blast radius — walk the reference graph out from each drift and rank what it reaches (plugin)'),
-    16: ('着脱可能な CLI プラグイン。`syncvey drift --exit-code` で CI から叩ける',
-         'A detachable CLI plugin — `syncvey drift --exit-code` makes a pipeline fail on drift'),
-    17: ('Auto Scaling の増減はドリフトではなく churn として別枠に。オオカミ少年をやめた',
-         'Auto Scaling churn stopped being counted as drift — the tool stopped crying wolf'),
-    18: ('非公開ロードマップ用に /.private/ を gitignore',
-         'Gitignored /.private/ for the non-public roadmap'),
-    19: ('設定駆動のドキュメント整合性チェッカー。公表値の食い違いを機械的に検出',
-         'A config-driven documentation consistency checker for numbers that disagree across docs'),
-    20: ('GitHub Actions でテストスイートを回すようにした。それまで main に CI は無かった',
-         'Put the test suite on GitHub Actions — until then main had no CI at all'),
-    21: ('AWS から消えたリソースを検出。スキャンできた範囲に限って判定するので、'
-         'API エラーで台帳が吹き飛ぶことはない',
-         'Detect resources that vanished from AWS — judged only where the scan succeeded, so a '
-         'transient API error can never be read as a mass deletion'),
-    22: ('SECURITY.md と CHANGELOG.md を追加し、初回リリース v0.1.0 の準備を整えた',
-         'Added SECURITY.md and CHANGELOG.md ahead of the first release'),
-    23: ('独立していた i18n ワークフローを CI に統合。1 PR で 8 回走っていたのを 1 回に',
-         'Folded the standalone i18n workflow into CI — it had been running eight times per pull request'),
-    24: ('削除されたリソースがドリフト総数から抜け落ちる不具合を修正。'
-         'ヒーロー帯と週次 Slack 通知の両方が過少報告していた',
-         'Fixed deleted resources being dropped from the drift totals — both the dashboard hero '
-         'band and the weekly Slack briefing were under-reporting'),
-    25: ('影響波及範囲・Auto Scaling 節・Missing Since の未翻訳 15 文字列を翻訳',
-         'Translated 15 strings still rendering in English — blast radius, the Auto Scaling section, Missing Since'),
-    26: ('抽出すらされていない文字列でビルドを落とす CI ゲート。'
-         '既存ゲートでは原理的に見えなかった穴を塞いだ',
-         'A CI gate for strings never extracted into the catalogue — a hole the existing gate could not see'),
-    27: ('v0.2.0 の変更内容を CHANGELOG に記録',
-         'Logged the v0.2.0 changes in the changelog'),
-    28: ('開発の記録ページを追加。ja/en を 1 つのデータ源から生成し、数値は git と GitHub API から計測する',
-         'Added this development-history page — both languages from one source, every number measured from git and the GitHub API'),
-}
-
-# Pull requests that sat open long enough to be worth explaining.
-LATE_MERGE_DAYS = 7
+# Trailing-bucket title for commits on main that have not been tagged yet.
+UNRELEASED_TITLE = ('未リリース', 'Unreleased')
 
 
 # ---------------------------------------------------------------------------
 # Measured layer
 # ---------------------------------------------------------------------------
 
-def _gh_json(args):
-    proc = subprocess.run(['gh', *args], cwd=REPO_ROOT, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise RuntimeError(f'gh {" ".join(args)} failed:\n{proc.stderr}')
-    return json.loads(proc.stdout)
-
-
-def _git(args):
+def _git(args: list[str]) -> str:
     return subprocess.run(['git', *args], cwd=REPO_ROOT,
                           capture_output=True, text=True, check=True).stdout.strip()
 
 
+def _tag_commits() -> list[tuple[str, str]]:
+    """[(tag, short_sha), ...] in version order, peeled to the commit each
+    annotated tag actually points at (not the tag object's own sha)."""
+    tags = _git(['tag', '--sort=v:refname']).splitlines()
+    out = []
+    for t in tags:
+        if not t.startswith('v'):
+            continue
+        sha = _git(['rev-parse', '--short', f'{t}^{{commit}}'])
+        out.append((t, sha))
+    return out
+
+
 def collect():
-    prs = _gh_json([
-        'pr', 'list', '--repo', REPO, '--state', 'merged', '--limit', '200',
-        '--json', 'number,title,createdAt,mergedAt,additions,deletions,files',
-    ])
-    by_number = {}
-    for pr in prs:
-        by_number[pr['number']] = {
-            'number':    pr['number'],
-            'title':     pr['title'],
-            'created':   datetime.date.fromisoformat(pr['createdAt'][:10]),
-            'merged':    datetime.date.fromisoformat(pr['mergedAt'][:10]),
-            'additions': pr['additions'],
-            'deletions': pr['deletions'],
-            'files':     len(pr['files']),
-        }
-
-    releases = _gh_json(['release', 'list', '--repo', REPO, '--json', 'tagName,publishedAt'])
-    releases = sorted(
-        ({'tag': r['tagName'], 'date': datetime.date.fromisoformat(r['publishedAt'][:10])}
-         for r in releases),
-        key=lambda r: r['date'],
-    )
-
     if _git(['rev-parse', '--is-shallow-repository']) == 'true':
-        # A shallow clone (CI's default) makes `git log` report one commit, and
-        # the page silently ships "1 day, 1 commit". That reached production
-        # once; refuse rather than publish a lie.
         raise RuntimeError(
             'the repository is a shallow clone, so commit history is not '
             'available and the statistics would be wrong.\n'
@@ -227,46 +155,99 @@ def collect():
             '`git fetch --unshallow`.'
         )
 
-    first = datetime.date.fromisoformat(
-        _git(['log', '--reverse', '--format=%ad', '--date=short']).split('\n')[0])
+    log = _git(['log', '--reverse', '--format=%h|%H|%ad|%s', '--date=short',
+                '--invert-grep', f'--grep={EXCLUDE_GREP}'])
+    stats = _git(['log', '--reverse', '--format=@@%h', '--shortstat',
+                  '--invert-grep', f'--grep={EXCLUDE_GREP}'])
 
-    # The page has to be a pure function of merged work, or the workflow that
-    # rebuilds it on every push to main would churn forever: its own commit
-    # would change the commit count, which changes the page, which is another
-    # commit. So the auto-rebuild commits are excluded from the count, and the
-    # end of the span comes from the last merged pull request rather than from
-    # the last commit.
-    commits = int(_git([
-        'rev-list', '--count', 'HEAD',
-        f'--invert-grep', '--grep=^docs: rebuild the development-history page',
-    ]))
-    last = max((pr['merged'] for pr in by_number.values()), default=first)
+    added: dict[str, int] = {}
+    removed: dict[str, int] = {}
+    cur = None
+    for line in stats.splitlines():
+        if line.startswith('@@'):
+            cur = line[2:]
+        elif line.strip() and cur is not None:
+            m_ins = re.search(r'(\d+) insertion', line)
+            m_del = re.search(r'(\d+) deletion', line)
+            added[cur] = int(m_ins.group(1)) if m_ins else 0
+            removed[cur] = int(m_del.group(1)) if m_del else 0
 
-    return {
-        'prs':      by_number,
-        'releases': releases,
-        'commits':  commits,
-        'first':    first,
-        'last':     last,
-    }
+    translations = {sha: (ja, en) for sha, ja, en in COMMITS}
+
+    commits = []
+    for line in log.splitlines():
+        short, full, date_s, subject = line.split('|', 3)
+        m = PR_SUFFIX_RE.search(subject)
+        pr = int(m.group(1)) if m else None
+        clean_subject = PR_SUFFIX_RE.sub('', subject)
+        ja, en = translations.get(short, (clean_subject, clean_subject))
+        commits.append({
+            'sha': short,
+            'date': datetime.date.fromisoformat(date_s),
+            'ja': ja,
+            'en': en,
+            'pr': pr,
+            'added': added.get(short, 0),
+            'removed': removed.get(short, 0),
+        })
+
+    unknown = set(translations) - {c['sha'] for c in commits}
+    if unknown:
+        print(f'warning: translations exist for commits not in history: {sorted(unknown)}',
+              file=sys.stderr)
+    missing = [c['sha'] for c in commits if c['sha'] not in translations]
+    if missing:
+        print(f'note: {len(missing)} commit(s) shown with their raw subject on both '
+              f'pages — add a translated pair to COMMITS in {Path(__file__).name}: '
+              f'{missing}', file=sys.stderr)
+
+    tags = _tag_commits()
+    first = commits[0]['date']
+    last = commits[-1]['date']
+
+    return {'commits': commits, 'tags': tags, 'first': first, 'last': last}
 
 
-def weekly_counts(prs, first, last):
-    """[(week_start, merged_pr_count), ...] covering the whole span."""
-    weeks = {}
+def group_by_version(data):
+    """[(ja_title, en_title, tag_or_none, [commit, ...]), ...] in chronological
+    order. A bucket runs up to and including the commit a tag points at, and
+    is titled after that tag — so "v0.1.0" is everything that had landed by
+    the time v0.1.0 shipped, first commit included. Whatever is left after
+    the last tag (commits not yet released) becomes its own trailing bucket."""
+    commits = data['commits']
+    tag_shas = {sha: tag for tag, sha in data['tags']}
+    groups = []
+    bucket = []
+    for c in commits:
+        bucket.append(c)
+        if c['sha'] in tag_shas:
+            tag = tag_shas[c['sha']]
+            groups.append((tag, tag, tag, bucket))
+            bucket = []
+    if bucket:
+        ja_t, en_t = UNRELEASED_TITLE
+        groups.append((ja_t, en_t, None, bucket))
+    return groups
+
+
+def weekly_counts(commits, first, last):
+    weeks: dict[int, int] = {}
     total_weeks = ((last - first).days // 7) + 1
     for index in range(total_weeks):
         weeks[index] = 0
-    for pr in prs.values():
-        weeks[(pr['merged'] - first).days // 7] = weeks.get((pr['merged'] - first).days // 7, 0) + 1
+    for c in commits:
+        idx = (c['date'] - first).days // 7
+        weeks[idx] = weeks.get(idx, 0) + 1
     return [(first + datetime.timedelta(days=i * 7), weeks[i]) for i in sorted(weeks)]
 
 
 # ---------------------------------------------------------------------------
-# Rendering
+# Rendering — same look as before (dark nav, indigo/coral), only the data
+# layer and the entry markup (a single translated line instead of a
+# PR-title + written-summary pair) changed.
 # ---------------------------------------------------------------------------
 
-def e(text):
+def e(text) -> str:
     return html.escape(str(text), quote=True)
 
 
@@ -319,43 +300,28 @@ STYLE = """
     .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
     .chart-title { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;
                    text-transform: uppercase; margin-bottom: 20px; }
-    .chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
+    .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
     .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
                align-items: center; gap: 6px; height: 100%; }
     .bar { width: 100%; border-radius: 5px 5px 0 0; background: var(--gradient); min-height: 3px; }
     .bar.zero { background: var(--surface2); }
-    .bar-n { font-size: 11px; font-weight: 700; color: var(--muted); }
-    .chart-axis { display: flex; gap: 6px; margin-top: 10px; }
-    .chart-axis span { flex: 1; text-align: center; font-size: 10px; color: var(--muted);
-                       white-space: nowrap; overflow: hidden; }
 
-    .phase { margin-bottom: 52px; }
-    .phase-head { border-left: 4px solid var(--indigo); padding-left: 18px; margin-bottom: 24px; }
-    .phase-dates { font-size: 12px; font-weight: 700; color: var(--indigo); letter-spacing: 0.05em; }
-    .phase-head h2 { font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 6px 0 10px; }
-    .phase-head p { color: var(--muted); font-size: 15px; margin: 0; max-width: 760px; }
+    .version { margin-bottom: 52px; }
+    .version-head { border-left: 4px solid var(--indigo); padding-left: 18px; margin-bottom: 24px; }
+    .version-tag { font-size: 12px; font-weight: 700; color: var(--indigo); letter-spacing: 0.05em; }
+    .version-head h2 { font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 6px 0 0; }
 
-    .entries { display: flex; flex-direction: column; gap: 12px; }
+    .entries { display: flex; flex-direction: column; gap: 10px; }
     .entry { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-             padding: 18px 20px; display: grid; grid-template-columns: 92px 1fr auto; gap: 18px;
+             padding: 16px 20px; display: grid; grid-template-columns: 92px 1fr auto; gap: 18px;
              align-items: baseline; transition: border-color 0.2s, transform 0.2s; }
     .entry:hover { border-color: var(--indigo); transform: translateY(-2px); }
-    .entry-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .entry-pr { font-weight: 700; color: var(--indigo); }
-    .entry-body h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
-    .entry-body p { font-size: 14px; color: var(--muted); margin: 0; }
-    .entry-note { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--coral-dark);
-                  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25);
-                  border-radius: 6px; padding: 2px 8px; }
+    .entry-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .entry-pr { display: block; font-weight: 700; color: var(--indigo); }
+    .entry-text { font-size: 14px; }
     .entry-diff { font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                   color: var(--muted); white-space: nowrap; }
     .entry-diff .add { color: #15803d; } .entry-diff .del { color: #b91c1c; }
-
-    .release-row { display: flex; align-items: center; gap: 14px; margin: 22px 0 0;
-                   padding: 16px 20px; border-radius: 14px; background: var(--slate); color: #fff; }
-    .release-tag { font-weight: 800; font-size: 16px; color: var(--coral); }
-    .release-row .when { font-size: 12px; color: rgba(255,255,255,0.55); margin-left: auto; }
-    .release-row .what { font-size: 14px; color: rgba(255,255,255,0.8); }
 
     .note { margin-top: 40px; padding: 22px 24px; background: var(--surface2);
             border-radius: 14px; font-size: 13px; color: var(--muted); }
@@ -370,7 +336,6 @@ STYLE = """
     @media (max-width: 720px) {
       .entry { grid-template-columns: 1fr; gap: 8px; }
       .entry-diff { display: none; }
-      .chart-axis span { font-size: 9px; }
     }
 """
 
@@ -393,68 +358,66 @@ STRINGS = {
         'title': 'SyncVey — 開発の記録',
         'eyebrow': '開発の記録',
         'h1_a': 'ここまでに', 'h1_span': '何をしてきたか',
-        'lead': 'マージされたプルリクエストを時系列で並べたもの。'
-                '日付・規模・件数は git と GitHub API から取得しており、手で書いていない。',
+        'lead': '全コミットを時系列で並べたもの。マージ済みプルリクエストだけを見ると、'
+                'main へ直接積んだ変更が抜け落ちる ── 日付・行数・件数は git から取得しており、手で書いていない。',
         'nav_home': 'トップ', 'nav_features': '機能', 'nav_setup': '導入',
-        'stat_days': '開発日数', 'stat_prs': 'マージ済み PR', 'stat_commits': 'コミット',
-        'stat_releases': 'リリース',
-        'chart_title': '週ごとのマージ数',
+        'stat_days': '開発日数', 'stat_commits': 'コミット', 'stat_releases': 'リリース',
+        'chart_title': '週ごとのコミット数',
         'released': 'リリース',
         'note_head': 'このページについて',
         'notes': [
-            '日付は GitHub 上でマージされた日（UTC）。',
-            '「作成から N 日」は、書かれてからマージされるまで開いていた期間。'
-            '長いものは他の作業を先に通していたか、衝突の解消が必要だったもの。',
-            '区切りと一行要約は後から付けた解釈で、それ以外の数値はすべて生成時に計測している。',
-            '最初の 2 週間（6/05〜6/16）に PR が 1 件も無いのは、いまのリポジトリを 6/17 に'
-            '作り直したため。その間の作業はコミットとして残っているが、当時の PR は旧リポジトリ'
-            'と一緒に消えた。開発日数と週ごとのグラフは git の最初のコミットから数えている。',
+            '単位はコミット。プルリクエストの一覧ではないので、main へ直接積んだ変更も漏れない'
+            '（以前の版はこれが原因で直近 3 件が欠けていた）。',
+            '区切りはタグ（バージョン）が付いた地点のみ。以前あった「フェーズ」のような'
+            '主観的な区切りは廃止した ── 客観的に決まる境界だけを使っている。',
+            '日英の文面は手作業の翻訳（コミットメッセージは英語期・日本語期のどちらか一方で'
+            'しか書かれていない）。それ以外の数値はすべて生成時に git から計測している。',
+            '翻訳がまだ無いコミットは、原文をそのまま両言語に出す。抜けにはならない。',
+            '開発の記録ページ自身の自動更新コミット（"docs: rebuild the development-history '
+            'page"）は集計から除外している。含めると再生成のたびにページ自身の分の記事が増える。',
         ],
-        'open_days': '作成から {n} 日',
-        'week_label': '{m}/{d}',
-        'recent_title': '最近の変更',
-        'recent_lead': 'まだフェーズに割り当てていないもの。要約は PR のタイトルをそのまま使っている。build_history.py の PHASES に入れると、書き下ろした一行に差し替わる。',
+        'pr_link': '#{n}',
     },
     'en': {
         'lang': 'en', 'other': 'history.ja.html', 'index': 'index.en.html',
         'title': 'SyncVey — Development history',
         'eyebrow': 'Development history',
         'h1_a': 'What has actually', 'h1_span': 'been built so far',
-        'lead': 'Every merged pull request, in order. Dates, sizes and counts are read from git '
-                'and the GitHub API at build time rather than written by hand.',
+        'lead': 'Every commit, in order. A merged-pull-request-only list drops whatever landed by a '
+                'direct push to main — dates, sizes and counts are read from git at build time '
+                'rather than written by hand.',
         'nav_home': 'Home', 'nav_features': 'Features', 'nav_setup': 'Setup',
-        'stat_days': 'Days', 'stat_prs': 'Merged PRs', 'stat_commits': 'Commits',
-        'stat_releases': 'Releases',
-        'chart_title': 'Pull requests merged per week',
+        'stat_days': 'Days', 'stat_commits': 'Commits', 'stat_releases': 'Releases',
+        'chart_title': 'Commits per week',
         'released': 'Released',
         'note_head': 'About this page',
         'notes': [
-            'Dates are the day the pull request was merged on GitHub (UTC).',
-            '"open N days" is how long a pull request stood between being written and being '
-            'merged. The long ones were waiting behind other work, or needed conflicts resolved.',
-            'The phase grouping and the one-line summaries are editorial. Every number on this '
-            'page is measured at build time.',
-            'The first two weeks (5-16 June) carry no pull requests because this repository was '
-            're-created on 17 June: that work survives as commits, but the pull requests went '
-            'with the old repository. Elapsed days and the weekly chart count from the first '
-            'commit in git.',
+            'The unit is the commit, not the pull request — so a direct push to main is never '
+            'dropped (the previous version of this page missed its three most recent changes for '
+            'exactly that reason).',
+            'Sections break at tagged versions only. The earlier "phase" grouping was editorial and '
+            'has been retired — only boundaries that are objectively decidable remain.',
+            'The bilingual text is translated by hand (each commit message was written in one '
+            'language, not both). Every other number on this page is measured from git at build time.',
+            'A commit without a translation yet shows its original subject line on both pages — '
+            'it is never simply missing.',
+            "This page's own rebuild commits (\"docs: rebuild the development-history page\") are "
+            'excluded from the count — otherwise every rebuild would add an entry for itself.',
         ],
-        'open_days': 'open {n} days',
-        'week_label': '{m}/{d}',
-        'recent_title': 'Recent changes',
-        'recent_lead': 'Not yet grouped into a phase, so the summary is just the pull request title. Adding it to PHASES in build_history.py replaces this with a written one.',
+        'pr_link': '#{n}',
     },
 }
 
 
-def render(lang, data):
+def render(lang, data, groups):
     s = STRINGS[lang]
     idx = 0 if lang == 'ja' else 1
-    prs, releases = data['prs'], data['releases']
+    commits = data['commits']
     days = (data['last'] - data['first']).days + 1
+    n_releases = len(data['tags'])
 
-    weeks = weekly_counts(prs, data['first'], data['last'])
-    peak = max(count for _start, count in weeks) or 1
+    weeks = weekly_counts(commits, data['first'], data['last'])
+    peak = max((count for _start, count in weeks), default=0) or 1
 
     out = []
     add = out.append
@@ -468,7 +431,6 @@ def render(lang, data):
     add(f'<style>{STYLE}</style>')
     add('</head>\n<body>')
 
-    # nav
     add('<nav><div class="container nav-inner">')
     add(f'<a href="{s["index"]}" class="nav-logo">{LOGO_SVG}'
         '<div class="nav-logo-text"><span class="n1">Sync</span><span class="n2">Vey</span></div></a>')
@@ -485,89 +447,49 @@ def render(lang, data):
         '</select></div>')
     add('</div></nav>')
 
-    # head + stats
     add('<header class="page-head"><div class="container">')
     add(f'<span class="badge">{e(s["eyebrow"])}</span>')
     add(f'<h1>{e(s["h1_a"])}<br><span>{e(s["h1_span"])}</span></h1>')
     add(f'<p>{e(s["lead"])}</p>')
     add('<div class="stats">')
-    for value, label in (
-        (days, s['stat_days']), (len(prs), s['stat_prs']),
-        (data['commits'], s['stat_commits']), (len(releases), s['stat_releases']),
-    ):
+    for value, label in ((days, s['stat_days']), (len(commits), s['stat_commits']),
+                         (n_releases, s['stat_releases'])):
         add(f'<div class="stat"><div class="stat-value">{value}</div>'
             f'<div class="stat-label">{e(label)}</div></div>')
     add('</div></div></header>')
 
-    # chart
     add('<section><div class="container"><div class="chart-wrap">')
     add(f'<div class="chart-title">{e(s["chart_title"])}</div>')
     add('<div class="chart">')
     for _start, count in weeks:
         height = round(count / peak * 100)
         cls = 'bar zero' if count == 0 else 'bar'
-        add(f'<div class="bar-col"><span class="bar-n">{count}</span>'
-            f'<div class="{cls}" style="height:{height}%"></div></div>')
-    add('</div><div class="chart-axis">')
-    for start, _count in weeks:
-        add(f'<span>{s["week_label"].format(m=start.month, d=start.day)}</span>')
+        add(f'<div class="bar-col"><div class="{cls}" style="height:{height}%"></div></div>')
     add('</div></div></div></section>')
 
-    # phases (+ a trailing catch-all so a newly merged pull request always
-    # shows up, even before anyone writes a summary for it)
-    shown_releases = set()
-    placed = {n for _a, _jt, _et, _jl, _el, numbers in PHASES for n in numbers}
-    leftover = sorted(set(prs) - placed)
-    phases = list(PHASES)
-    if leftover:
-        phases.append((
-            'recent', s['recent_title'], s['recent_title'],
-            s['recent_lead'], s['recent_lead'], leftover,
-        ))
-
     add('<section><div class="container">')
-    for anchor, ja_t, en_t, ja_lead, en_lead, numbers in phases:
-        listed = [prs[n] for n in numbers if n in prs]
-        if not listed:
-            continue
-        lo = min(p['merged'] for p in listed)
-        hi = max(p['merged'] for p in listed)
+    for ja_t, en_t, tag, listed in groups:
+        title = (ja_t, en_t)[idx]
+        lo, hi = listed[0]['date'], listed[-1]['date']
         span = f'{lo:%Y-%m-%d}' if lo == hi else f'{lo:%Y-%m-%d} – {hi:%Y-%m-%d}'
-        add(f'<div class="phase" id="{anchor}"><div class="phase-head">')
-        add(f'<div class="phase-dates">{span}</div>')
-        add(f'<h2>{e((ja_t, en_t)[idx])}</h2>')
-        add(f'<p>{e((ja_lead, en_lead)[idx])}</p>')
+        anchor = tag or 'unreleased'
+        add(f'<div class="version" id="{e(anchor)}"><div class="version-head">')
+        add(f'<div class="version-tag">{e(span)}</div><h2>{e(title)}</h2>')
         add('</div><div class="entries">')
-        for pr in sorted(listed, key=lambda p: (p['merged'], p['number'])):
-            summary = SUMMARIES.get(pr['number'], (pr['title'], pr['title']))[idx]
-            open_days = (pr['merged'] - pr['created']).days
+        for c in listed:
+            text = (c['ja'], c['en'])[idx]
             add('<div class="entry">')
-            add(f'<div class="entry-meta">{pr["merged"]:%Y-%m-%d}<br>'
-                f'<a class="entry-pr" href="https://github.com/{REPO}/pull/{pr["number"]}">'
-                f'#{pr["number"]}</a></div>')
-            add(f'<div class="entry-body"><h3>{e(pr["title"])}</h3><p>{e(summary)}</p>')
-            if open_days >= LATE_MERGE_DAYS:
-                add(f'<span class="entry-note">{e(s["open_days"].format(n=open_days))}</span>')
+            add(f'<div class="entry-date">{c["date"]:%Y-%m-%d}')
+            if c['pr']:
+                add(f'<br><a class="entry-pr" href="https://github.com/{REPO}/pull/{c["pr"]}">'
+                    f'{e(s["pr_link"].format(n=c["pr"]))}</a>')
             add('</div>')
-            add(f'<div class="entry-diff"><span class="add">+{pr["additions"]}</span> '
-                f'<span class="del">-{pr["deletions"]}</span></div>')
+            add(f'<div class="entry-text">{e(text)}</div>')
+            add(f'<div class="entry-diff"><span class="add">+{c["added"]}</span> '
+                f'<span class="del">-{c["removed"]}</span></div>')
             add('</div>')
-        add('</div>')
-        # Any release published inside this phase's window. Phase windows can
-        # touch (v0.1.0 shipped the same day the next phase started), so each
-        # release is emitted once, in the first phase that contains it.
-        for rel in releases:
-            if rel['tag'] in shown_releases:
-                continue
-            if lo <= rel['date'] <= hi:
-                shown_releases.add(rel['tag'])
-                add('<div class="release-row">'
-                    f'<span class="release-tag">{e(rel["tag"])}</span>'
-                    f'<span class="what">{e(s["released"])}</span>'
-                    f'<span class="when">{rel["date"]:%Y-%m-%d}</span></div>')
-        add('</div>')
+        add('</div></div>')
 
-    # notes
     add(f'<div class="note"><h3>{e(s["note_head"])}</h3><ul>')
     for line in s['notes']:
         add(f'<li>{e(line)}</li>')
@@ -582,25 +504,11 @@ def render(lang, data):
 
 def main():
     data = collect()
-
-    unknown = set(SUMMARIES) - set(data['prs'])
-    if unknown:
-        print(f'warning: summaries for pull requests that are not merged: '
-              f'{sorted(unknown)}', file=sys.stderr)
-    placed = {n for _a, _jt, _et, _jl, _el, numbers in PHASES for n in numbers}
-    missing = sorted(set(data['prs']) - placed)
-    if missing:
-        # Not an error. These land in the trailing "recent changes" section with
-        # their pull-request title as the summary, so the page is never missing
-        # work — it just reads less well until someone writes a line for them.
-        print(f'note: {len(missing)} pull request(s) not yet placed in a phase, shown '
-              f'under "recent changes": {missing}\n'
-              f'  Give them a summary in PHASES/SUMMARIES in {Path(__file__).name}.',
-              file=sys.stderr)
+    groups = group_by_version(data)
 
     for lang in ('ja', 'en'):
         path = REPO_ROOT / 'docs' / f'history.{lang}.html'
-        path.write_text(render(lang, data), encoding='utf-8')
+        path.write_text(render(lang, data, groups), encoding='utf-8')
         print(f'wrote {path.relative_to(REPO_ROOT)}')
 
     return 0

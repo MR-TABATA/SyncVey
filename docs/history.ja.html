@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>SyncVey — 開発の記録</title>
-<meta name="description" content="マージされたプルリクエストを時系列で並べたもの。日付・規模・件数は git と GitHub API から取得しており、手で書いていない。" />
+<meta name="description" content="全コミットを時系列で並べたもの。マージ済みプルリクエストだけを見ると、main へ直接積んだ変更が抜け落ちる ── 日付・行数・件数は git から取得しており、手で書いていない。" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <style>
     :root {
@@ -55,43 +55,28 @@
     .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
     .chart-title { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em;
                    text-transform: uppercase; margin-bottom: 20px; }
-    .chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
+    .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
     .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
                align-items: center; gap: 6px; height: 100%; }
     .bar { width: 100%; border-radius: 5px 5px 0 0; background: var(--gradient); min-height: 3px; }
     .bar.zero { background: var(--surface2); }
-    .bar-n { font-size: 11px; font-weight: 700; color: var(--muted); }
-    .chart-axis { display: flex; gap: 6px; margin-top: 10px; }
-    .chart-axis span { flex: 1; text-align: center; font-size: 10px; color: var(--muted);
-                       white-space: nowrap; overflow: hidden; }
 
-    .phase { margin-bottom: 52px; }
-    .phase-head { border-left: 4px solid var(--indigo); padding-left: 18px; margin-bottom: 24px; }
-    .phase-dates { font-size: 12px; font-weight: 700; color: var(--indigo); letter-spacing: 0.05em; }
-    .phase-head h2 { font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 6px 0 10px; }
-    .phase-head p { color: var(--muted); font-size: 15px; margin: 0; max-width: 760px; }
+    .version { margin-bottom: 52px; }
+    .version-head { border-left: 4px solid var(--indigo); padding-left: 18px; margin-bottom: 24px; }
+    .version-tag { font-size: 12px; font-weight: 700; color: var(--indigo); letter-spacing: 0.05em; }
+    .version-head h2 { font-size: clamp(20px, 3vw, 28px); font-weight: 700; margin: 6px 0 0; }
 
-    .entries { display: flex; flex-direction: column; gap: 12px; }
+    .entries { display: flex; flex-direction: column; gap: 10px; }
     .entry { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-             padding: 18px 20px; display: grid; grid-template-columns: 92px 1fr auto; gap: 18px;
+             padding: 16px 20px; display: grid; grid-template-columns: 92px 1fr auto; gap: 18px;
              align-items: baseline; transition: border-color 0.2s, transform 0.2s; }
     .entry:hover { border-color: var(--indigo); transform: translateY(-2px); }
-    .entry-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
-    .entry-pr { font-weight: 700; color: var(--indigo); }
-    .entry-body h3 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
-    .entry-body p { font-size: 14px; color: var(--muted); margin: 0; }
-    .entry-note { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--coral-dark);
-                  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25);
-                  border-radius: 6px; padding: 2px 8px; }
+    .entry-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .entry-pr { display: block; font-weight: 700; color: var(--indigo); }
+    .entry-text { font-size: 14px; }
     .entry-diff { font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                   color: var(--muted); white-space: nowrap; }
     .entry-diff .add { color: #15803d; } .entry-diff .del { color: #b91c1c; }
-
-    .release-row { display: flex; align-items: center; gap: 14px; margin: 22px 0 0;
-                   padding: 16px 20px; border-radius: 14px; background: var(--slate); color: #fff; }
-    .release-tag { font-weight: 800; font-size: 16px; color: var(--coral); }
-    .release-row .when { font-size: 12px; color: rgba(255,255,255,0.55); margin-left: auto; }
-    .release-row .what { font-size: 14px; color: rgba(255,255,255,0.8); }
 
     .note { margin-top: 40px; padding: 22px 24px; background: var(--surface2);
             border-radius: 14px; font-size: 13px; color: var(--muted); }
@@ -106,7 +91,6 @@
     @media (max-width: 720px) {
       .entry { grid-template-columns: 1fr; gap: 8px; }
       .entry-diff { display: none; }
-      .chart-axis span { font-size: 9px; }
     }
 </style>
 </head>
@@ -119,342 +103,472 @@
 <header class="page-head"><div class="container">
 <span class="badge">開発の記録</span>
 <h1>ここまでに<br><span>何をしてきたか</span></h1>
-<p>マージされたプルリクエストを時系列で並べたもの。日付・規模・件数は git と GitHub API から取得しており、手で書いていない。</p>
+<p>全コミットを時系列で並べたもの。マージ済みプルリクエストだけを見ると、main へ直接積んだ変更が抜け落ちる ── 日付・行数・件数は git から取得しており、手で書いていない。</p>
 <div class="stats">
-<div class="stat"><div class="stat-value">93</div><div class="stat-label">開発日数</div></div>
-<div class="stat"><div class="stat-value">40</div><div class="stat-label">マージ済み PR</div></div>
-<div class="stat"><div class="stat-value">59</div><div class="stat-label">コミット</div></div>
-<div class="stat"><div class="stat-value">5</div><div class="stat-label">リリース</div></div>
+<div class="stat"><div class="stat-value">104</div><div class="stat-label">開発日数</div></div>
+<div class="stat"><div class="stat-value">60</div><div class="stat-label">コミット</div></div>
+<div class="stat"><div class="stat-value">6</div><div class="stat-label">リリース</div></div>
 </div></div></header>
 <section><div class="container"><div class="chart-wrap">
-<div class="chart-title">週ごとのマージ数</div>
+<div class="chart-title">週ごとのコミット数</div>
 <div class="chart">
-<div class="bar-col"><span class="bar-n">0</span><div class="bar zero" style="height:0%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">5</span><div class="bar" style="height:33%"></div></div>
-<div class="bar-col"><span class="bar-n">5</span><div class="bar" style="height:33%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">0</span><div class="bar zero" style="height:0%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">0</span><div class="bar zero" style="height:0%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">15</span><div class="bar" style="height:100%"></div></div>
-<div class="bar-col"><span class="bar-n">7</span><div class="bar" style="height:47%"></div></div>
-<div class="bar-col"><span class="bar-n">1</span><div class="bar" style="height:7%"></div></div>
-<div class="bar-col"><span class="bar-n">2</span><div class="bar" style="height:13%"></div></div>
-</div><div class="chart-axis">
-<span>6/5</span>
-<span>6/12</span>
-<span>6/19</span>
-<span>6/26</span>
-<span>7/3</span>
-<span>7/10</span>
-<span>7/17</span>
-<span>7/24</span>
-<span>7/31</span>
-<span>8/7</span>
-<span>8/14</span>
-<span>8/21</span>
-<span>8/28</span>
-<span>9/4</span>
+<div class="bar-col"><div class="bar" style="height:87%"></div></div>
+<div class="bar-col"><div class="bar" style="height:20%"></div></div>
+<div class="bar-col"><div class="bar" style="height:33%"></div></div>
+<div class="bar-col"><div class="bar" style="height:33%"></div></div>
+<div class="bar-col"><div class="bar" style="height:7%"></div></div>
+<div class="bar-col"><div class="bar zero" style="height:0%"></div></div>
+<div class="bar-col"><div class="bar" style="height:7%"></div></div>
+<div class="bar-col"><div class="bar" style="height:7%"></div></div>
+<div class="bar-col"><div class="bar zero" style="height:0%"></div></div>
+<div class="bar-col"><div class="bar" style="height:7%"></div></div>
+<div class="bar-col"><div class="bar" style="height:100%"></div></div>
+<div class="bar-col"><div class="bar" style="height:47%"></div></div>
+<div class="bar-col"><div class="bar" style="height:7%"></div></div>
+<div class="bar-col"><div class="bar" style="height:20%"></div></div>
+<div class="bar-col"><div class="bar" style="height:27%"></div></div>
 </div></div></div></section>
 <section><div class="container">
-<div class="phase" id="foundation"><div class="phase-head">
-<div class="phase-dates">2026-06-17</div>
-<h2>土台をつくる</h2>
-<p>資産台帳・AWS スキャン・tfstate 取込・構成図まで、まず動くものを一気に作った時期。最初の PR が「任意機能を疎結合にするプラグイン機構」だったのは偶然ではなく、後から機能を足しても本体が太らないようにするため。</p>
+<div class="version" id="v0.1.0"><div class="version-head">
+<div class="version-tag">2026-06-05 – 2026-08-19</div><h2>v0.1.0</h2>
 </div><div class="entries">
 <div class="entry">
-<div class="entry-meta">2026-06-17<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/1">#1</a></div>
-<div class="entry-body"><h3>feat: フィーチャーフラグ＋プラグイン機構（任意機能を疎結合に）</h3><p>フィーチャーフラグ＋プラグイン機構。任意機能を疎結合な Django アプリとして着脱可能にした</p>
+<div class="entry-date">2026-06-05
 </div>
-<div class="entry-diff"><span class="add">+225</span> <span class="del">-0</span></div>
-</div>
-</div>
-</div>
-<div class="phase" id="drift"><div class="phase-head">
-<div class="phase-dates">2026-06-22 – 2026-07-04</div>
-<h2>ドリフトを深める</h2>
-<p>「差分が出る」だけでは使えない。推移が追えること、危険度が分かること、誰がやったか辿れること。ドリフト検知を一段ずつ実用に寄せた。</p>
-</div><div class="entries">
-<div class="entry">
-<div class="entry-meta">2026-06-22<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/2">#2</a></div>
-<div class="entry-body"><h3>feat(drift): cap DriftSnapshot history per environment</h3><p>ドリフト履歴が無限に伸びるのを環境ごとの保持件数で止めた</p>
-</div>
-<div class="entry-diff"><span class="add">+170</span> <span class="del">-1</span></div>
+<div class="entry-text">SyncVey — 自己ホスト型の AWS 資産台帳、Terraform ドリフト検知付き</div>
+<div class="entry-diff"><span class="add">+61757</span> <span class="del">-0</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-06-22<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/3">#3</a></div>
-<div class="entry-body"><h3>fix(i18n): correct fuzzy ja translations for drift-history strings</h3><p>ドリフト履歴の日本語訳が fuzzy のまま出ていたのを修正</p>
+<div class="entry-date">2026-06-06
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/1">#1</a>
 </div>
-<div class="entry-diff"><span class="add">+5</span> <span class="del">-12</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-06-24<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/4">#4</a></div>
-<div class="entry-body"><h3>test(drift): cover drift-history view render + close EFS icon gap</h3><p>ドリフト履歴ビューのテストを追加、EFS のアイコン欠けも解消</p>
-</div>
-<div class="entry-diff"><span class="add">+122</span> <span class="del">-0</span></div>
+<div class="entry-text">fix: 組織スコープの認可を強化</div>
+<div class="entry-diff"><span class="add">+49</span> <span class="del">-11</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-06-24<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/5">#5</a></div>
-<div class="entry-body"><h3>docs(lp): align landing page with surface EOL/2FA</h3><p>LP の記述を実装（EOL・2FA）に合わせた</p>
+<div class="entry-date">2026-06-06
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/2">#2</a>
 </div>
-<div class="entry-diff"><span class="add">+26</span> <span class="del">-2</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-06-25<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/6">#6</a></div>
-<div class="entry-body"><h3>feat(dashboard): hero-signal row — drift trend, EOL, freshness</h3><p>ダッシュボードにヒーロー行。ドリフト推移・EOL・スキャン鮮度を一目で</p>
-</div>
-<div class="entry-diff"><span class="add">+364</span> <span class="del">-4</span></div>
+<div class="entry-text">docs: ドキュメントを英語主＋日本語（.ja.md）従に統一し、AWS 手順のリンク切れを修正</div>
+<div class="entry-diff"><span class="add">+488</span> <span class="del">-90</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-06-26<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/7">#7</a></div>
-<div class="entry-body"><h3>feat(drift-risk): security-risk triage + CloudTrail attribution (plugin)</h3><p>ドリフトをセキュリティ影響度で採点し、CloudTrail で変更者を特定（プラグイン）</p>
+<div class="entry-date">2026-06-06
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/3">#3</a>
 </div>
-<div class="entry-diff"><span class="add">+578</span> <span class="del">-5</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-06-26<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/8">#8</a></div>
-<div class="entry-body"><h3>docs: document drift-risk in README + landing page</h3><p>drift-risk を README と LP に記載</p>
-</div>
-<div class="entry-diff"><span class="add">+16</span> <span class="del">-0</span></div>
+<div class="entry-text">ux: チップ溢れ修正・環境カードのアクションをケバブ集約・サイドバーをモバイル対応</div>
+<div class="entry-diff"><span class="add">+91</span> <span class="del">-60</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-06-29<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/9">#9</a></div>
-<div class="entry-body"><h3>feat(drift-digest): weekly drift briefing + plugin scheduled-job seam</h3><p>週次ドリフト・ブリーフィング。プラグインが定期ジョブを生やす継ぎ目も用意</p>
+<div class="entry-date">2026-06-06
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/4">#4</a>
 </div>
-<div class="entry-diff"><span class="add">+451</span> <span class="del">-5</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-06-29<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/10">#10</a></div>
-<div class="entry-body"><h3>docs: document the weekly drift briefing (README + LP)</h3><p>週次ブリーフィングを README と LP に記載</p>
-</div>
-<div class="entry-diff"><span class="add">+10</span> <span class="del">-6</span></div>
+<div class="entry-text">chore(seed): デモデータを完全英語化し、superuser=管理専用モデルを維持</div>
+<div class="entry-diff"><span class="add">+19</span> <span class="del">-19</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-07-01<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/11">#11</a></div>
-<div class="entry-body"><h3>feat(survey): capture attribution + intent on the download survey</h3><p>ダウンロード時アンケートで流入経路と目的を取得</p>
+<div class="entry-date">2026-06-06
 </div>
-<div class="entry-diff"><span class="add">+83</span> <span class="del">-17</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-07-04<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/12">#12</a></div>
-<div class="entry-body"><h3>feat(drift-risk): flag secret rotation that should have happened but didn&#x27;t</h3><p>「されるべきなのにされていない」シークレットのローテーションを検出。差分ではなく現在の状態を採点する</p>
-</div>
-<div class="entry-diff"><span class="add">+268</span> <span class="del">-10</span></div>
-</div>
-</div>
-</div>
-<div class="phase" id="reach"><div class="phase-head">
-<div class="phase-dates">2026-07-22 – 2026-07-30</div>
-<h2>届く範囲を広げる</h2>
-<p>ダッシュボードの外へ。CI から叩ける CLI、日本語 UI の穴埋め、そして「Auto Scaling の増減で騒がない」という、現場で使うなら避けて通れない調整。</p>
-</div><div class="entries">
-<div class="entry">
-<div class="entry-meta">2026-07-22<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/16">#16</a></div>
-<div class="entry-body"><h3>feat(cli): detachable `syncvey` command-line plugin (scan / drift / status)</h3><p>着脱可能な CLI プラグイン。`syncvey drift --exit-code` で CI から叩ける</p>
-</div>
-<div class="entry-diff"><span class="add">+590</span> <span class="del">-0</span></div>
+<div class="entry-text">feat(lp): ブランド準拠の 404 ページを追加（言語自動判定・橋メタファー）</div>
+<div class="entry-diff"><span class="add">+93</span> <span class="del">-0</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-07-30<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/17">#17</a></div>
-<div class="entry-body"><h3>feat(drift): Auto Scaling-aware drift — stop crying wolf on scale-out</h3><p>Auto Scaling の増減はドリフトではなく churn として別枠に。オオカミ少年をやめた</p>
+<div class="entry-date">2026-06-06
 </div>
-<div class="entry-diff"><span class="add">+355</span> <span class="del">-18</span></div>
-</div>
-</div>
-</div>
-<div class="phase" id="ground"><div class="phase-head">
-<div class="phase-dates">2026-08-08 – 2026-08-19</div>
-<h2>足場を固める → v0.1.0</h2>
-<p>テストが通るかは手元でしか分からず、リリースもゼロ、脆弱性の報告先も無かった。機能を足す前に、その状態を先に潰した。同じ期間に「AWS から消えたリソースが台帳に残り続ける」実バグも直している。</p>
-</div><div class="entries">
-<div class="entry">
-<div class="entry-meta">2026-08-08<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/18">#18</a></div>
-<div class="entry-body"><h3>chore: gitignore /.private/</h3><p>非公開ロードマップ用に /.private/ を gitignore</p>
-</div>
-<div class="entry-diff"><span class="add">+7</span> <span class="del">-0</span></div>
+<div class="entry-text">improve(audit-log): レスポンシブなカードレイアウト＋変更列を分かりやすく</div>
+<div class="entry-diff"><span class="add">+113</span> <span class="del">-13</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-08-17<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/19">#19</a></div>
-<div class="entry-body"><h3>chore: 設定駆動のドキュメント整合性チェッカーを追加</h3><p>設定駆動のドキュメント整合性チェッカー。公表値の食い違いを機械的に検出</p>
+<div class="entry-date">2026-06-06
 </div>
-<div class="entry-diff"><span class="add">+334</span> <span class="del">-0</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-18<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/20">#20</a></div>
-<div class="entry-body"><h3>chore(ci): run the test suite on GitHub Actions</h3><p>GitHub Actions でテストスイートを回すようにした。それまで main に CI は無かった</p>
-</div>
-<div class="entry-diff"><span class="add">+210</span> <span class="del">-28</span></div>
+<div class="entry-text">ux(assets): リソース一覧をテーブル→カードのレスポンシブ切り替えに</div>
+<div class="entry-diff"><span class="add">+71</span> <span class="del">-2</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-08-18<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/21">#21</a></div>
-<div class="entry-body"><h3>feat(scan): detect resources that disappeared from AWS</h3><p>AWS から消えたリソースを検出。スキャンできた範囲に限って判定するので、API エラーで台帳が吹き飛ぶことはない</p>
+<div class="entry-date">2026-06-07
 </div>
-<div class="entry-diff"><span class="add">+645</span> <span class="del">-26</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-19<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/22">#22</a></div>
-<div class="entry-body"><h3>docs: add SECURITY.md and CHANGELOG.md ahead of v0.1.0</h3><p>SECURITY.md と CHANGELOG.md を追加し、初回リリース v0.1.0 の準備を整えた</p>
-</div>
-<div class="entry-diff"><span class="add">+248</span> <span class="del">-0</span></div>
-</div>
-</div>
-<div class="release-row"><span class="release-tag">v0.1.0</span><span class="what">リリース</span><span class="when">2026-08-19</span></div>
-</div>
-<div class="phase" id="backlog"><div class="phase-head">
-<div class="phase-dates">2026-08-19 – 2026-08-20</div>
-<h2>積み残しを回収 → v0.2.0</h2>
-<p>7月に書いたまま開きっぱなしだった 3 本を、衝突を解いて片付けた。その過程で「削除されたリソースがドリフト総数から抜け落ちる」不具合と、未翻訳のまま出ていた 15 文字列が見つかり、どちらも塞いだ。</p>
-</div><div class="entries">
-<div class="entry">
-<div class="entry-meta">2026-08-19<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/13">#13</a></div>
-<div class="entry-body"><h3>ci(i18n): fail the build on unreviewed translations</h3><p>未レビュー（fuzzy・空）の翻訳でビルドを落とす CI ゲート</p>
-<span class="entry-note">作成から 40 日</span>
-</div>
-<div class="entry-diff"><span class="add">+188</span> <span class="del">-0</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-19<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/14">#14</a></div>
-<div class="entry-body"><h3>docs(i18n): translate the 50 never-extracted strings + document rotation drift</h3><p>makemessages を一度も通っていなかった 50 文字列を翻訳</p>
-<span class="entry-note">作成から 40 日</span>
-</div>
-<div class="entry-diff"><span class="add">+755</span> <span class="del">-19</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-19<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/15">#15</a></div>
-<div class="entry-body"><h3>feat(blast-radius): reference graph + drift propagation (steps 1–3)</h3><p>影響波及範囲。ドリフトを起点に参照グラフを辿り、届く範囲を影響度順に出す（プラグイン）</p>
-<span class="entry-note">作成から 35 日</span>
-</div>
-<div class="entry-diff"><span class="add">+1353</span> <span class="del">-1</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-19<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/23">#23</a></div>
-<div class="entry-body"><h3>chore(ci): fold the i18n check into CI and log v0.1.0+ changes</h3><p>独立していた i18n ワークフローを CI に統合。1 PR で 8 回走っていたのを 1 回に</p>
-</div>
-<div class="entry-diff"><span class="add">+37</span> <span class="del">-18</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/24">#24</a></div>
-<div class="entry-body"><h3>fix(drift): count removed resources in the drift totals</h3><p>削除されたリソースがドリフト総数から抜け落ちる不具合を修正。ヒーロー帯と週次 Slack 通知の両方が過少報告していた</p>
-</div>
-<div class="entry-diff"><span class="add">+49</span> <span class="del">-6</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/25">#25</a></div>
-<div class="entry-body"><h3>i18n(ja): translate blast-radius, Auto Scaling and missing-since strings</h3><p>影響波及範囲・Auto Scaling 節・Missing Since の未翻訳 15 文字列を翻訳</p>
-</div>
-<div class="entry-diff"><span class="add">+216</span> <span class="del">-173</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/26">#26</a></div>
-<div class="entry-body"><h3>ci(i18n): fail the build on strings that were never extracted</h3><p>抽出すらされていない文字列でビルドを落とす CI ゲート。既存ゲートでは原理的に見えなかった穴を塞いだ</p>
-</div>
-<div class="entry-diff"><span class="add">+216</span> <span class="del">-5</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/27">#27</a></div>
-<div class="entry-body"><h3>docs: log v0.2.0 in the changelog</h3><p>v0.2.0 の変更内容を CHANGELOG に記録</p>
-</div>
-<div class="entry-diff"><span class="add">+32</span> <span class="del">-1</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/28">#28</a></div>
-<div class="entry-body"><h3>docs: add a generated development-history page</h3><p>開発の記録ページを追加。ja/en を 1 つのデータ源から生成し、数値は git と GitHub API から計測する</p>
-</div>
-<div class="entry-diff"><span class="add">+1287</span> <span class="del">-0</span></div>
-</div>
-</div>
-<div class="release-row"><span class="release-tag">v0.2.0</span><span class="what">リリース</span><span class="when">2026-08-20</span></div>
-</div>
-<div class="phase" id="recent"><div class="phase-head">
-<div class="phase-dates">2026-08-20 – 2026-09-05</div>
-<h2>最近の変更</h2>
-<p>まだフェーズに割り当てていないもの。要約は PR のタイトルをそのまま使っている。build_history.py の PHASES に入れると、書き下ろした一行に差し替わる。</p>
-</div><div class="entries">
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/29">#29</a></div>
-<div class="entry-body"><h3>ci: rebuild the development-history page automatically on main</h3><p>ci: rebuild the development-history page automatically on main</p>
-</div>
-<div class="entry-diff"><span class="add">+160</span> <span class="del">-22</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-20<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/30">#30</a></div>
-<div class="entry-body"><h3>fix(ci): check out full history when rebuilding the history page</h3><p>fix(ci): check out full history when rebuilding the history page</p>
-</div>
-<div class="entry-diff"><span class="add">+65</span> <span class="del">-40</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-22<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/31">#31</a></div>
-<div class="entry-body"><h3>feat(demo): LocalStack on-ramp — try it without an AWS account (+ fix removed drift in the CLI)</h3><p>feat(demo): LocalStack on-ramp — try it without an AWS account (+ fix removed drift in the CLI)</p>
-</div>
-<div class="entry-diff"><span class="add">+362</span> <span class="del">-9</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-22<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/32">#32</a></div>
-<div class="entry-body"><h3>refactor(drift): decide what drift is in one place</h3><p>refactor(drift): decide what drift is in one place</p>
-</div>
-<div class="entry-diff"><span class="add">+319</span> <span class="del">-141</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-23<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/33">#33</a></div>
-<div class="entry-body"><h3>chore(metrics): publish the image to Docker Hub and keep the traffic numbers that expire</h3><p>chore(metrics): publish the image to Docker Hub and keep the traffic numbers that expire</p>
-</div>
-<div class="entry-diff"><span class="add">+362</span> <span class="del">-0</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-23<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/34">#34</a></div>
-<div class="entry-body"><h3>feat(dist): start from the published image instead of building</h3><p>feat(dist): start from the published image instead of building</p>
-</div>
-<div class="entry-diff"><span class="add">+31</span> <span class="del">-9</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-23<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/35">#35</a></div>
-<div class="entry-body"><h3>docs: cut 0.3.0</h3><p>docs: cut 0.3.0</p>
-</div>
-<div class="entry-diff"><span class="add">+19</span> <span class="del">-1</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-27<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/36">#36</a></div>
-<div class="entry-body"><h3>開発の記録ページへの入口を足し、最初の2週間の空白を説明する</h3><p>開発の記録ページへの入口を足し、最初の2週間の空白を説明する</p>
-</div>
-<div class="entry-diff"><span class="add">+75</span> <span class="del">-10</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-27<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/37">#37</a></div>
-<div class="entry-body"><h3>0.4.0: 起動を pull にした変更を記録する</h3><p>0.4.0: 起動を pull にした変更を記録する</p>
-</div>
-<div class="entry-diff"><span class="add">+29</span> <span class="del">-1</span></div>
-</div>
-<div class="entry">
-<div class="entry-meta">2026-08-28<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/38">#38</a></div>
-<div class="entry-body"><h3>導入の手前からアンケートを外す</h3><p>導入の手前からアンケートを外す</p>
-</div>
+<div class="entry-text">fix(lp): ダウンロードページの導入手順を修正</div>
 <div class="entry-diff"><span class="add">+6</span> <span class="del">-6</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-09-04<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/39">#39</a></div>
-<div class="entry-body"><h3>時刻を自分のタイムゾーンで、どこのものか分かる形で出す</h3><p>時刻を自分のタイムゾーンで、どこのものか分かる形で出す</p>
+<div class="entry-date">2026-06-07
 </div>
+<div class="entry-text">fix(docker): クローン直後でもどこでも動く自己完結構成に</div>
+<div class="entry-diff"><span class="add">+88</span> <span class="del">-6</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-08
+</div>
+<div class="entry-text">docs(lp): ダウンロードページにデモ用ログイン情報を表示</div>
+<div class="entry-diff"><span class="add">+2</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-08
+</div>
+<div class="entry-text">chore(lp): サイトを syncvey.com のカスタムドメインへ向ける</div>
+<div class="entry-diff"><span class="add">+22</span> <span class="del">-21</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-08
+</div>
+<div class="entry-text">fix(drift): 共通キーのみを比較し、誤検知を無くす</div>
+<div class="entry-diff"><span class="add">+23</span> <span class="del">-14</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-16
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/5">#5</a>
+</div>
+<div class="entry-text">feat: ライブスキャン対象の拡張 + ドリフト履歴・推移</div>
+<div class="entry-diff"><span class="add">+824</span> <span class="del">-39</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-16
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/6">#6</a>
+</div>
+<div class="entry-text">docs: README/LP にスキャン対象拡大とドリフト履歴を反映</div>
+<div class="entry-diff"><span class="add">+136</span> <span class="del">-514</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-17
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/1">#1</a>
+</div>
+<div class="entry-text">feat(core): 任意機能のフィーチャーフラグ＋プラグイン発見の継ぎ目</div>
+<div class="entry-diff"><span class="add">+225</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-22
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/2">#2</a>
+</div>
+<div class="entry-text">feat(drift): 環境ごとに DriftSnapshot 履歴の保持件数を制限</div>
+<div class="entry-diff"><span class="add">+170</span> <span class="del">-1</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-22
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/3">#3</a>
+</div>
+<div class="entry-text">fix(i18n): ドリフト履歴文字列の fuzzy な日本語訳を修正</div>
+<div class="entry-diff"><span class="add">+5</span> <span class="del">-12</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-24
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/4">#4</a>
+</div>
+<div class="entry-text">test(drift): ドリフト履歴ビューの描画をテストし、EFS アイコンの欠落も解消</div>
+<div class="entry-diff"><span class="add">+122</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-24
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/5">#5</a>
+</div>
+<div class="entry-text">docs(lp): ランディングページを実際のスキャン範囲に合わせ、EOL/2FA も明記</div>
+<div class="entry-diff"><span class="add">+26</span> <span class="del">-2</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-25
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/6">#6</a>
+</div>
+<div class="entry-text">feat(dashboard): ヒーロー行を追加 — ドリフト推移・EOL・鮮度</div>
+<div class="entry-diff"><span class="add">+338</span> <span class="del">-2</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-26
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/7">#7</a>
+</div>
+<div class="entry-text">feat(drift-risk): セキュリティリスクでの選別＋ CloudTrail による変更者特定プラグイン</div>
+<div class="entry-diff"><span class="add">+578</span> <span class="del">-5</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-26
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/8">#8</a>
+</div>
+<div class="entry-text">docs: drift-risk 機能を README とランディングページに記載</div>
+<div class="entry-diff"><span class="add">+16</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-29
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/9">#9</a>
+</div>
+<div class="entry-text">feat(drift-digest): 週次ドリフト・ブリーフィング＋プラグイン用の定期ジョブの継ぎ目</div>
+<div class="entry-diff"><span class="add">+451</span> <span class="del">-5</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-06-29
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/10">#10</a>
+</div>
+<div class="entry-text">docs: 週次ドリフト・ブリーフィングを README とランディングページに記載</div>
+<div class="entry-diff"><span class="add">+10</span> <span class="del">-6</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-07-01
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/11">#11</a>
+</div>
+<div class="entry-text">feat(survey): ダウンロード時アンケートで流入経路と目的を取得</div>
+<div class="entry-diff"><span class="add">+83</span> <span class="del">-17</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-07-04
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/12">#12</a>
+</div>
+<div class="entry-text">feat(drift-risk): されるべきなのにされていない Secrets Manager のローテーションを検出</div>
+<div class="entry-diff"><span class="add">+268</span> <span class="del">-10</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-07-22
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/16">#16</a>
+</div>
+<div class="entry-text">feat(cli): 着脱可能な `syncvey` コマンドラインプラグインを追加</div>
+<div class="entry-diff"><span class="add">+590</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-07-30
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/17">#17</a>
+</div>
+<div class="entry-text">feat(drift): Auto Scaling の増減をオオカミ少年扱いしないように</div>
+<div class="entry-diff"><span class="add">+355</span> <span class="del">-18</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-08
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/18">#18</a>
+</div>
+<div class="entry-text">chore: 非公開ロードマップ用に /.private/ を gitignore</div>
+<div class="entry-diff"><span class="add">+7</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-17
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/19">#19</a>
+</div>
+<div class="entry-text">chore: 設定駆動のドキュメント整合性チェッカーを追加</div>
+<div class="entry-diff"><span class="add">+334</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-18
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/20">#20</a>
+</div>
+<div class="entry-text">chore(ci): テストスイートを GitHub Actions で実行</div>
+<div class="entry-diff"><span class="add">+210</span> <span class="del">-28</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-18
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/21">#21</a>
+</div>
+<div class="entry-text">feat(scan): AWS から消えたリソースを検出</div>
+<div class="entry-diff"><span class="add">+645</span> <span class="del">-26</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-19
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/22">#22</a>
+</div>
+<div class="entry-text">docs: v0.1.0 に先立ち SECURITY.md と CHANGELOG.md を追加</div>
+<div class="entry-diff"><span class="add">+248</span> <span class="del">-0</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.2.0"><div class="version-head">
+<div class="version-tag">2026-08-19 – 2026-08-20</div><h2>v0.2.0</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-08-19
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/13">#13</a>
+</div>
+<div class="entry-text">ci(i18n): 未レビューの翻訳でビルドを失敗させる</div>
+<div class="entry-diff"><span class="add">+188</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-19
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/14">#14</a>
+</div>
+<div class="entry-text">docs(i18n): 抽出されていなかった 50 文字列を翻訳し、ローテーションドリフトを記載</div>
+<div class="entry-diff"><span class="add">+755</span> <span class="del">-19</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-19
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/15">#15</a>
+</div>
+<div class="entry-text">feat(blast-radius): 参照グラフとドリフトの波及（ステップ 1〜3）</div>
+<div class="entry-diff"><span class="add">+1353</span> <span class="del">-1</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-19
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/23">#23</a>
+</div>
+<div class="entry-text">chore(ci): i18n チェックを CI に統合し、v0.1.0 以降の変更を記録</div>
+<div class="entry-diff"><span class="add">+37</span> <span class="del">-18</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/24">#24</a>
+</div>
+<div class="entry-text">fix(drift): 削除されたリソースをドリフト総数に数える</div>
+<div class="entry-diff"><span class="add">+49</span> <span class="del">-6</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/25">#25</a>
+</div>
+<div class="entry-text">i18n(ja): 影響波及範囲・Auto Scaling・Missing Since の文字列を翻訳</div>
+<div class="entry-diff"><span class="add">+216</span> <span class="del">-173</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/26">#26</a>
+</div>
+<div class="entry-text">ci(i18n): 一度も抽出されていない文字列でビルドを失敗させる</div>
+<div class="entry-diff"><span class="add">+216</span> <span class="del">-5</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/27">#27</a>
+</div>
+<div class="entry-text">docs: v0.2.0 の変更を CHANGELOG に記録</div>
+<div class="entry-diff"><span class="add">+32</span> <span class="del">-1</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.3.0"><div class="version-head">
+<div class="version-tag">2026-08-20 – 2026-08-23</div><h2>v0.3.0</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/28">#28</a>
+</div>
+<div class="entry-text">docs: 生成される開発の記録ページを追加</div>
+<div class="entry-diff"><span class="add">+1287</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/29">#29</a>
+</div>
+<div class="entry-text">ci: main への push で開発の記録ページを自動的に再生成</div>
+<div class="entry-diff"><span class="add">+160</span> <span class="del">-22</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-20
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/30">#30</a>
+</div>
+<div class="entry-text">fix(ci): 記録ページの再生成時にフル履歴を checkout するように</div>
+<div class="entry-diff"><span class="add">+65</span> <span class="del">-40</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-22
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/31">#31</a>
+</div>
+<div class="entry-text">feat(demo): LocalStack オンランプ — AWS アカウント無しで試せる（CLI の削除ドリフトの修正も併せて）</div>
+<div class="entry-diff"><span class="add">+362</span> <span class="del">-9</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-23
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/32">#32</a>
+</div>
+<div class="entry-text">refactor(drift): 「ドリフトとは何か」の判定を 1 か所に集約</div>
+<div class="entry-diff"><span class="add">+319</span> <span class="del">-141</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-23
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/33">#33</a>
+</div>
+<div class="entry-text">chore(metrics): イメージを Docker Hub に公開し、期限切れになるトラフィック数を保持</div>
+<div class="entry-diff"><span class="add">+362</span> <span class="del">-0</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-23
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/35">#35</a>
+</div>
+<div class="entry-text">docs: 0.3.0 をカット</div>
+<div class="entry-diff"><span class="add">+19</span> <span class="del">-1</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.4.0"><div class="version-head">
+<div class="version-tag">2026-08-23 – 2026-08-27</div><h2>v0.4.0</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-08-23
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/34">#34</a>
+</div>
+<div class="entry-text">feat(dist): ビルドせず公開済みイメージから起動するように</div>
+<div class="entry-diff"><span class="add">+31</span> <span class="del">-9</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-27
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/36">#36</a>
+</div>
+<div class="entry-text">docs: 開発の記録ページへの入口を足し、最初の 2 週間の空白を説明する</div>
+<div class="entry-diff"><span class="add">+57</span> <span class="del">-4</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-08-27
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/37">#37</a>
+</div>
+<div class="entry-text">0.4.0: 起動が pull になったことを記録する</div>
+<div class="entry-diff"><span class="add">+29</span> <span class="del">-1</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.5.0"><div class="version-head">
+<div class="version-tag">2026-08-28 – 2026-09-04</div><h2>v0.5.0</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-08-28
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/38">#38</a>
+</div>
+<div class="entry-text">導入の手前からアンケートを外す</div>
+<div class="entry-diff"><span class="add">+6</span> <span class="del">-6</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-09-04
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/39">#39</a>
+</div>
+<div class="entry-text">時刻を自分のタイムゾーンで、どこのものか分かる形で出す</div>
 <div class="entry-diff"><span class="add">+128</span> <span class="del">-7</span></div>
 </div>
 <div class="entry">
-<div class="entry-meta">2026-09-05<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/40">#40</a></div>
-<div class="entry-body"><h3>CLAUDE.md を git 管理から外す</h3><p>CLAUDE.md を git 管理から外す</p>
+<div class="entry-date">2026-09-04
 </div>
+<div class="entry-text">0.5.0: 版上げと CHANGELOG</div>
+<div class="entry-diff"><span class="add">+6</span> <span class="del">-1</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.6.0"><div class="version-head">
+<div class="version-tag">2026-09-05 – 2026-09-16</div><h2>v0.6.0</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-09-05
+<br><a class="entry-pr" href="https://github.com/MR-TABATA/SyncVey/pull/40">#40</a>
+</div>
+<div class="entry-text">CLAUDE.md を git 管理から外す</div>
 <div class="entry-diff"><span class="add">+3</span> <span class="del">-0</span></div>
 </div>
+<div class="entry">
+<div class="entry-date">2026-09-16
 </div>
-<div class="release-row"><span class="release-tag">v0.4.0</span><span class="what">リリース</span><span class="when">2026-08-27</span></div>
-<div class="release-row"><span class="release-tag">v0.3.0</span><span class="what">リリース</span><span class="when">2026-08-27</span></div>
-<div class="release-row"><span class="release-tag">v0.5.0</span><span class="what">リリース</span><span class="when">2026-09-04</span></div>
+<div class="entry-text">配布ポリシーに EBS/EFS/SNS/SQS の読み取り権限を足す</div>
+<div class="entry-diff"><span class="add">+26</span> <span class="del">-1</span></div>
 </div>
+<div class="entry">
+<div class="entry-date">2026-09-16
+</div>
+<div class="entry-text">ダッシュボードのヒーロー 3 枚を同じ骨組みに揃え、htmx 断片の直接アクセスを包む</div>
+<div class="entry-diff"><span class="add">+287</span> <span class="del">-193</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-09-16
+</div>
+<div class="entry-text">v0.6.0 の CHANGELOG を確定し、README/LP のスクリーンショットを撮り直す</div>
+<div class="entry-diff"><span class="add">+27</span> <span class="del">-0</span></div>
+</div>
+</div></div>
+<div class="version" id="unreleased"><div class="version-head">
+<div class="version-tag">2026-09-16</div><h2>未リリース</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-09-16
+</div>
+<div class="entry-text">開発の記録ページを、マージ済みPRからコミット単位の生成へ切り替える</div>
+<div class="entry-diff"><span class="add">+894</span> <span class="del">-759</span></div>
+</div>
+</div></div>
 <div class="note"><h3>このページについて</h3><ul>
-<li>日付は GitHub 上でマージされた日（UTC）。</li>
-<li>「作成から N 日」は、書かれてからマージされるまで開いていた期間。長いものは他の作業を先に通していたか、衝突の解消が必要だったもの。</li>
-<li>区切りと一行要約は後から付けた解釈で、それ以外の数値はすべて生成時に計測している。</li>
-<li>最初の 2 週間（6/05〜6/16）に PR が 1 件も無いのは、いまのリポジトリを 6/17 に作り直したため。その間の作業はコミットとして残っているが、当時の PR は旧リポジトリと一緒に消えた。開発日数と週ごとのグラフは git の最初のコミットから数えている。</li>
+<li>単位はコミット。プルリクエストの一覧ではないので、main へ直接積んだ変更も漏れない（以前の版はこれが原因で直近 3 件が欠けていた）。</li>
+<li>区切りはタグ（バージョン）が付いた地点のみ。以前あった「フェーズ」のような主観的な区切りは廃止した ── 客観的に決まる境界だけを使っている。</li>
+<li>日英の文面は手作業の翻訳（コミットメッセージは英語期・日本語期のどちらか一方でしか書かれていない）。それ以外の数値はすべて生成時に git から計測している。</li>
+<li>翻訳がまだ無いコミットは、原文をそのまま両言語に出す。抜けにはならない。</li>
+<li>開発の記録ページ自身の自動更新コミット（&quot;docs: rebuild the development-history page&quot;）は集計から除外している。含めると再生成のたびにページ自身の分の記事が増える。</li>
 </ul></div>
 </div></section>
 <footer><div class="container"><p>© 2026 SyncVey &nbsp;·&nbsp; <a href="https://github.com/MR-TABATA/SyncVey">GitHub</a></p></div></footer>

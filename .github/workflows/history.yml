@@ -1,15 +1,16 @@
 name: history
 
-# 開発の記録ページ（docs/history.{ja,en}.html）は「マージ済み PR」から
-# 生成するので、マージした瞬間に必ず古くなる。
+# 開発の記録ページ（docs/history.{ja,en}.html）は git のコミットから生成する
+# （以前は「マージ済み PR」からで、main へ直接積んだコミットが 3 件連続で
+# 抜けたまま気づかなかった実害があった）。
 #
-# だからこれは「古かったら落とす」ゲートにしていない。ゲートにすると
-# マージのたびに main が赤くなり、赤を消すためだけの手作業が毎回発生する。
+# これは「古かったら落とす」ゲートにしていない。ゲートにするとコミットの
+# たびに main が赤くなり、赤を消すためだけの手作業が毎回発生する。
 # 代わりに main への push で再生成し、変化があった時だけコミットする。
 #
-# フェーズ未登録の PR があってもスクリプトは失敗せず、「最近の変更」節に
-# PR タイトルのまま出る。ページが取りこぼすことはなく、要約を書きたく
-# なった時に PHASES へ移せばいい。
+# 翻訳が無いコミットがあってもスクリプトは失敗せず、原文のまま両言語に
+# 出る。ページが取りこぼすことはなく、訳したくなった時に
+# scripts/build_history.py の COMMITS へ追記すればいい。
 
 on:
   push:
@@ -41,14 +42,12 @@ jobs:
           python-version: "3.12"
 
       - name: Rebuild the history page
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 scripts/build_history.py
 
       - name: Commit if it changed
         run: |
           if git diff --quiet -- docs/history.ja.html docs/history.en.html; then
-            echo "No change — the page already matches the merged history."
+            echo "No change — the page already matches the commit history."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
