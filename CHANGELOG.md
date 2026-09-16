@@ -8,6 +8,10 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-16
+
+Four missing IAM permissions were making four scanners fail silently.
+
 ### Fixed
 
 - **The distributed IAM policy was missing 4 permissions, so EBS, EFS, SNS,
@@ -20,6 +24,29 @@ While the major version is `0`, minor releases may change behaviour.
   surfaced as an error — the resources were just absent. Confirmed against a
   real AWS account on 2026-09-07. Added new `SyncVeyMessagingReadOnly` /
   extended `SyncVeyStorageReadOnly` statements for the 4 actions.
+
+### Changed
+
+- **The dashboard's three signal cards (drift / EOL / freshness) now share
+  one skeleton, and speak in numbers even when there's nothing to report.**
+  They used to be two different HTML blocks per card — an "alert" version
+  and an "all clear" version with different copy — so a calm-day screenshot
+  and a noisy-day screenshot looked like different products. Every card now
+  always shows label → number → one line of context → an action, and
+  "nothing wrong" renders as `0`, not a sentence, so the eye doesn't have to
+  re-read the tile to tell whether something changed. The drift trend chart
+  on the environment history page also grew a breakdown: each bar is now
+  stacked into changed/added/removed instead of one color, matching the
+  legend already used in the snapshot list below it.
+- **Opening an htmx partial URL directly (reload, bookmark, a pasted link)
+  no longer shows a bare, unstyled fragment.** Most screens in this app are
+  `#main-content` swaps that return HTML with no `<head>`, so navigating to
+  one of those URLs directly skipped the `<head>` that loads Tailwind — the
+  page rendered with classes present but no CSS applied. A new
+  `ShellFallbackMiddleware` detects a real browser navigation
+  (`Sec-Fetch-Mode: navigate`, not an htmx/fetch request) returning a bare
+  fragment, and wraps it in the same shell the normal dashboard uses, so
+  every entry point lands on the same screen.
 
 ## [0.5.0] — 2026-09-04
 
