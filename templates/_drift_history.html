@@ -32,20 +32,46 @@
 {% if snapshots %}
 {# ── Trend chart ────────────────────────────────────────────────── #}
 {% if peak %}
+{# バーは内訳の積み上げ。色は下のスナップショット一覧と揃える（青=変更/緑=追加/赤=削除）。単色だと「青 = 変更」と読めてしまい、追加だけの回でも青一色になって一覧と食い違う。 #}
 <div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-6">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 gap-4 flex-wrap">
         <span class="text-xs font-bold uppercase tracking-widest text-slate-400">{% trans "Drift trend" %}</span>
-        <span class="text-xs text-slate-400">{% trans "oldest → newest" %}</span>
+        <div class="flex items-center gap-3 text-[11px] text-slate-400">
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>{% trans "changed" %}</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>{% trans "added" %}</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>{% trans "removed" %}</span>
+            <span class="text-slate-300">|</span>
+            <span class="tabular-nums">{% blocktrans with n=peak %}peak {{ n }}{% endblocktrans %}</span>
+        </div>
     </div>
     <div class="flex flex-row-reverse items-end gap-1 h-24">
         {% for s in snapshots %}
-        <div class="flex-1 min-w-[3px] flex flex-col justify-end h-full group/bar relative"
+        {# 1件しか無い時に帯が横いっぱいに伸びてグラフに見えなくなるので幅に上限を置く #}
+        <div class="flex-1 max-w-[40px] min-w-[4px] flex flex-col justify-end h-full group/bar"
              title="{{ s.detected_at|date:'Y-m-d H:i T' }} — {{ s.changed_count }} {% trans 'changed' %}, {{ s.added_count }} {% trans 'added' %}, {{ s.removed_count }} {% trans 'removed' %}">
-            <div class="rounded-t-sm transition-colors {% if s.has_drift %}bg-blue-400 group-hover/bar:bg-blue-600{% else %}bg-slate-200 group-hover/bar:bg-slate-300{% endif %}"
-                 style="height: {% widthratio s.total_count peak 100 %}%; min-height: 3px;"></div>
+            {% if s.has_drift %}
+            {# 内訳の比率は flex-grow で割る（widthratio の丸め誤差で合計が 100% を外れないように） #}
+            <div class="w-full flex flex-col rounded-t-sm overflow-hidden opacity-90 group-hover/bar:opacity-100 transition-opacity"
+                 style="height: {% widthratio s.total_count peak 100 %}%; min-height: 4px;">
+                <div class="bg-blue-500"  style="flex: {{ s.changed_count }} 1 0%"></div>
+                <div class="bg-green-500" style="flex: {{ s.added_count }} 1 0%"></div>
+                <div class="bg-red-500"   style="flex: {{ s.removed_count }} 1 0%"></div>
+            </div>
+            {% else %}
+            <div class="w-full bg-slate-200 rounded-t-sm" style="height: 4px;"></div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
+    {# 1件しか無い時は左右に同じ日付が並ぶだけなので出さない #}
+    {% if snapshots|length > 1 %}
+    {% with oldest=snapshots|last %}
+    <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+        <span>{{ oldest.detected_at|date:"Y-m-d" }}</span>
+        <span>{{ snapshots.0.detected_at|date:"Y-m-d" }}</span>
+    </div>
+    {% endwith %}
+    {% endif %}
 </div>
 {% endif %}
 

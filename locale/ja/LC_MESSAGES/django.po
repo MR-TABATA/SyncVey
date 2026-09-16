@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 11:22+0000\n"
+"POT-Creation-Date: 2026-09-09 13:37+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -342,7 +342,6 @@ msgstr "最終インポート日時"
 #: asset_manager/models/asset.py:49
 msgid "Missing Since"
 msgstr "消失日時"
-
 
 #: asset_manager/models/asset.py:51
 msgid "Memo"
@@ -717,32 +716,32 @@ msgstr "AI / ML"
 msgid "Security"
 msgstr "セキュリティ"
 
-#: asset_manager/views.py:661
+#: asset_manager/views.py:615
 msgid "DB tables not created. Run `python manage.py migrate`."
 msgstr ""
 "DBテーブルが作成されていません。`python manage.py migrate` を実行してくださ"
 "い。"
 
-#: asset_manager/views.py:894
+#: asset_manager/views.py:848
 msgid "No file selected."
 msgstr "ファイルが選択されていません。"
 
-#: asset_manager/views.py:898
+#: asset_manager/views.py:852
 msgid "Only .tfstate or .json files are accepted."
 msgstr ".tfstate または .json ファイルのみ受け付けます。"
 
-#: asset_manager/views.py:904
+#: asset_manager/views.py:858
 msgid "Failed to parse JSON. Please verify the file is a valid .tfstate."
 msgstr ""
 "JSONの解析に失敗しました。ファイルが有効な .tfstate であることを確認してくだ"
 "さい。"
 
-#: asset_manager/views.py:906
+#: asset_manager/views.py:860
 #, python-format
 msgid "File read error: %(err)s"
 msgstr "ファイル読み込みエラー: %(err)s"
 
-#: asset_manager/views.py:926
+#: asset_manager/views.py:880
 msgid ""
 "Could not auto-detect system or environment name. Please fill in System Name "
 "and Environment Name manually."
@@ -750,157 +749,157 @@ msgstr ""
 "システム名または環境名を自動判定できませんでした。システム名と環境名を手動で"
 "入力してください。"
 
-#: asset_manager/views.py:952
+#: asset_manager/views.py:906
 msgid "Session expired. Please upload the file again."
 msgstr "セッションが切れました。ファイルを再度アップロードしてください。"
 
-#: asset_manager/views.py:974
+#: asset_manager/views.py:928
 #, python-format
 msgid "An error occurred during processing: %(err)s"
 msgstr "処理中にエラーが発生しました: %(err)s"
 
-#: asset_manager/views.py:984
+#: asset_manager/views.py:938
 #, python-format
 msgid "%(count)d asset(s) registered/updated from %(filename)s."
 msgstr "%(filename)s から %(count)d 件の資産を登録/更新しました。"
 
-#: asset_manager/views.py:1023 asset_manager/views.py:1073
+#: asset_manager/views.py:977 asset_manager/views.py:1027
 msgid "System name is required."
 msgstr "システム名は必須です。"
 
-#: asset_manager/views.py:1025 asset_manager/views.py:1077
+#: asset_manager/views.py:979 asset_manager/views.py:1031
 msgid "This system name is already in use."
 msgstr "このシステム名はすでに使用されています。"
 
-#: asset_manager/views.py:1027 asset_manager/views.py:1079
+#: asset_manager/views.py:981 asset_manager/views.py:1033
 msgid "This code is already in use."
 msgstr "このコードはすでに使用されています。"
 
-#: asset_manager/views.py:1042
+#: asset_manager/views.py:996
 msgid "15 min"
 msgstr "15分"
 
-#: asset_manager/views.py:1043
+#: asset_manager/views.py:997
 msgid "30 min"
 msgstr "30分"
 
-#: asset_manager/views.py:1044
+#: asset_manager/views.py:998
 msgid "1 hour"
 msgstr "1時間"
 
-#: asset_manager/views.py:1045
+#: asset_manager/views.py:999
 msgid "6 hours"
 msgstr "6時間"
 
-#: asset_manager/views.py:1046
+#: asset_manager/views.py:1000
 msgid "24 hours"
 msgstr "24時間"
 
-#: asset_manager/views.py:1075
+#: asset_manager/views.py:1029
 msgid "Code is required."
 msgstr "コードは必須です。"
 
-#: asset_manager/views.py:1084
+#: asset_manager/views.py:1038
 msgid "Webhook URL must be an https://hooks.slack.com/… address."
 msgstr ""
 "Webhook URL は https://hooks.slack.com/… のアドレスである必要があります。"
 
-#: asset_manager/views.py:1151 asset_manager/views.py:1194
+#: asset_manager/views.py:1105 asset_manager/views.py:1148
 msgid "Environment name is required."
 msgstr "環境名は必須です。"
 
-#: asset_manager/views.py:1153 asset_manager/views.py:1196
+#: asset_manager/views.py:1107 asset_manager/views.py:1150
 msgid "This environment name already exists."
 msgstr "この環境名はすでに存在します。"
 
-#: asset_manager/views.py:1264
+#: asset_manager/views.py:1218
 msgid "Asset name is required."
 msgstr "資産名は必須です。"
 
-#: asset_manager/views.py:1270
+#: asset_manager/views.py:1224
 msgid "The specified environment does not exist."
 msgstr "指定された環境が存在しません。"
 
-#: asset_manager/views.py:1299
+#: asset_manager/views.py:1253
 #, python-format
 msgid "Asset \"%(name)s\" has been registered."
 msgstr "資産「%(name)s」を登録しました。"
 
-#: asset_manager/views.py:1731
+#: asset_manager/views.py:1679
 msgid "Incorrect username or password."
 msgstr "ユーザー名またはパスワードが正しくありません。"
 
-#: asset_manager/views.py:1754
+#: asset_manager/views.py:1702
 msgid "認証コードが正しくありません"
 msgstr "認証コードが正しくありません"
 
-#: asset_manager/views.py:1804
+#: asset_manager/views.py:1752
 msgid "Saved"
 msgstr "保存しました"
 
-#: asset_manager/views.py:1820
+#: asset_manager/views.py:1768
 msgid "Current password is incorrect"
 msgstr "現在のパスワードが正しくありません"
 
-#: asset_manager/views.py:1822
+#: asset_manager/views.py:1770
 msgid "New password must be at least 8 characters"
 msgstr "新しいパスワードは8文字以上にしてください"
 
-#: asset_manager/views.py:1824
+#: asset_manager/views.py:1772
 msgid "New passwords do not match"
 msgstr "新しいパスワードが一致しません"
 
-#: asset_manager/views.py:1834
+#: asset_manager/views.py:1782
 msgid "Password changed"
 msgstr "パスワードを変更しました"
 
-#: asset_manager/views.py:1862
+#: asset_manager/views.py:1810
 msgid "Your session has expired. Please try again."
 msgstr "セッションが切れました。再度やり直してください。"
 
-#: asset_manager/views.py:1868
+#: asset_manager/views.py:1816
 msgid "The verification code is incorrect"
 msgstr "認証コードが正しくありません"
 
-#: asset_manager/views.py:1879
+#: asset_manager/views.py:1827
 msgid "Two-factor authentication enabled"
 msgstr "2段階認証が有効になりました"
 
-#: asset_manager/views.py:1890 asset_manager/views.py:1907
+#: asset_manager/views.py:1838 asset_manager/views.py:1855
 msgid "Password is incorrect"
 msgstr "パスワードが正しくありません"
 
-#: asset_manager/views.py:1946
+#: asset_manager/views.py:1894
 msgid "Cannot change the role of the last owner"
 msgstr "最後のオーナーのロールは変更できません"
 
-#: asset_manager/views.py:1953
+#: asset_manager/views.py:1901
 msgid "Updated"
 msgstr "変更しました"
 
-#: asset_manager/views.py:2028
+#: asset_manager/views.py:1976
 msgid ""
 "AWS credentials are not configured. Enter a Role ARN in the System settings."
 msgstr ""
 "AWS認証情報が設定されていません。System設定で Role ARN を入力してください。"
 
-#: asset_manager/views.py:2080
+#: asset_manager/views.py:2028
 msgid "This environment is not configured with an S3 backend."
 msgstr "この環境はS3バックエンドに設定されていません。"
 
-#: asset_manager/views.py:2082
+#: asset_manager/views.py:2030
 msgid "Please set the S3 bucket and key."
 msgstr "S3 BucketとKeyを設定してください。"
 
-#: asset_manager/views.py:2087
+#: asset_manager/views.py:2035
 msgid "Failed to fetch from S3"
 msgstr "S3からの取得に失敗しました"
 
-#: asset_manager/views.py:2091
+#: asset_manager/views.py:2039
 msgid "tfstate contains sensitive information"
 msgstr "tfstateに機密情報が含まれています"
 
-#: asset_manager/views.py:2100
+#: asset_manager/views.py:2048
 msgid "Import error"
 msgstr "インポートエラー"
 
@@ -909,32 +908,28 @@ msgstr "インポートエラー"
 msgid "Blast Radius"
 msgstr "影響波及範囲"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:8
 msgid ""
 "What the current drift can reach across the resource graph, ranked by impact"
-msgstr "いま起きているドリフトがリソースの参照グラフ上でどこまで届くかを、影響度順に表示"
-
+msgstr ""
+"いま起きているドリフトがリソースの参照グラフ上でどこまで届くかを、影響度順に"
+"表示"
 
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:14
 msgid "Drift sources"
 msgstr "ドリフト起点"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:17
 msgid "Collateral reached"
 msgstr "波及先"
-
 
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:21
 msgid "Install Drift Risk to weight by severity"
 msgstr "ドリフトリスクを導入すると重大度で重み付けされます"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:34
 msgid "drift"
 msgstr "ドリフト"
-
 
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:36
 #, python-format
@@ -946,23 +941,20 @@ msgstr[0] "%(hops)s ホップ"
 msgid "impact"
 msgstr "影響度"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:56
 #, python-format
 msgid "Showing the top %(shown)s of %(total)s impacted resources."
 msgstr "影響を受けた %(total)s 件のうち、上位 %(shown)s 件を表示しています。"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:62
 msgid "No blast radius"
 msgstr "波及なし"
 
-
 #: syncvey_blast_radius/templates/syncvey_blast_radius/_blast_list.html:63
 msgid ""
 "No resource has drifted, so nothing is propagating impact across the graph."
-msgstr "ドリフトしているリソースが無いため、グラフ上に波及しているものはありません。"
-
+msgstr ""
+"ドリフトしているリソースが無いため、グラフ上に波及しているものはありません。"
 
 #: syncvey_drift_risk/apps.py:26
 #: syncvey_drift_risk/templates/syncvey_drift_risk/_risk_list.html:7
@@ -1202,7 +1194,7 @@ msgstr "任意のメモ"
 #: templates/_profile_totp_setup.html:41 templates/_system_create_form.html:55
 #: templates/_system_edit_form.html:100
 #: templates/_upload_secret_warning.html:59
-#: templates/_upload_tfstate_form.html:91 templates/dashboard.html:259
+#: templates/_upload_tfstate_form.html:91 templates/dashboard.html:260
 msgid "Cancel"
 msgstr "キャンセル"
 
@@ -1505,7 +1497,7 @@ msgstr "「%(name)s」を削除しますか？"
 
 #: templates/_asset_list.html:157 templates/_asset_list.html:187
 #: templates/_environment_list.html:133 templates/_profile.html:195
-#: templates/_system_list.html:68 templates/dashboard.html:263
+#: templates/_system_list.html:68 templates/dashboard.html:264
 msgid "Delete"
 msgstr "削除"
 
@@ -1577,11 +1569,11 @@ msgstr "変更履歴はありません。"
 msgid "Overview signals"
 msgstr "概要シグナル"
 
-#: templates/_dashboard_hero.html:12 templates/_dashboard_hero.html:42
+#: templates/_dashboard_hero.html:11
 msgid "Drift"
 msgstr "ドリフト"
 
-#: templates/_dashboard_hero.html:16
+#: templates/_dashboard_hero.html:15
 msgid "resources drifted"
 msgstr "件のリソースがドリフト"
 
@@ -1597,61 +1589,55 @@ msgstr "前回のスキャンから変更なし"
 msgid "No prior snapshot yet"
 msgstr "比較対象のスナップショットがまだありません"
 
-#: templates/_dashboard_hero.html:34
-msgid "Review drift"
-msgstr "ドリフトを確認"
-
-#: templates/_dashboard_hero.html:44 templates/_drift_report.html:66
-#: templates/_drift_snapshot.html:47
-msgid "No drift detected"
-msgstr "ドリフトは検出されませんでした"
-
-#: templates/_dashboard_hero.html:45
+#: templates/_dashboard_hero.html:31
 msgid "Definition matches live state"
 msgstr "定義と実環境が一致しています"
 
-#: templates/_dashboard_hero.html:54 templates/_dashboard_hero.html:77
+#: templates/_dashboard_hero.html:41
+msgid "Review drift"
+msgstr "ドリフトを確認"
+
+#: templates/_dashboard_hero.html:41
+msgid "View drift history"
+msgstr "ドリフト履歴を見る"
+
+#: templates/_dashboard_hero.html:51
 msgid "End of life"
 msgstr "サポート終了"
+
+#: templates/_dashboard_hero.html:56 templates/_dashboard_hero.html:64
+msgid "nearing end-of-life"
+msgstr "サポート終了間近"
 
 #: templates/_dashboard_hero.html:59
 msgid "past end-of-life"
 msgstr "サポート終了済み"
 
-#: templates/_dashboard_hero.html:62 templates/_dashboard_hero.html:66
-msgid "nearing end-of-life"
-msgstr "サポート終了間近"
-
-#: templates/_dashboard_hero.html:70
-msgid "Review runtimes"
-msgstr "ランタイムを確認"
-
-#: templates/_dashboard_hero.html:79
-msgid "All runtimes supported"
-msgstr "すべてのランタイムがサポート対象です"
-
-#: templates/_dashboard_hero.html:80
+#: templates/_dashboard_hero.html:66
 msgid "No tracked dependency is past EOL"
 msgstr "追跡中の依存関係にサポート終了済みのものはありません"
 
-#: templates/_dashboard_hero.html:88
+#: templates/_dashboard_hero.html:75
+msgid "Review runtimes"
+msgstr "ランタイムを確認"
+
+#: templates/_dashboard_hero.html:84
 msgid "Freshness"
 msgstr "鮮度"
 
-#: templates/_dashboard_hero.html:92
-#, python-format
-msgid "Scanned %(t)s ago"
-msgstr "%(t)s前にスキャン"
+#. Translators: 経過時間のあとに付く接尾辞。例: 「3 時間」＋「前にスキャン」
+#: templates/_dashboard_hero.html:90
+msgid "ago"
+msgstr "前にスキャン"
 
-#: templates/_dashboard_hero.html:94
+#: templates/_dashboard_hero.html:92
 msgid "Never scanned"
 msgstr "未スキャン"
 
-#: templates/_dashboard_hero.html:98
+#: templates/_dashboard_hero.html:96
 #, python-format
-msgid "%(n)s system scanned"
-msgid_plural "%(n)s systems scanned"
-msgstr[0] "%(n)s 件のシステムをスキャン済み"
+msgid "%(s)s of %(t)s systems scanned"
+msgstr "%(t)s 件中 %(s)s 件のシステムをスキャン済み"
 
 #: templates/_diagram.html:19 templates/_environment_list.html:124
 msgid "Architecture Diagram"
@@ -1669,42 +1655,43 @@ msgstr "ドリフト履歴"
 msgid "Latest report"
 msgstr "最新レポート"
 
-#: templates/_drift_history.html:37
+#: templates/_drift_history.html:38
 msgid "Drift trend"
 msgstr "ドリフトの推移"
 
-#: templates/_drift_history.html:38
-msgid "oldest → newest"
-msgstr "古い → 新しい"
-
-#: templates/_drift_history.html:43 templates/_drift_history.html:67
-#: templates/_drift_report.html:39 templates/_drift_snapshot.html:29
-#: templates/_environment_list.html:193
+#: templates/_drift_history.html:40 templates/_drift_history.html:51
+#: templates/_drift_history.html:90 templates/_drift_report.html:39
+#: templates/_drift_snapshot.html:29 templates/_environment_list.html:193
 msgid "changed"
 msgstr "変更"
 
-#: templates/_drift_history.html:43 templates/_drift_history.html:72
-#: templates/_drift_report.html:44 templates/_drift_snapshot.html:34
-#: templates/_environment_list.html:196
+#: templates/_drift_history.html:41 templates/_drift_history.html:51
+#: templates/_drift_history.html:95 templates/_drift_report.html:44
+#: templates/_drift_snapshot.html:34 templates/_environment_list.html:196
 msgid "added"
 msgstr "追加"
 
 # --- 削除リソースの検出（prune） ---
-#: templates/_drift_history.html:43 templates/_drift_history.html:77
-#: templates/_drift_report.html:49 templates/_drift_snapshot.html:39
-#: templates/_environment_list.html:199
+#: templates/_drift_history.html:42 templates/_drift_history.html:51
+#: templates/_drift_history.html:100 templates/_drift_report.html:49
+#: templates/_drift_snapshot.html:39 templates/_environment_list.html:199
 msgid "removed"
 msgstr "削除"
 
-#: templates/_drift_history.html:83
+#: templates/_drift_history.html:44
+#, python-format
+msgid "peak %(n)s"
+msgstr "最大 %(n)s 件"
+
+#: templates/_drift_history.html:106
 msgid "no drift"
 msgstr "ドリフトなし"
 
-#: templates/_drift_history.html:93
+#: templates/_drift_history.html:116
 msgid "No drift history yet."
 msgstr "ドリフト履歴はまだありません。"
 
-#: templates/_drift_history.html:94
+#: templates/_drift_history.html:117
 msgid "Run a scan or import a tfstate to start tracking drift over time."
 msgstr "スキャンまたは tfstate 取込で、ドリフトの推移を記録できます。"
 
@@ -1720,10 +1707,13 @@ msgstr "履歴"
 msgid "autoscaling"
 msgstr "Auto Scaling"
 
-
 #: templates/_drift_report.html:61
 msgid "unchanged"
 msgstr "変更なし"
+
+#: templates/_drift_report.html:66 templates/_drift_snapshot.html:47
+msgid "No drift detected"
+msgstr "ドリフトは検出されませんでした"
 
 #: templates/_drift_report.html:92 templates/_drift_snapshot.html:72
 msgid "fields"
@@ -1750,11 +1740,11 @@ msgstr "%(when)s に消失"
 msgid "Auto Scaling"
 msgstr "Auto Scaling"
 
-
 #: templates/_drift_report.html:182
 msgid "Owned by an Auto Scaling group — churn, not drift. Not counted above."
-msgstr "Auto Scaling グループが所有するリソース。ドリフトではなく増減（churn）として扱い、上の件数には含めていません。"
-
+msgstr ""
+"Auto Scaling グループが所有するリソース。ドリフトではなく増減（churn）として"
+"扱い、上の件数には含めていません。"
 
 #: templates/_drift_report.html:212
 msgid "click to expand"
@@ -2201,23 +2191,23 @@ msgstr "ログアウト"
 msgid "Import tfstate"
 msgstr "tfstate から登録"
 
-#: templates/dashboard.html:219
+#: templates/dashboard.html:220
 msgid "Upload tfstate File"
 msgstr "tfstateファイルをアップロード"
 
-#: templates/dashboard.html:224 templates/dashboard.html:317
+#: templates/dashboard.html:225 templates/dashboard.html:318
 msgid "Close"
 msgstr "閉じる"
 
-#: templates/dashboard.html:252
+#: templates/dashboard.html:253
 msgid "Confirm deletion"
 msgstr "削除の確認"
 
-#: templates/dashboard.html:317
+#: templates/dashboard.html:318
 msgid "A server error occurred (HTTP"
 msgstr "サーバーエラーが発生しました (HTTP"
 
-#: templates/dashboard.html:317
+#: templates/dashboard.html:318
 msgid "Check the console for details."
 msgstr "コンソールを確認してください。"
 

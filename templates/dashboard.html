@@ -208,7 +208,8 @@
             {% include '_dashboard_hero.html' %}
 
             <main id="main-content" class="p-6">
-                {% include '_system_list.html' %}
+                {# initial_content は ShellFallbackMiddleware が入れる。htmx パーシャルをブラウザで直接開かれた時に、その断片をここに差し込んでシェルごと返す。 #}
+                {% if initial_content %}{{ initial_content }}{% else %}{% include '_system_list.html' %}{% endif %}
             </main>
         </div>
 

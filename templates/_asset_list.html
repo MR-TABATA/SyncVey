@@ -165,7 +165,8 @@
     </div>
 
     <!-- Cards (below xl — stacked layout avoids horizontal overflow on narrow / zoomed views) -->
-    <div class="xl:hidden space-y-3">
+    {# 1列だと 1000px 前後の幅で 1枚が横いっぱいに伸び、右半分が空いたまま縦に長くなるので、md 以上は2列に並べる。 #}
+    <div class="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
         {% for asset in assets %}
         {% blocktrans with name=asset.name asvar del_confirm %}Delete "{{ name }}"?{% endblocktrans %}
         <div class="bg-white rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors cursor-pointer group"

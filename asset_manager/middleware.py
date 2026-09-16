@@ -80,3 +80,57 @@ class OrgRequiredMiddleware:
                 auth_logout(request)
                 return redirect('/login/?no_org=1')
         return self.get_response(request)
+
+
+class ShellFallbackMiddleware:
+    """htmx パーシャルをブラウザで直接開かれた時に、アプリのシェルで包んで返す。
+
+    本アプリの画面遷移は #main-content を htmx で差し替える方式なので、
+    ほとんどのビューは <head> を持たない断片を返す。その URL をブラウザで
+    直接開く / リロード / ブックマークから開くと断片がそのまま表示され、
+    Tailwind(Play CDN) を読み込む <head> が無いため CSS が一切当たらない
+    （class 属性はあるのに素の HTML が並ぶ状態になる）。
+
+    そこで「ブラウザのページ遷移」で断片が返ってきた場合だけ dashboard.html
+    の #main-content に差し込んで返し、どの入り方でも同じ画面にする。
+    htmx リクエスト(HX-Request)・API 的な取得・ダウンロードは対象外。
+    """
+
+    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/static', '/__debug__')
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if not self._should_wrap(request, response):
+            return response
+
+        from django.shortcuts import render
+        from django.utils.safestring import mark_safe
+        from .views import _dashboard_context
+
+        fragment = response.content.decode(response.charset or 'utf-8')
+        context = _dashboard_context(request)
+        context['initial_content'] = mark_safe(fragment)
+        return render(request, 'dashboard.html', context)
+
+    def _should_wrap(self, request, response) -> bool:
+        if request.method != 'GET' or request.headers.get('HX-Request'):
+            return False
+        # ブラウザのページ遷移だけを対象にする。htmx/fetch は Sec-Fetch-Mode が
+        # navigate にならず、Accept も text/html を先頭に置かない。
+        if request.headers.get('Sec-Fetch-Mode') != 'navigate':
+            return False
+        if any(request.path.startswith(p) for p in self.EXEMPT_PREFIXES):
+            return False
+        user = getattr(request, 'user', None)
+        if user is None or not user.is_authenticated:
+            return False
+        if getattr(response, 'streaming', False) or response.status_code != 200:
+            return False
+        if not response.get('Content-Type', '').startswith('text/html'):
+            return False
+        # 既に完全な HTML ドキュメントなら包まない
+        head = response.content[:1024].lstrip().lower()
+        return not (head.startswith(b'<!doctype') or b'<html' in head)

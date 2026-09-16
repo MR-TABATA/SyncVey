@@ -17,6 +17,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
 from django.http import HttpResponseForbidden
 from django.utils import timezone
+from django.utils.timesince import timesince
 
 from .models import (
     Asset, System, Environment,
@@ -300,8 +301,10 @@ def _get_dashboard_stats(org=None):
 # 空状態（org 未所属 / DB 未準備）でも壊さないデフォルト
 _EMPTY_SIGNALS = {
     'drift_current': 0, 'drift_delta': None, 'drift_top_env_id': None,
+    'drift_history_env_id': None,
     'eol_overdue': 0, 'eol_soon': 0,
-    'last_scan': None, 'last_scan_stale': True, 'scanned_systems': 0, 'has_history': False,
+    'last_scan': None, 'last_scan_ago': None, 'last_scan_stale': True,
+    'scanned_systems': 0, 'total_systems': 0, 'has_history': False,
 }
 
 
@@ -354,6 +357,11 @@ def _get_dashboard_signals(org=None):
             max(latest_by_env, key=latest_by_env.get)
             if latest_by_env and drift_current > 0 else None
         )
+        # ドリフト 0 でも「履歴を見る」動線は残したいので、スナップショットが
+        # 1件でもある環境を持っておく（ドリフトがある時は top と同じ環境）。
+        drift_history_env_id = (
+            max(latest_by_env, key=latest_by_env.get) if latest_by_env else None
+        )
 
         # ── EOL: 追跡中の依存のうち終了済み / 期限間近を数える ──
         eol_overdue = eol_soon = 0
@@ -383,6 +391,10 @@ def _get_dashboard_signals(org=None):
             .filter(system__organization=org, status=ScanJob.Status.DONE)
             .values('system_id').distinct().count()
         )
+        total_systems = System.objects.filter(organization=org).count()
+        # タイルは「数値＋単位」で揃えたいので、経過時間は最上位の1単位だけにする
+        # （既定の depth=2 だと「2ヶ月, 2週間」になり折り返す）。
+        last_scan_ago = timesince(last_scan, depth=1) if last_scan else None
         # 24時間より古い（または未スキャン）なら「鮮度が落ちている」扱い
         last_scan_stale = (
             last_scan is None
@@ -393,11 +405,14 @@ def _get_dashboard_signals(org=None):
             'drift_current':    drift_current,
             'drift_delta':      drift_delta,
             'drift_top_env_id': drift_top_env_id,
+            'drift_history_env_id': drift_history_env_id,
             'eol_overdue':      eol_overdue,
             'eol_soon':         eol_soon,
             'last_scan':        last_scan,
+            'last_scan_ago':    last_scan_ago,
             'last_scan_stale':  last_scan_stale,
             'scanned_systems':  scanned_systems,
+            'total_systems':    total_systems,
             'has_history':      has_history,
         }
     except (ProgrammingError, OperationalError):
@@ -422,8 +437,12 @@ def _system_list_context(org=None):
     }
 
 
-@htmx_login_required
-def dashboard_view(request):
+def _dashboard_context(request):
+    """ダッシュボードのシェル(dashboard.html)を描くのに必要な文脈をまとめて返す。
+
+    dashboard_view からも ShellFallbackMiddleware からも使う。後者は htmx
+    パーシャルを直接開かれた時に、この文脈でシェルを描いて中身を差し込む。
+    """
     org = _get_user_org(request)
     systems = _safe_query_or_empty(lambda: _systems_queryset(org))
     _attach_system_providers(systems)
@@ -436,7 +455,7 @@ def dashboard_view(request):
         audit_count = AuditLog.objects.count()
     except (ProgrammingError, OperationalError):
         audit_count = 0
-    context = {
+    return {
         'systems': systems,
         'env_types': Environment.EnvType.choices,
         'stats': _get_dashboard_stats(org),
@@ -445,7 +464,11 @@ def dashboard_view(request):
         'apps_count': apps_count,
         'audit_count': audit_count,
     }
-    return render(request, 'dashboard.html', context)
+
+
+@htmx_login_required
+def dashboard_view(request):
+    return render(request, 'dashboard.html', _dashboard_context(request))
 
 
 @require_GET

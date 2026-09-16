@@ -1,101 +1,99 @@
 {% load i18n %}
-{# ヒーロー行: 「何が起きているか(シグナル)」だけでなく「緊急か(前回比/鮮度)」「次に何をするか(動線)」まで出す常設バンド。htmx で差し替わる #main-content の外に置く。 #}
+{# ヒーロー行: 「何が起きているか(シグナル)」だけでなく「緊急か(前回比/鮮度)」「次に何をするか(動線)」まで出す常設バンド。htmx で差し替わる #main-content の外に置く。3枚とも ラベル → 大きな数値 → 補足1行 → 動線 の同じ骨格にし、平常時も文章ではなく 0 を出す（数値の位置が動かないので増減が視線移動なしで分かる）。 #}
 <section aria-label="{% trans 'Overview signals' %}"
          class="px-4 sm:px-6 pt-5 pb-1 bg-slate-50/70 border-b border-slate-200">
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
     {# ── 1. Drift（最重要シグナル） ─────────────────────────────── #}
-    {% if signals.drift_current > 0 %}
-    <div class="rounded-2xl border border-amber-200 bg-white p-4 flex flex-col">
-      <div class="flex items-center gap-2 text-amber-600">
-        <i data-lucide="git-compare" class="w-4 h-4"></i>
+    <div class="rounded-2xl border {% if signals.drift_current > 0 %}border-amber-200{% else %}border-emerald-200{% endif %} bg-white p-4 flex flex-col">
+      <div class="flex items-center gap-2 {% if signals.drift_current > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+        <i data-lucide="{% if signals.drift_current > 0 %}git-compare{% else %}shield-check{% endif %}" class="w-4 h-4"></i>
         <span class="text-xs font-semibold uppercase tracking-wide">{% trans "Drift" %}</span>
       </div>
-      <div class="mt-2 flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-slate-800 tabular-nums">{{ signals.drift_current }}</span>
+      <div class="mt-3 flex items-baseline gap-2 min-h-[2.5rem]">
+        <span class="text-4xl font-bold leading-none tabular-nums {% if signals.drift_current > 0 %}text-amber-600{% else %}text-slate-800{% endif %}">{{ signals.drift_current }}</span>
         <span class="text-sm text-slate-500">{% trans "resources drifted" %}</span>
       </div>
-      <div class="mt-1 text-xs">
-        {% if signals.has_history %}
-          {% if signals.drift_delta > 0 %}
-            <span class="text-red-600 font-medium">▲ {{ signals.drift_delta }} {% trans "since last scan" %}</span>
-          {% elif signals.drift_delta < 0 %}
-            <span class="text-emerald-600 font-medium">▼ {{ signals.drift_delta|cut:"-" }} {% trans "since last scan" %}</span>
+      <div class="mt-2 text-xs">
+        {% if signals.drift_current > 0 %}
+          {% if signals.has_history %}
+            {% if signals.drift_delta > 0 %}
+              <span class="text-red-600 font-medium">▲ {{ signals.drift_delta }} {% trans "since last scan" %}</span>
+            {% elif signals.drift_delta < 0 %}
+              <span class="text-emerald-600 font-medium">▼ {{ signals.drift_delta|cut:"-" }} {% trans "since last scan" %}</span>
+            {% else %}
+              <span class="text-slate-400">{% trans "No change since last scan" %}</span>
+            {% endif %}
           {% else %}
-            <span class="text-slate-400">{% trans "No change since last scan" %}</span>
+            <span class="text-slate-400">{% trans "No prior snapshot yet" %}</span>
           {% endif %}
         {% else %}
-          <span class="text-slate-400">{% trans "No prior snapshot yet" %}</span>
+          <span class="text-slate-400">{% trans "Definition matches live state" %}</span>
         {% endif %}
       </div>
-      {% if signals.drift_top_env_id %}
-      <a href="{% url 'env-drift-history' signals.drift_top_env_id %}"
-         class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
-        {% trans "Review drift" %} <i data-lucide="arrow-right" class="w-4 h-4"></i>
-      </a>
+      {% if signals.drift_history_env_id %}
+      {# ドリフト履歴は htmx パーシャル（シェル無し）なので、素の href だと生の断片が表示される。#main-content に差し込むこと。 #}
+      <button type="button"
+              hx-get="{% url 'env-drift-history' signals.drift_history_env_id %}"
+              hx-target="#main-content"
+              hx-swap="innerHTML"
+              class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
+        {% if signals.drift_current > 0 %}{% trans "Review drift" %}{% else %}{% trans "View drift history" %}{% endif %}
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
       {% endif %}
     </div>
-    {% else %}
-    <div class="rounded-2xl border border-emerald-200 bg-white p-4 flex flex-col">
-      <div class="flex items-center gap-2 text-emerald-600">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-        <span class="text-xs font-semibold uppercase tracking-wide">{% trans "Drift" %}</span>
-      </div>
-      <div class="mt-2 text-lg font-semibold text-slate-800">{% trans "No drift detected" %}</div>
-      <div class="mt-1 text-xs text-slate-400">{% trans "Definition matches live state" %}</div>
-    </div>
-    {% endif %}
 
     {# ── 2. EOL（サポート終了） ─────────────────────────────────── #}
-    {% if signals.eol_overdue > 0 or signals.eol_soon > 0 %}
-    <div class="rounded-2xl border {% if signals.eol_overdue > 0 %}border-red-200{% else %}border-amber-200{% endif %} bg-white p-4 flex flex-col">
-      <div class="flex items-center gap-2 {% if signals.eol_overdue > 0 %}text-red-600{% else %}text-amber-600{% endif %}">
-        <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+    <div class="rounded-2xl border {% if signals.eol_overdue > 0 %}border-red-200{% elif signals.eol_soon > 0 %}border-amber-200{% else %}border-emerald-200{% endif %} bg-white p-4 flex flex-col">
+      <div class="flex items-center gap-2 {% if signals.eol_overdue > 0 %}text-red-600{% elif signals.eol_soon > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+        <i data-lucide="{% if signals.eol_overdue > 0 or signals.eol_soon > 0 %}calendar-clock{% else %}calendar-check{% endif %}" class="w-4 h-4"></i>
         <span class="text-xs font-semibold uppercase tracking-wide">{% trans "End of life" %}</span>
       </div>
-      <div class="mt-2 flex items-baseline gap-2">
-        {% if signals.eol_overdue > 0 %}
-          <span class="text-3xl font-bold text-slate-800 tabular-nums">{{ signals.eol_overdue }}</span>
-          <span class="text-sm text-slate-500">{% trans "past end-of-life" %}</span>
-        {% else %}
-          <span class="text-3xl font-bold text-slate-800 tabular-nums">{{ signals.eol_soon }}</span>
+      <div class="mt-3 flex items-baseline gap-2 min-h-[2.5rem]">
+        {% if signals.eol_overdue == 0 and signals.eol_soon > 0 %}
+          <span class="text-4xl font-bold leading-none tabular-nums text-amber-600">{{ signals.eol_soon }}</span>
           <span class="text-sm text-slate-500">{% trans "nearing end-of-life" %}</span>
+        {% else %}
+          <span class="text-4xl font-bold leading-none tabular-nums {% if signals.eol_overdue > 0 %}text-red-600{% else %}text-slate-800{% endif %}">{{ signals.eol_overdue }}</span>
+          <span class="text-sm text-slate-500">{% trans "past end-of-life" %}</span>
         {% endif %}
       </div>
-      <div class="mt-1 text-xs text-slate-400">
-        {% if signals.eol_overdue > 0 and signals.eol_soon > 0 %}+{{ signals.eol_soon }} {% trans "nearing end-of-life" %}{% endif %}
+      <div class="mt-2 text-xs text-slate-400">
+        {% if signals.eol_overdue > 0 and signals.eol_soon > 0 %}
+          +{{ signals.eol_soon }} {% trans "nearing end-of-life" %}
+        {% elif signals.eol_overdue == 0 and signals.eol_soon == 0 %}
+          {% trans "No tracked dependency is past EOL" %}
+        {% endif %}
       </div>
-      <a href="{% url 'application-list-all' %}"
-         class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
+      <button type="button"
+              hx-get="{% url 'application-list-all' %}"
+              hx-target="#main-content"
+              hx-swap="innerHTML"
+              hx-on::after-request="setSidebarActive('apps')"
+              class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
         {% trans "Review runtimes" %} <i data-lucide="arrow-right" class="w-4 h-4"></i>
-      </a>
+      </button>
     </div>
-    {% else %}
-    <div class="rounded-2xl border border-emerald-200 bg-white p-4 flex flex-col">
-      <div class="flex items-center gap-2 text-emerald-600">
-        <i data-lucide="calendar-check" class="w-4 h-4"></i>
-        <span class="text-xs font-semibold uppercase tracking-wide">{% trans "End of life" %}</span>
-      </div>
-      <div class="mt-2 text-lg font-semibold text-slate-800">{% trans "All runtimes supported" %}</div>
-      <div class="mt-1 text-xs text-slate-400">{% trans "No tracked dependency is past EOL" %}</div>
-    </div>
-    {% endif %}
 
     {# ── 3. Freshness（データの鮮度） ──────────────────────────── #}
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col">
+    {# ここだけ値が件数ではなく経過時間。スキャンは環境ごとの操作なのでバンドからの動線は張らない。 #}
+    <div class="rounded-2xl border {% if signals.last_scan_stale %}border-amber-200{% else %}border-emerald-200{% endif %} bg-white p-4 flex flex-col">
       <div class="flex items-center gap-2 {% if signals.last_scan_stale %}text-amber-600{% else %}text-emerald-600{% endif %}">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         <span class="text-xs font-semibold uppercase tracking-wide">{% trans "Freshness" %}</span>
       </div>
-      <div class="mt-2 text-lg font-semibold text-slate-800">
-        {% if signals.last_scan %}
-          {% blocktrans with t=signals.last_scan|timesince %}Scanned {{ t }} ago{% endblocktrans %}
+      <div class="mt-3 flex items-baseline gap-2 min-h-[2.5rem]">
+        {% if signals.last_scan_ago %}
+          <span class="text-4xl font-bold leading-none tabular-nums text-slate-800">{{ signals.last_scan_ago }}</span>
+          {# Translators: 経過時間のあとに付く接尾辞。例: 「3 時間」＋「前にスキャン」 #}
+          <span class="text-sm text-slate-500">{% trans "ago" %}</span>
         {% else %}
-          {% trans "Never scanned" %}
+          <span class="text-2xl font-bold leading-none {% if signals.last_scan_stale %}text-amber-600{% else %}text-slate-800{% endif %}">{% trans "Never scanned" %}</span>
         {% endif %}
       </div>
-      <div class="mt-1 text-xs text-slate-400">
-        {% blocktrans count n=signals.scanned_systems %}{{ n }} system scanned{% plural %}{{ n }} systems scanned{% endblocktrans %}
+      <div class="mt-2 text-xs text-slate-400">
+        {% blocktrans with s=signals.scanned_systems t=signals.total_systems %}{{ s }} of {{ t }} systems scanned{% endblocktrans %}
       </div>
     </div>
 

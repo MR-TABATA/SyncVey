@@ -120,6 +120,7 @@ MIDDLEWARE = [
     'asset_manager.middleware.OrgRequiredMiddleware',
     'asset_manager.middleware.SecurityHeadersMiddleware',
     'asset_manager.middleware.AuditMiddleware',
+    'asset_manager.middleware.ShellFallbackMiddleware',
 ]
 
 # Referrer-Policy（Django の SecurityMiddleware が付与）
