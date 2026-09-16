@@ -8,6 +8,19 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The distributed IAM policy was missing 4 permissions, so EBS, EFS, SNS,
+  and SQS silently dropped out of the asset ledger.** `iam/iam-policy.json`
+  lacked `ec2:DescribeVolumes`, `elasticfilesystem:DescribeFileSystems`,
+  `sns:ListTopics`, and `sqs:ListQueues` (plus `sqs:GetQueueAttributes`,
+  needed for queue detail), so a role set up exactly as `aws-setup.md`
+  describes hit an `AccessDenied` on those 4 of 18 scanners. Because a failed
+  scanner is reported and skipped rather than raising, the gap never
+  surfaced as an error — the resources were just absent. Confirmed against a
+  real AWS account on 2026-09-07. Added new `SyncVeyMessagingReadOnly` /
+  extended `SyncVeyStorageReadOnly` statements for the 4 actions.
+
 ## [0.5.0] — 2026-09-04
 
 Times now say which timezone they are in.

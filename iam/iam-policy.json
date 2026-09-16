@@ -44,7 +44,9 @@
       "Action": [
         "s3:ListAllMyBuckets",
         "s3:GetBucketLocation",
-        "s3:GetBucketTagging"
+        "s3:GetBucketTagging",
+        "ec2:DescribeVolumes",
+        "elasticfilesystem:DescribeFileSystems"
       ],
       "Resource": "*"
     },
@@ -59,6 +61,16 @@
         "route53:ListHostedZones",
         "route53:ListResourceRecordSets",
         "apigateway:GET"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SyncVeyMessagingReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "sns:ListTopics",
+        "sqs:ListQueues",
+        "sqs:GetQueueAttributes"
       ],
       "Resource": "*"
     },
