@@ -3,6 +3,8 @@ python manage.py seed             # insert sample data (idempotent)
 python manage.py seed --flush     # delete all app data first, then insert
 python manage.py seed --flush-users  # also delete seeded users/groups
 """
+import os
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
@@ -22,6 +24,14 @@ SEEDED_USERS = [
     "sato_mai", "suzuki_taro", "demo_viewer",
 ]
 SEEDED_GROUPS = ["Owner", "Infra Admin", "App Admin", "Viewer"]
+
+# Write-capable seeded users (Owner / Infra Admin / App Admin) get a password
+# overridable via SEED_STAFF_PASSWORD, so a public deployment (the hosted demo)
+# can set it to a value nobody can guess from this source file. Unset, it's the
+# same "Passw0rd!" documented in docker-setup.md for local dev — unchanged.
+# Viewer-role users (sato_mai, demo_viewer) stay on the literal password: they
+# can't write anything, so there's nothing an unpredictable password protects.
+STAFF_PASSWORD = os.environ.get("SEED_STAFF_PASSWORD", "Passw0rd!")
 
 
 class Command(BaseCommand):
@@ -524,11 +534,11 @@ class Command(BaseCommand):
             user.groups.add(group)
             return user
 
-        u_tabata  = make_user("tabata_hiroshi", "h.tabata@s-arcana.co.jp", "Hiroshi Tabata", "Passw0rd!", g_owner,  is_staff=True)
-        u_tanaka  = make_user("tanaka_kenji",   "k.tanaka@s-arcana.co.jp", "Kenji Tanaka",   "Passw0rd!", g_infra,  is_staff=True)
-        u_yamada  = make_user("yamada_yuki",    "y.yamada@s-arcana.co.jp", "Yuki Yamada",    "Passw0rd!", g_app)
+        u_tabata  = make_user("tabata_hiroshi", "h.tabata@s-arcana.co.jp", "Hiroshi Tabata", STAFF_PASSWORD, g_owner,  is_staff=True)
+        u_tanaka  = make_user("tanaka_kenji",   "k.tanaka@s-arcana.co.jp", "Kenji Tanaka",   STAFF_PASSWORD, g_infra,  is_staff=True)
+        u_yamada  = make_user("yamada_yuki",    "y.yamada@s-arcana.co.jp", "Yuki Yamada",    STAFF_PASSWORD, g_app)
         u_sato    = make_user("sato_mai",       "m.sato@s-arcana.co.jp",   "Mai Sato",       "Passw0rd!", g_viewer)
-        u_suzuki  = make_user("suzuki_taro",    "t.suzuki@demo-corp.com",  "Taro Suzuki",    "Passw0rd!", g_owner,  is_staff=True)
+        u_suzuki  = make_user("suzuki_taro",    "t.suzuki@demo-corp.com",  "Taro Suzuki",    STAFF_PASSWORD, g_owner,  is_staff=True)
         u_dviewer = make_user("demo_viewer",    "viewer@demo-corp.com",    "Demo Viewer","Passw0rd!", g_viewer)
 
         self.stdout.write("  users OK")
