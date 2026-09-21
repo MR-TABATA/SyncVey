@@ -4,16 +4,18 @@ python manage.py seed --flush     # delete all app data first, then insert
 python manage.py seed --flush-users  # also delete seeded users/groups
 """
 import os
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from asset_manager.models import (
     AppDependency, AppEnvConfig, Application,
-    Asset, Environment,
+    Asset, DriftSnapshot, Environment,
     Membership, Organization, System,
 )
 
@@ -56,7 +58,7 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
 
     def _flush(self):
-        for model in [AppDependency, AppEnvConfig, Application,
+        for model in [DriftSnapshot, AppDependency, AppEnvConfig, Application,
                       Asset, Environment, System, Membership, Organization]:
             count, _ = model.objects.all().delete()
             self.stdout.write(f"  deleted {count:>4}  {model.__name__}")
@@ -470,6 +472,68 @@ class Command(BaseCommand):
 
         self.stdout.write("  dependencies OK")
 
+        # ── DriftSnapshot（実スキャンでなく、ここで直接でっち上げる）───
+        # 本物は _record_drift_snapshot()（views.py）が raw_data / raw_data_prev
+        # の差分から作るが、ここには実スキャンが無いので detail の形だけ合わせて
+        # 手で3件積む。ec_prod は「ALBの削除保護が外れる→直る、代わりに
+        # batch インスタンスが消える」という筋のある推移。cms_prod は無風の
+        # 1件（＝ドリフトが無い環境の見え方も見せる）。
+        now = timezone.now()
+
+        ec_snap1 = DriftSnapshot.objects.create(
+            environment=ec_prod, source=DriftSnapshot.Source.SCAN,
+            changed_count=1, added_count=0, removed_count=0, unchanged_count=6,
+            detail={
+                "changed": [{
+                    "type": "RDS", "name": "ecsite-prod-db",
+                    "cloud_id": "ecsite-prod-mysql", "provider": "AWS",
+                    "changes": [{"field": "backup_retention_period", "old": "7", "new": "3"}],
+                }],
+                "added": [], "removed": [], "autoscaling": [],
+            },
+        )
+        ec_snap2 = DriftSnapshot.objects.create(
+            environment=ec_prod, source=DriftSnapshot.Source.SCAN,
+            changed_count=1, added_count=1, removed_count=0, unchanged_count=5,
+            detail={
+                "changed": [{
+                    "type": "ALB", "name": "ecsite-prod-alb",
+                    "cloud_id": alb_asset.cloud_id, "provider": "AWS",
+                    "changes": [{"field": "deletion_protection", "old": "{'enabled': True}", "new": "{'enabled': False}"}],
+                }],
+                "added": [{
+                    "type": "EC2", "name": "ecsite-prod-web-02",
+                    "cloud_id": "i-0a1b2c3d4e5f00003", "provider": "AWS",
+                }],
+                "removed": [], "autoscaling": [],
+            },
+        )
+        ec_snap3 = DriftSnapshot.objects.create(
+            environment=ec_prod, source=DriftSnapshot.Source.SCAN,
+            changed_count=0, added_count=0, removed_count=1, unchanged_count=6,
+            detail={
+                "changed": [], "added": [],
+                "removed": [{
+                    "type": "EC2", "name": "ecsite-prod-batch-01",
+                    "cloud_id": ec2_batch.cloud_id, "provider": "AWS",
+                }],
+                "autoscaling": [],
+            },
+        )
+        for snap, days_ago in [(ec_snap1, 3), (ec_snap2, 1), (ec_snap3, 0)]:
+            DriftSnapshot.objects.filter(pk=snap.pk).update(
+                detected_at=now - timedelta(days=days_ago, hours=0 if days_ago else 2)
+            )
+
+        cms_snap = DriftSnapshot.objects.create(
+            environment=cms_prod, source=DriftSnapshot.Source.TFSTATE,
+            changed_count=0, added_count=0, removed_count=0, unchanged_count=3,
+            detail={"changed": [], "added": [], "removed": [], "autoscaling": []},
+        )
+        DriftSnapshot.objects.filter(pk=cms_snap.pk).update(detected_at=now - timedelta(hours=1))
+
+        self.stdout.write("  drift snapshots OK")
+
     # ------------------------------------------------------------------
     # users / groups / memberships
     # ------------------------------------------------------------------
@@ -548,6 +612,14 @@ class Command(BaseCommand):
             (u_tanaka,  org_a, Membership.Role.INFRA_ADMIN),
             (u_yamada,  org_a, Membership.Role.APP_ADMIN),
             (u_sato,    org_a, Membership.Role.VIEWER),
+            # demo_viewer は org_b（Demo Corp）だけだと資産・ドリフト例が無い
+            # 空の組織にしか入れず、公開デモとして見せるものが無い。sato_mai の
+            # 「両組織を Viewer で持つ」前例に倣い、データが入っている org_a
+            # （Arcana Inc.）にも Viewer で足す。views.py の current-org 解決
+            # （Membership.objects.filter(user=...).first()、明示的な order_by
+            # 無し＝作成順）は最初に作られたメンバーシップを拾うので、org_a を
+            # org_b より先に作って既定の着地先にする。
+            (u_dviewer, org_a, Membership.Role.VIEWER),
             (u_suzuki,  org_b, Membership.Role.OWNER),
             (u_dviewer, org_b, Membership.Role.VIEWER),
             (u_sato,    org_b, Membership.Role.VIEWER),
