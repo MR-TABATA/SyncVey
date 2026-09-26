@@ -2,7 +2,7 @@
 
 English | **[日本語](README.ja.md)**
 
-**One-stop AWS asset ledger with Terraform drift detection — self-hosted, no SaaS fees.**
+**`terraform plan`: no changes. Reality: someone edited 3 resources in the AWS console last week. SyncVey catches what plan can't.**
 
 SyncVey organizes your AWS resources into a **System → Environment → Asset** hierarchy,
 flags configuration drift between your tfstate and live AWS state, and tracks application
