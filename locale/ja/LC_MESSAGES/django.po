@@ -743,6 +743,14 @@ msgstr "ファイル読み込みエラー: %(err)s"
 
 #: asset_manager/views.py:880
 msgid ""
+"This state file is encrypted (OpenTofu state encryption), so it cannot be "
+"read. Decrypt it first (for example with `tofu state pull`) and upload the "
+"result."
+msgstr ""
+"この state ファイルは暗号化されている（OpenTofu の state 暗号化）ため読めません。"
+"先に復号（例: `tofu state pull`）してから、その結果をアップロードしてください。"
+
+msgid ""
 "Could not auto-detect system or environment name. Please fill in System Name "
 "and Environment Name manually."
 msgstr ""
@@ -1611,7 +1619,7 @@ msgstr "サポート終了間近"
 
 #: templates/_dashboard_hero.html:59
 msgid "past end-of-life"
-msgstr "サポート終了済み"
+msgstr "サポート終了"
 
 #: templates/_dashboard_hero.html:66
 msgid "No tracked dependency is past EOL"
@@ -2238,3 +2246,35 @@ msgstr "確認"
 #: templates/totp_verify.html:66
 msgid "Back to Sign In"
 msgstr "ログインに戻る"
+
+msgid "Attributes"
+msgstr "属性"
+
+msgid "Supported"
+msgstr "サポート中"
+
+msgid "Middleware support"
+msgstr "ミドルウェアのサポート状況"
+
+msgid "Database engine"
+msgstr "データベースエンジン"
+
+msgid "Kubernetes version"
+msgstr "Kubernetes バージョン"
+
+msgid "Support end date"
+msgstr "サポート終了日"
+
+msgid "Basis: Amazon EKS standard support end date (endoflife.date)."
+msgstr "判定の基準: Amazon EKS の標準サポートの終了日（endoflife.date）。"
+
+msgid ""
+"Basis: the upstream project's own support end date (endoflife.date). AWS's "
+"schedule for this service can differ."
+msgstr ""
+"判定の基準: 元のソフトウェア自身のサポート終了日（endoflife.date）。この AWS サービス"
+"独自のスケジュールとは異なることがあります。"
+
+#, python-format
+msgid "EKS supports Kubernetes %(v)s and later"
+msgstr "EKS は Kubernetes %(v)s 以上をサポート"

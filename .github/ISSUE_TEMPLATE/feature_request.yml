@@ -1,0 +1,25 @@
+name: Feature request
+description: Something you would like SyncVey to do
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem you are trying to solve
+      description: What are you doing today, and where does it hurt? A concrete situation helps more than a feature name.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like
+      description: Optional — a sketch of how it could work.
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do instead
+      description: A script, another tool, a manual step.
+    validations:
+      required: false

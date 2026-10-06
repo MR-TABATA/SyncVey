@@ -423,6 +423,33 @@ class TestDashboardSignals(TestCase):
         self.assertEqual(sig['eol_overdue'], 1)
         self.assertEqual(sig['eol_soon'], 1)
 
+    def test_eol_counts_include_assets_but_not_vanished_ones(self):
+        """RDS のエンジン・Lambda のランタイムも期限を数える。消えた資産は数えない。"""
+        from asset_manager.views import _get_dashboard_signals
+        from asset_manager.models import Asset
+        org = self._org()
+        env = self._env(org)
+
+        def asset(cloud_id, asset_type, raw, **kw):
+            return Asset.objects.create(environment=env, cloud_id=cloud_id, name=cloud_id,
+                                        provider='AWS', asset_type=asset_type, raw_data=raw, **kw)
+
+        asset('db-old', 'RDS', {'engine': 'postgres', 'engine_version': '9.6.24'})
+        asset('fn-soon', 'LAMBDA', {'runtime': 'python3.soon'})
+        asset('db-gone', 'RDS', {'engine': 'postgres', 'engine_version': '9.6.24'},
+              missing_since=timezone.now())
+        asset('vm', 'EC2', {'engine': 'postgres', 'engine_version': '9.6.24'})
+
+        def fake_status(name, version):
+            return {('postgresql', '9.6.24'): 'eol', ('python', 'soon'): 'warning'}.get((name, version), 'unknown')
+
+        with mock.patch('asset_manager.eol_data.get_eol_status', side_effect=fake_status), \
+             mock.patch('asset_manager.eol_data.asset_eol_target',
+                        side_effect=lambda t, raw: ('postgresql', '9.6.24') if t == 'RDS' else ('python', 'soon') if t == 'LAMBDA' else None):
+            sig = _get_dashboard_signals(org)
+        self.assertEqual(sig['eol_overdue'], 1)   # db-old だけ（db-gone と EC2 は数えない）
+        self.assertEqual(sig['eol_soon'], 1)      # fn-soon
+
     def test_freshness_reflects_latest_done_scan(self):
         from asset_manager.views import _get_dashboard_signals
         from asset_manager.models import ScanJob

@@ -8,6 +8,68 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- **End-of-life is now judged for the resources themselves, not only for
+  the dependencies an application declares.** An RDS instance's engine and
+  version (PostgreSQL / MySQL, including Aurora), a Lambda function's
+  runtime (Python / Node.js / Ruby / Java) and an EKS cluster's Kubernetes
+  version are checked against the same EOL data. Resources past EOL or
+  nearing it are counted on the dashboard's EOL card and badged in the asset
+  list. The badge sits on the line that shows the version it is about — an
+  icon for the kind (runtime / database engine / Kubernetes version), the stored
+  value (`python3.7`, `mysql 5.7.44`, `Kubernetes 1.24`), then the badge — not
+  next to the service name, so it does not read as the service itself being
+  retired. Vanished resources (`missing_since`) are not counted. Aurora and
+  Lambda are judged against the upstream engine / language dates, which are
+  close to but not the same as AWS's own deprecation dates; EKS has no built-in
+  dates and is judged only once the EOL data has been fetched
+  (`EOL_REFRESH_ENABLED=true`).
+- **`manage.py syncvey export` writes the asset ledger as JSON or CSV**
+  (`--format`, `--system`, `--env`, `--output FILE`). Every asset is included —
+  vanished ones too, with `missing_since` set — together with its EOL verdict;
+  JSON also carries each asset's stored attributes (`--no-raw` leaves them out).
+- **Issue forms (bug report, feature request) and a pull request template.**
+  Security reports are pointed to the private advisory form.
+
+### Fixed
+
+- **The asset list never showed an RDS instance's engine.** The row printed the
+  instance class and stopped, so `postgres 16.2` was hidden behind
+  `db.t3.micro`. Both are shown now.
+- **The asset detail window showed no attributes at all.** After the per-type
+  detail tables were removed, `asset_detail_view` stopped passing the data the
+  detail partials render, so the window held only the name, region and
+  timestamps. It now lists the stored attributes (`raw_data`, with internal and
+  empty keys left out) and, for RDS / Lambda / EKS, an end-of-life panel with
+  the cycle's support-end date, headed "Middleware support" and saying whether
+  the version is a runtime, a database engine or a Kubernetes version.
+- **The asset cards were all different heights.** The grid top-aligned each card
+  at the height of its own content, so an RDS card (instance class, engine,
+  badge) towered over a Lambda one. Every card now takes the height of the
+  tallest.
+- **The detail window's icon was broken and its provider / type pills were empty.**
+  The icon pointed at `static/aws-icons/`, which does not exist (the list uses
+  `static/cloud-icons/aws/`), and the pills called `get_provider_display` /
+  `get_asset_type_display`, which Django only generates for fields with
+  `choices` — these two have none, so the template printed nothing. The window
+  now uses the same icon lookup as the list and prints the provider and type.
+- **Uploading an encrypted OpenTofu state ended with "0 asset(s) registered".**
+  OpenTofu 1.7+ can encrypt state; the file then holds only ciphertext and no
+  `resources`, which looked like a successful, empty import. It is now refused
+  with a message saying the file has to be decrypted first.
+- **The plugins' tests were never run by CI.** `syncvey_cli` and
+  `syncvey_drift_risk` keep their tests in Django-style `tests.py`, which
+  `pytest.ini` did not collect, so CI silently skipped 56 tests (the workflow
+  even had a comment saying plugin tests must not slip out). `pytest.ini` now
+  collects `tests.py` too.
+
+### Verified
+
+- OpenTofu state files (provider `registry.opentofu.org/...`) import exactly
+  like Terraform's. Checked with a state in OpenTofu's documented format, not
+  with the output of a real `tofu` run.
+
 ## [0.6.0] — 2026-09-16
 
 Four missing IAM permissions were making four scanners fail silently.

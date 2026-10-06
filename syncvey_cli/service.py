@@ -177,3 +177,44 @@ def status_rows():
                 'scan_enabled': system.scan_enabled,
             })
     return rows
+
+
+EXPORT_COLUMNS = (
+    'system', 'environment', 'provider', 'asset_type', 'asset_category',
+    'name', 'cloud_id', 'region', 'eol', 'last_imported_at', 'missing_since',
+)
+
+
+def export_rows(systems, env_selector=None, include_raw=True):
+    """
+    The asset ledger as plain dicts, one per asset, ordered system / environment /
+    type / name — for `syncvey export`.
+
+    `eol` is the same verdict the dashboard shows ('eol' | 'warning' | 'ok' |
+    'unknown'); `raw_data` is the stored attributes (already scrubbed of secrets
+    when they came from a tfstate). Assets that have vanished from AWS are kept,
+    with `missing_since` set, so the export is the whole ledger and not a filtered view.
+    """
+    from asset_manager.eol_data import get_asset_eol_status
+
+    rows = []
+    for system in systems:
+        for env in resolve_environments(system, env_selector):
+            for a in env.assets.all().order_by('asset_type', 'name', 'cloud_id'):
+                row = {
+                    'system':           system.name,
+                    'environment':      env.name,
+                    'provider':         a.provider,
+                    'asset_type':       a.asset_type,
+                    'asset_category':   a.asset_category,
+                    'name':             a.name,
+                    'cloud_id':         a.cloud_id,
+                    'region':           a.region or '',
+                    'eol':              get_asset_eol_status(a.asset_type, a.raw_data),
+                    'last_imported_at': a.last_imported_at.isoformat() if a.last_imported_at else '',
+                    'missing_since':    a.missing_since.isoformat() if a.missing_since else '',
+                }
+                if include_raw:
+                    row['raw_data'] = a.raw_data
+                rows.append(row)
+    return rows

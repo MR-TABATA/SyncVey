@@ -64,7 +64,7 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 | **影響波及範囲（Blast Radius）** *(オプションのプラグイン)* | 各ドリフトを起点にリソースの参照グラフを外側へ辿り、到達しうる全リソースを「重大度×距離減衰」の影響度でランク付け。drift-risk プラグイン併用でより精緻に。着脱可能で、アプリを外せば機能も消える |
 | **シークレットのローテーション・ドリフト** | ローテーションされるべきなのにされていない Secrets Manager のシークレットを検出 — ローテーション無効・一度も実行されていない・`SECRET_ROTATION_MAX_AGE_DAYS`（既定 90 日）の上限超過。差分ではなく現在の状態を採点するため、2 回のスキャン間で何も変化していなくても表面化する。取得するのはメタデータのみで、シークレットの値は読み取らず保存もしない |
 | **ドリフト・ブリーフィング** | システム単位の週次 Slack サマリ（任意）— 重大度の内訳、前週比のトレンド、危険な変更トップと実行者。`DRIFT_DIGEST_ENABLED` でオプトイン |
-| **コマンドライン** *(オプションのプラグイン)* | `manage.py syncvey scan / drift / status` で、ターミナルや CI からスキャンとドリフト確認を実行 — ダッシュボードと同じエンジンを駆動。`drift --exit-code` はドリフトがあればビルドを失敗させ、`--format json` はパイプラインに渡せる。着脱可能で、アプリを外せばコマンドも消える |
+| **コマンドライン** *(オプションのプラグイン)* | `manage.py syncvey scan / drift / status / export` で、ターミナルや CI からスキャン・ドリフト確認・台帳の書き出しを実行 — ダッシュボードと同じエンジンを駆動。`drift --exit-code` はドリフトがあればビルドを失敗させ、`--format json` はパイプラインに渡せる。着脱可能で、アプリを外せばコマンドも消える |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告（既定オフライン・任意で日次更新） |
 | **構成図** | 環境内のリソース関係を可視化 |
@@ -293,6 +293,10 @@ docker compose exec app python manage.py syncvey drift --exit-code
 
 # システム/環境を資産数と最終スキャン時刻つきで一覧
 docker compose exec app python manage.py syncvey status
+
+# 資産台帳を持ち出す: JSON（各資産の保存済み属性つき）または CSV
+docker compose exec app python manage.py syncvey export --system e-commerce --output ledger.json
+docker compose exec app python manage.py syncvey export --format csv > ledger.csv
 ```
 
 終了コードが CI の契約: `0` = 正常 / ドリフト無し、`1` = ドリフト検出

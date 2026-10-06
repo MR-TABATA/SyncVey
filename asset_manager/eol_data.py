@@ -8,6 +8,7 @@ EOL (End of Life) database for common middleware and runtimes.
 外部取得は EOL_REFRESH_ENABLED=true のときだけ行われる（eol_refresh.py 参照）。
 Source: https://endoflife.date/
 """
+import re
 import time
 from datetime import date, datetime, timedelta
 
@@ -108,6 +109,9 @@ _EOL: dict[str, dict[str, date | None]] = {
         '1': date(2025, 6, 30),
         '2': None,
     },
+    # EKS は Kubernetes のバージョンごとにサポート期限が決まっている。日付は内蔵せず、
+    # endoflife.date から取得したスナップショットだけで判定する（未取得なら 'unknown'）。
+    'amazon-eks': {},
     'go': {
         '1.19': date(2023, 9, 5),
         '1.20': date(2024, 2, 6),
@@ -217,14 +221,14 @@ def _effective() -> dict:
     return eff
 
 
-def get_eol_status(name: str, version: str) -> str:
-    """Return 'eol' | 'warning' | 'ok' | 'unknown'."""
+def _judge(name: str, version: str):
+    """(status, eol_date) — status は 'eol' | 'warning' | 'ok' | 'unknown'。日付が無い/不明なら None。"""
     canon = canonical(name)
     if canon is None:
-        return 'unknown'
+        return 'unknown', None
     cycles = _effective().get(canon)
     if not cycles:
-        return 'unknown'
+        return 'unknown', None
 
     today   = date.today()
     version = version.strip()
@@ -236,11 +240,140 @@ def get_eol_status(name: str, version: str) -> str:
             continue
         eol_date = _parse_date(cycles[cycle])
         if eol_date is None:
-            return 'ok'
+            return 'ok', None
         if eol_date < today:
-            return 'eol'
+            return 'eol', eol_date
         if eol_date < today + timedelta(days=_WARNING_DAYS):
-            return 'warning'
-        return 'ok'
+            return 'warning', eol_date
+        return 'ok', eol_date
 
-    return 'unknown'
+    return 'unknown', None
+
+
+def get_eol_status(name: str, version: str) -> str:
+    """Return 'eol' | 'warning' | 'ok' | 'unknown'."""
+    return _judge(name, version)[0]
+
+
+# --- 資産（RDS / Lambda / EKS）の判定 ------------------------------------------------------
+#
+# AppDependency（アプリが使うミドルウェア・言語）だけでなく、クラウド資産そのものにも
+# サポート期限がある: RDS のエンジン、Lambda のランタイム、EKS の Kubernetes バージョン。
+# 資産の raw_data から (product, version) を取り出し、get_eol_status に渡す。
+# 判定できない（未対応のエンジン・ランタイム、バージョン欠落）ものは 'unknown'。
+
+# RDS の Engine -> canonical product。Aurora は同じエンジンの upstream 期限で近似する
+# （Aurora 独自のサポート終了日とは一致しないことがある）。
+_RDS_ENGINES = {
+    'postgres':          'postgresql',
+    'aurora-postgresql': 'postgresql',
+    'mysql':             'mysql',
+    'aurora-mysql':      'mysql',
+}
+
+# Lambda の Runtime 接頭辞 -> canonical product。dotnet / go1.x / provided.* は
+# _EOL に無いので対象外（unknown）。Lambda 側の廃止日は言語の EOL と近いが同一ではない。
+_LAMBDA_RUNTIMES = {
+    'python': 'python',
+    'nodejs': 'nodejs',
+    'ruby':   'ruby',
+    'java':   'java',
+}
+
+# 画面に出す名前。「LAMBDA（サービス）」ではなく「Python 3.7（ミドルウェア）」の期限だと分かるように、
+# バッジと詳細にはサービス名でなく、この名前と版を出す。
+_PRODUCT_LABELS = {
+    'python': 'Python', 'nodejs': 'Node.js', 'ruby': 'Ruby', 'java': 'Java',
+    'postgresql': 'PostgreSQL', 'mysql': 'MySQL', 'amazon-eks': 'Kubernetes',
+}
+# 資産の種別 -> 何の版か（詳細画面の補足）
+_ASSET_KIND = {'RDS': 'engine', 'LAMBDA': 'runtime', 'EKS': 'kubernetes'}
+# 3 種類の「サポート終了」を見分けるアイコン（lucide）: ランタイム / DB エンジン / Kubernetes
+_KIND_ICONS = {'runtime': 'terminal', 'engine': 'database', 'kubernetes': 'ship-wheel'}
+
+_LEADING_VERSION = re.compile(r'^(\d+(?:\.\d+)*)')
+_LAMBDA_RUNTIME  = re.compile(r'^([a-z]+)(\d+(?:\.\d+)?)')
+
+
+def asset_eol_target(asset_type: str, raw: dict | None):
+    """資産 -> (product, version)。判定対象外・情報不足なら None。"""
+    raw = raw or {}
+    kind = (asset_type or '').upper()
+    if kind == 'RDS':
+        product = _RDS_ENGINES.get(str(raw.get('engine', '')).lower())
+        m = _LEADING_VERSION.match(str(raw.get('engine_version', '')).strip())
+        return (product, m.group(1)) if product and m else None
+    if kind == 'LAMBDA':
+        m = _LAMBDA_RUNTIME.match(str(raw.get('runtime', '')).lower())
+        product = _LAMBDA_RUNTIMES.get(m.group(1)) if m else None
+        return (product, m.group(2)) if product else None
+    if kind == 'EKS':
+        m = _LEADING_VERSION.match(str(raw.get('version', '')).strip())
+        return ('amazon-eks', m.group(1)) if m else None
+    return None
+
+
+def get_asset_eol_status(asset_type: str, raw: dict | None) -> str:
+    """資産の EOL 状態: 'eol' | 'warning' | 'ok' | 'unknown'。"""
+    target = asset_eol_target(asset_type, raw)
+    if target is None:
+        return 'unknown'
+    return get_eol_status(*target)
+
+
+def _version_key(v: str):
+    return tuple(int(x) for x in re.findall(r'\d+', v))
+
+
+def eks_supported_floor():
+    """いま EKS の標準サポート中の、いちばん古い Kubernetes バージョン（'1.31' など）。
+
+    取得済みの amazon-eks のスケジュールから計算する。データが無い・全部期限切れなら None。
+    「Kubernetes 1.24 はサポート終了」とだけ言わず、「EKS は 1.31 以上をサポート」と、行き先を
+    示すために使う。
+    """
+    cycles = _effective().get('amazon-eks') or {}
+    today = date.today()
+    alive = []
+    for cycle, eol in cycles.items():
+        d = _parse_date(eol)
+        if (d is None or d >= today) and _version_key(cycle):
+            alive.append(cycle)
+    return min(alive, key=_version_key) if alive else None
+
+
+def asset_eol_info(asset_type: str, raw: dict | None):
+    """資産の詳細画面用: {'status', 'product', 'version', 'date'}。判定対象外・不明なら None。
+
+    `date` はそのバージョン（サイクル）のサポート終了日。日付が無い（サポート中で未定）なら None。
+    """
+    target = asset_eol_target(asset_type, raw)
+    if target is None:
+        return None
+    # get_eol_status を経由する（テストや呼び出し側が差し替えられるよう、判定の入口は 1 つに保つ）
+    status = get_eol_status(*target)
+    if status == 'unknown':
+        return None
+    date_ = _judge(*target)[1]
+    product = target[0]
+    kind = _ASSET_KIND.get((asset_type or '').upper(), '')
+    raw = raw or {}
+    # 一覧の「中身の行」に出す文字列: 保存されている値そのまま（aurora-mysql など、判定に使った
+    # 正規化前の名前を失わない）。
+    if kind == 'engine':
+        shown = f"{raw.get('engine', '')} {raw.get('engine_version', '')}".strip()
+    elif kind == 'runtime':
+        shown = str(raw.get('runtime', ''))
+    else:
+        shown = f"Kubernetes {target[1]}"
+    return {
+        'status':  status,
+        'product': product,
+        'label':   _PRODUCT_LABELS.get(product, product),
+        'kind':    kind,
+        'icon':    _KIND_ICONS.get(kind, 'circle'),
+        'shown':   shown,
+        'floor':   eks_supported_floor() if kind == 'kubernetes' else None,
+        'version': target[1],
+        'date':    date_,
+    }

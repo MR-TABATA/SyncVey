@@ -324,7 +324,7 @@ def _get_dashboard_signals(org=None):
         return dict(_EMPTY_SIGNALS)
     try:
         from .models import DriftSnapshot, ScanJob
-        from .eol_data import get_eol_status
+        from .eol_data import get_eol_status, get_asset_eol_status
 
         # ── Drift: 環境ごとに最新2件を取り、現在値と前回比を出す（1クエリ） ──
         rows = (
@@ -372,6 +372,22 @@ def _get_dashboard_signals(org=None):
         )
         for name, version in deps:
             status = get_eol_status(name, version)
+            if status == 'eol':
+                eol_overdue += 1
+            elif status == 'warning':
+                eol_soon += 1
+
+        # 資産そのもの（RDS のエンジン・Lambda のランタイム・EKS のバージョン）にも期限がある。
+        # 消えた資産（missing_since）は数えない。
+        assets = (
+            Asset.objects
+            .filter(environment__system__organization=org,
+                    asset_type__in=('RDS', 'LAMBDA', 'EKS'),
+                    missing_since__isnull=True)
+            .values_list('asset_type', 'raw_data')
+        )
+        for asset_type, raw in assets:
+            status = get_asset_eol_status(asset_type, raw)
             if status == 'eol':
                 eol_overdue += 1
             elif status == 'warning':
@@ -859,6 +875,14 @@ def upload_tfstate_view(request):
     except Exception as e:
         return _render_upload_form_error(request, _("File read error: %(err)s") % {'err': e})
 
+    # OpenTofu 1.7+ の state 暗号化: 中身は暗号文だけで resources が無い。そのまま進むと
+    # 「0件登録」で終わり、取り込めたように見えてしまう。復号が要ると伝えて止める。
+    if isinstance(tfstate_data, dict) and 'encrypted_data' in tfstate_data and 'resources' not in tfstate_data:
+        return _render_upload_form_error(request, _(
+            "This state file is encrypted (OpenTofu state encryption), so it cannot be read. "
+            "Decrypt it first (for example with `tofu state pull`) and upload the result."
+        ))
+
     filename       = tfstate_file.name
     tfstate_config = _extract_tfstate_config(tfstate_data, filename) or {}
 
@@ -1184,7 +1208,36 @@ def delete_environment_view(request, environment_id):
 @htmx_login_required
 def asset_detail_view(request, asset_id):
     asset = _user_asset_or_404(request, asset_id)
-    return render(request, '_asset_detail.html', {'asset': asset})
+    from .eol_data import asset_eol_info
+    return render(request, '_asset_detail.html', {
+        'asset': asset,
+        'attrs': _asset_attribute_rows(asset.raw_data),
+        'eol':   asset_eol_info(asset.asset_type, asset.raw_data),
+    })
+
+
+def _asset_attribute_rows(raw, limit=80):
+    """保存済みの属性（raw_data）を、詳細画面に出す (key, value) の並びにする。
+
+    内部用のキー（_resource_type など）と空の値は出さない。入れ子（tags など）は 1 行の JSON に
+    縮める。Detail テーブルを廃止したあと、詳細画面は属性を何も出せなくなっていた。
+    """
+    rows = []
+    for key in sorted((raw or {}), key=str):
+        if str(key).startswith('_'):
+            continue
+        value = raw[key]
+        if value in (None, '', [], {}):
+            continue
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        elif isinstance(value, bool):
+            value = 'true' if value else 'false'
+        text = str(value)
+        rows.append((key, text if len(text) <= 160 else text[:157] + '…'))
+        if len(rows) >= limit:
+            break
+    return rows
 
 
 @require_GET

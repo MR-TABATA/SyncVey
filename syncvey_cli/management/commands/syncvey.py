@@ -5,6 +5,7 @@ Subcommands:
   scan    Run a live AWS scan and record a drift snapshot.
   drift   Print the current drift (optionally fail the build on any drift).
   status  List systems / environments with asset counts and last-scan time.
+  export  Write the asset ledger as JSON or CSV (stdout, or --output FILE).
 
 Design notes:
   - Output is human text by default and machine JSON with `--format json`, so
@@ -25,7 +26,7 @@ from ... import service
 
 
 class Command(BaseCommand):
-    help = "SyncVey command-line interface: scan, drift, status."
+    help = "SyncVey command-line interface: scan, drift, status, export."
 
     def add_arguments(self, parser):
         sub = parser.add_subparsers(dest='subcommand', title='subcommands', required=True)
@@ -46,6 +47,16 @@ class Command(BaseCommand):
 
         p_status = sub.add_parser('status', help="List systems / environments.")
         p_status.add_argument('--format', choices=('text', 'json'), default='text')
+
+        p_export = sub.add_parser('export', help="Write the asset ledger as JSON or CSV.")
+        p_export.add_argument('--system', help="System code or name (default: all systems).")
+        p_export.add_argument('--env', dest='env', help="Environment name (default: all of the system).")
+        p_export.add_argument('--format', choices=('json', 'csv'), default='json')
+        p_export.add_argument('--output', '-o', help="Write to this file instead of stdout.")
+        p_export.add_argument(
+            '--no-raw', action='store_true',
+            help="JSON only: leave out each asset's stored attributes (raw_data).",
+        )
 
     def handle(self, *args, **options):
         return getattr(self, f"_cmd_{options['subcommand']}")(**options)
@@ -109,6 +120,33 @@ class Command(BaseCommand):
 
         if any_failed:
             raise SystemExit(2)
+
+    # -- export -------------------------------------------------------------
+
+    def _cmd_export(self, system, env, format, output, no_raw, **_):
+        import csv
+        import io
+
+        systems = self._selected_systems(system)
+        if not systems:
+            raise SystemExit(2)
+        rows = service.export_rows(systems, env, include_raw=(format == 'json' and not no_raw))
+
+        if format == 'json':
+            text = json.dumps(rows, indent=2, ensure_ascii=False, default=str)
+        else:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=service.EXPORT_COLUMNS, lineterminator='\n')
+            writer.writeheader()
+            writer.writerows(rows)
+            text = buf.getvalue().rstrip('\n')
+
+        if output:
+            with open(output, 'w', encoding='utf-8', newline='') as fh:
+                fh.write(text + '\n')
+            self.stderr.write(f"Wrote {len(rows)} asset(s) to {output}")
+        else:
+            self.stdout.write(text)
 
     # -- drift --------------------------------------------------------------
 

@@ -132,9 +132,9 @@
                             {% endif %}
                             {{ asset.asset_type }}
                         </span>
-                        {% with rd=asset.raw_data %}{% if rd %}
+                        {% with eol=asset|asset_eol %}{% with rd=asset.raw_data %}{% if rd %}
                             {% if rd.instance_type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_type }}</p>
-                            {% elif rd.instance_class %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_class }}</p>
+                            {% elif rd.instance_class %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_class }}</p>{% if rd.engine and not eol %}<p class="text-xs text-slate-400 font-mono">{{ rd.engine }}{% if rd.engine_version %} {{ rd.engine_version }}{% endif %}</p>{% endif %}
                             {% elif rd.engine %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.engine }}{% if rd.engine_version %} {{ rd.engine_version }}{% endif %}</p>
                             {% elif rd.type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.type }}{% if rd.size %} {{ rd.size }} GB{% endif %}</p>
                             {% elif rd.cidr_block %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.cidr_block }}</p>
@@ -143,6 +143,7 @@
                             {% elif rd|dict_get:'_resource_type' %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd|dict_get:'_resource_type' }}</p>
                             {% endif %}
                         {% endif %}{% endwith %}
+                        {% if eol %}<p class="mt-1 flex items-center gap-1.5 text-xs"><i data-lucide="{{ eol.icon }}" class="w-3.5 h-3.5 text-slate-400 shrink-0" title="{% if eol.kind == 'runtime' %}{% trans "Runtime" %}{% elif eol.kind == 'engine' %}{% trans "Database engine" %}{% else %}{% trans "Kubernetes version" %}{% endif %}"></i><span class="font-mono text-slate-500">{{ eol.shown }}</span>{% if eol.status == 'eol' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-50 text-red-700 border-red-200">{% trans "past end-of-life" %}</span>{% elif eol.status == 'warning' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 text-amber-700 border-amber-200">{% trans "nearing end-of-life" %}</span>{% endif %}</p>{% if eol.floor and eol.status != 'ok' %}<p class="mt-0.5 ml-5 text-[11px] text-slate-400">{% blocktrans with v=eol.floor %}EKS supports Kubernetes {{ v }} and later{% endblocktrans %}</p>{% endif %}{% endif %}{% endwith %}
                     </td>
                     <td class="px-5 py-4 font-mono text-xs text-slate-500 max-w-[200px] truncate">{{ asset.cloud_id }}</td>
                     <td class="px-5 py-4 text-sm text-slate-600 whitespace-nowrap">{{ asset.region|default:"—" }}</td>
@@ -166,10 +167,10 @@
 
     <!-- Cards (below xl — stacked layout avoids horizontal overflow on narrow / zoomed views) -->
     {# 1列だと 1000px 前後の幅で 1枚が横いっぱいに伸び、右半分が空いたまま縦に長くなるので、md 以上は2列に並べる。 #}
-    <div class="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+    <div class="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3 auto-rows-fr">
         {% for asset in assets %}
         {% blocktrans with name=asset.name asvar del_confirm %}Delete "{{ name }}"?{% endblocktrans %}
-        <div class="bg-white rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors cursor-pointer group"
+        <div class="bg-white rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors cursor-pointer group flex flex-col"
              hx-get="{% url 'asset-detail' asset.id %}"
              hx-target="#detailModalBody"
              hx-on::after-request="document.getElementById('detailModal').showModal()">
@@ -202,9 +203,9 @@
                     {% endif %}
                     {{ asset.asset_type }}
                 </span>
-                {% with rd=asset.raw_data %}{% if rd %}
+                {% with eol=asset|asset_eol %}{% with rd=asset.raw_data %}{% if rd %}
                     {% if rd.instance_type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_type }}</p>
-                    {% elif rd.instance_class %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_class }}</p>
+                    {% elif rd.instance_class %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.instance_class }}</p>{% if rd.engine and not eol %}<p class="text-xs text-slate-400 font-mono">{{ rd.engine }}{% if rd.engine_version %} {{ rd.engine_version }}{% endif %}</p>{% endif %}
                     {% elif rd.engine %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.engine }}{% if rd.engine_version %} {{ rd.engine_version }}{% endif %}</p>
                     {% elif rd.type %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.type }}{% if rd.size %} {{ rd.size }} GB{% endif %}</p>
                     {% elif rd.cidr_block %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd.cidr_block }}</p>
@@ -213,10 +214,11 @@
                     {% elif rd|dict_get:'_resource_type' %}<p class="text-xs text-slate-400 mt-1 font-mono">{{ rd|dict_get:'_resource_type' }}</p>
                     {% endif %}
                 {% endif %}{% endwith %}
+                {% if eol %}<p class="mt-1 flex items-center gap-1.5 text-xs"><i data-lucide="{{ eol.icon }}" class="w-3.5 h-3.5 text-slate-400 shrink-0" title="{% if eol.kind == 'runtime' %}{% trans "Runtime" %}{% elif eol.kind == 'engine' %}{% trans "Database engine" %}{% else %}{% trans "Kubernetes version" %}{% endif %}"></i><span class="font-mono text-slate-500">{{ eol.shown }}</span>{% if eol.status == 'eol' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-red-50 text-red-700 border-red-200">{% trans "past end-of-life" %}</span>{% elif eol.status == 'warning' %}<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-amber-50 text-amber-700 border-amber-200">{% trans "nearing end-of-life" %}</span>{% endif %}</p>{% if eol.floor and eol.status != 'ok' %}<p class="mt-0.5 ml-5 text-[11px] text-slate-400">{% blocktrans with v=eol.floor %}EKS supports Kubernetes {{ v }} and later{% endblocktrans %}</p>{% endif %}{% endif %}{% endwith %}
             </div>
 
             <!-- Cloud ID / Region / Environment -->
-            <div class="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 pt-3">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 pt-3 mt-auto">
                 <div class="col-span-2 min-w-0">
                     <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-0.5">Cloud ID</span>
                     <span class="font-mono text-xs text-slate-500 break-all">{{ asset.cloud_id|default:"—" }}</span>

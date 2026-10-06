@@ -207,3 +207,62 @@ class TestDetachableSeam(TestCase):
     def test_command_is_discoverable(self):
         from django.core.management import get_commands
         self.assertEqual(get_commands().get('syncvey'), 'syncvey_cli')
+
+
+class TestExport(Base):
+    def test_json_has_every_asset_with_raw_data_and_eol(self):
+        _, env = self._env()
+        self._asset(env, 'db-1', {}, {'engine': 'postgres', 'engine_version': '9.6.24'}, asset_type='RDS', name='orders')
+        self._asset(env, 'sg-1', {}, {'vpc': 'v'}, asset_type='SG', name='web')
+        out, code = _run('export')
+        data = json.loads(out)
+        assert code == 0
+        assert [(r['asset_type'], r['name']) for r in data] == [('RDS', 'orders'), ('SG', 'web')]
+        rds = data[0]
+        assert rds['system'] == 'sys-a' and rds['environment'] == 'prod'
+        assert rds['raw_data']['engine_version'] == '9.6.24'
+        assert rds['eol'] == 'eol'
+        assert data[1]['eol'] == 'unknown'
+
+    def test_no_raw_leaves_the_attributes_out(self):
+        _, env = self._env()
+        self._asset(env, 'sg-1', {}, {'secret-ish': 'x'})
+        data = json.loads(_run('export', '--no-raw')[0])
+        assert 'raw_data' not in data[0]
+
+    def test_csv_has_a_header_and_one_row_per_asset(self):
+        import csv as _csv
+        _, env = self._env()
+        self._asset(env, 'sg-1', {}, {}, name='web, "public"')   # commas and quotes survive
+        out, _code = _run('export', '--format', 'csv')
+        rows = list(_csv.DictReader(StringIO(out)))
+        assert list(rows[0].keys()) == list(service.EXPORT_COLUMNS)
+        assert len(rows) == 1 and rows[0]['name'] == 'web, "public"'
+
+    def test_vanished_assets_are_kept_and_marked(self):
+        _, env = self._env()
+        a = self._asset(env, 'sg-gone', {}, {})
+        a.missing_since = timezone.now()
+        a.save()
+        data = json.loads(_run('export')[0])
+        assert len(data) == 1 and data[0]['missing_since']
+
+    def test_selectors_narrow_the_export(self):
+        _, env_a = self._env('sys-a', 'sys-a', 'prod')
+        _, env_b = self._env('sys-b', 'sys-b', 'prod')
+        self._asset(env_a, 'a-1', {}, {})
+        self._asset(env_b, 'b-1', {}, {})
+        data = json.loads(_run('export', '--system', 'sys-b')[0])
+        assert [r['cloud_id'] for r in data] == ['b-1']
+
+    def test_output_file_and_unknown_system(self):
+        import os, tempfile
+        _, env = self._env()
+        self._asset(env, 'sg-1', {}, {})
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, 'ledger.json')
+            out, code = _run('export', '--output', path)
+            assert code == 0 and out == ''
+            assert json.load(open(path, encoding='utf-8'))[0]['cloud_id'] == 'sg-1'
+        _out, code = _run('export', '--system', 'nope')
+        assert code == 2

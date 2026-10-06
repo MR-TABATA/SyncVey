@@ -1,15 +1,9 @@
-{% load i18n static %}
+{% load i18n static dep_tags %}
 
 <div class="flex items-center justify-between mb-5">
     <div class="flex items-center gap-3">
-        {% if asset.asset_type == 'EC2' %}<img src="{% static 'aws-icons/ec2.svg' %}" class="w-10 h-10 flex-shrink-0" alt="EC2">
-        {% elif asset.asset_type == 'RDS' %}<img src="{% static 'aws-icons/rds.svg' %}" class="w-10 h-10 flex-shrink-0" alt="RDS">
-        {% elif asset.asset_type == 'S3' %}<img src="{% static 'aws-icons/s3.svg' %}" class="w-10 h-10 flex-shrink-0" alt="S3">
-        {% elif asset.asset_type == 'EBS' %}<img src="{% static 'aws-icons/ebs.svg' %}" class="w-10 h-10 flex-shrink-0" alt="EBS">
-        {% elif asset.asset_type == 'ALB' %}<img src="{% static 'aws-icons/alb.svg' %}" class="w-10 h-10 flex-shrink-0" alt="ALB">
-        {% elif asset.asset_type == 'VPC' %}<img src="{% static 'aws-icons/vpc.svg' %}" class="w-10 h-10 flex-shrink-0" alt="VPC">
-        {% elif asset.asset_type == 'ECS' %}<img src="{% static 'aws-icons/ecs.svg' %}" class="w-10 h-10 flex-shrink-0" alt="ECS">
-        {% endif %}
+        {% asset_icon_url asset.provider asset.asset_type as icon_path %}
+        {% if icon_path %}<img src="{% static icon_path %}" class="w-10 h-10 flex-shrink-0" alt="{{ asset.asset_type }}">{% endif %}
         <div>
             <p class="text-xs text-slate-500 font-mono">{{ asset.cloud_id }}</p>
             <h2 class="font-bold text-xl text-slate-800 mt-0.5">{{ asset.name }}</h2>
@@ -25,10 +19,10 @@
     <span class="px-2.5 py-1 rounded-full text-xs font-bold border
         {% if asset.provider == 'AWS' %}bg-orange-100 text-orange-700 border-orange-200
         {% else %}bg-gray-100 text-gray-700 border-gray-200{% endif %}">
-        {{ asset.get_provider_display }}
+        {{ asset.provider|provider_label }}
     </span>
     <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-        {{ asset.get_asset_type_display }}
+        {{ asset.asset_type }}
     </span>
     {% if asset.region %}
     <span class="px-2.5 py-1 rounded-full text-xs bg-slate-50 text-slate-600 border border-slate-200 font-mono">
@@ -64,6 +58,37 @@
         {% include '_asset_detail_ecs.html' with d=detail %}
     {% endif %}
 
+</div>
+{% endif %}
+
+{% if eol %}
+<div class="rounded-xl border px-4 py-3 mb-5 {% if eol.status == 'eol' %}bg-red-50 border-red-200{% elif eol.status == 'warning' %}bg-amber-50 border-amber-200{% else %}bg-emerald-50 border-emerald-200{% endif %}">
+    <div class="flex items-center justify-between gap-3">
+        <p class="text-xs font-semibold flex items-center gap-1.5 {% if eol.status == 'eol' %}text-red-700{% elif eol.status == 'warning' %}text-amber-700{% else %}text-emerald-700{% endif %}"><i data-lucide="{{ eol.icon }}" class="w-3.5 h-3.5"></i>{% trans "Middleware support" %}</p>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-white {% if eol.status == 'eol' %}text-red-700 border-red-200{% elif eol.status == 'warning' %}text-amber-700 border-amber-200{% else %}text-emerald-700 border-emerald-200{% endif %}">{% if eol.status == 'eol' %}{% trans "past end-of-life" %}{% elif eol.status == 'warning' %}{% trans "nearing end-of-life" %}{% else %}{% trans "Supported" %}{% endif %}</span>
+    </div>
+    <p class="text-sm text-slate-800 mt-1 font-semibold">{{ eol.label }} {{ eol.version }}
+        <span class="font-normal text-slate-500 text-xs">
+            {% if eol.kind == 'runtime' %}({% trans "Runtime" %}){% elif eol.kind == 'engine' %}({% trans "Database engine" %}){% elif eol.kind == 'kubernetes' %}({% trans "Kubernetes version" %}){% endif %}
+        </span>
+    </p>
+    {% if eol.date %}<p class="text-xs text-slate-500 mt-0.5 font-mono">{% trans "Support end date" %}: {{ eol.date|date:"Y-m-d" }}</p>{% endif %}
+    {% if eol.floor and eol.status != 'ok' %}<p class="text-xs text-slate-600 mt-1">{% blocktrans with v=eol.floor %}EKS supports Kubernetes {{ v }} and later{% endblocktrans %}</p>{% endif %}
+    <p class="text-[11px] text-slate-400 mt-2">{% if eol.product == 'amazon-eks' %}{% trans "Basis: Amazon EKS standard support end date (endoflife.date)." %}{% else %}{% trans "Basis: the upstream project's own support end date (endoflife.date). AWS's schedule for this service can differ." %}{% endif %}</p>
+</div>
+{% endif %}
+
+{% if attrs %}
+<div class="mb-5">
+    <p class="text-xs font-semibold text-slate-500 mb-2">{% trans "Attributes" %}</p>
+    <dl class="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200 max-h-72 overflow-y-auto">
+        {% for key, value in attrs %}
+        <div class="px-4 py-2 flex justify-between gap-4 text-sm">
+            <dt class="text-slate-500 font-mono text-xs shrink-0">{{ key }}</dt>
+            <dd class="text-slate-800 font-mono text-xs text-right break-all">{{ value }}</dd>
+        </div>
+        {% endfor %}
+    </dl>
 </div>
 {% endif %}
 

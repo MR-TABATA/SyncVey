@@ -89,7 +89,7 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **Blast radius** *(optional plugin)* | Walk the resource reference graph outward from each drift and rank every resource it can reach by severity-weighted, distance-decayed impact. Richer with the drift-risk plugin installed; detachable — remove the app and the feature disappears |
 | **Secret rotation drift** | Flag Secrets Manager secrets that *should* have rotated but didn't — rotation disabled, never run, or past the `SECRET_ROTATION_MAX_AGE_DAYS` limit (default 90). Graded on current state, so it surfaces even when nothing changed between two scans. Metadata only: the secret value is never read or stored |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
-| **Command line** *(optional plugin)* | Drive scan and drift from a terminal or CI with `manage.py syncvey scan / drift / status` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
+| **Command line** *(optional plugin)* | Drive scan, drift and export from a terminal or CI with `manage.py syncvey scan / drift / status / export` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
 | **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
 | **Architecture diagram** | Visualize resource relationships within an environment |
@@ -320,6 +320,10 @@ docker compose exec app python manage.py syncvey drift --exit-code
 
 # List systems / environments with asset counts and last-scan time
 docker compose exec app python manage.py syncvey status
+
+# Take the asset ledger out: JSON (with each asset's stored attributes) or CSV
+docker compose exec app python manage.py syncvey export --system e-commerce --output ledger.json
+docker compose exec app python manage.py syncvey export --format csv > ledger.csv
 ```
 
 Exit codes are the CI contract: `0` = ok / no drift, `1` = drift found
