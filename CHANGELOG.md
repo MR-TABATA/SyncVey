@@ -8,6 +8,10 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-08
+
+End-of-life is now judged for RDS, Lambda and EKS resources too, the ledger can be exported, and CI finally runs the plugins' tests.
+
 ### Added
 
 - **End-of-life is now judged for the resources themselves, not only for
@@ -350,7 +354,11 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MR-TABATA/SyncVey/releases/tag/v0.1.0
