@@ -9,8 +9,7 @@ flags configuration drift between your tfstate and live AWS state, and tracks ap
 metadata (language, framework, dependencies) per environment.
 Spin it up with a single `docker compose up`.
 
-> Live feature tour → **[https://syncvey.com/](https://syncvey.com/)**
-> Development history → **[https://syncvey.com/history.en.html](https://syncvey.com/history.en.html)** — every merged pull request in order, with dates and sizes measured from git.
+> Feature tour → **[https://mrktools.app/en/sync/](https://mrktools.app/en/sync/)**
 
 ---
 
