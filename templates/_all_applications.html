@@ -4,6 +4,13 @@
     <span class="font-medium text-slate-700">{% trans "Applications & Middleware" %}</span>
 </div>
 
+{% if import_message %}
+<div class="mb-4 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm">{{ import_message }}</div>
+{% endif %}
+{% if import_error %}
+<div class="mb-4 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">{{ import_error }}</div>
+{% endif %}
+
 {% if applications %}
     {# システムごとにグルーピング #}
     {% regroup applications by system as system_groups %}
@@ -101,13 +108,51 @@
                                                         </div>
                                                     {% elif group.grouper == 'library' %}
                                                         <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                                                            <i data-lucide="package" class="w-3 h-3"></i>{% trans "Libraries" %}
+                                                            <i data-lucide="package" class="w-3 h-3"></i>{% trans "Libraries" %} ({{ cfg.lib_total }})
                                                         </p>
-                                                        <div class="flex flex-wrap gap-1">
-                                                            {% for dep in group.list %}
+                                                        {% if cfg.lib_tracked %}
+                                                        <p class="text-xs mb-1.5 {% if cfg.lib_vulnerable %}{% if cfg.lib_high %}text-red-700{% else %}text-amber-700{% endif %}{% else %}text-slate-500{% endif %}">
+                                                            {% if not cfg.lib_checked %}
+                                                                {% trans "Not checked for vulnerabilities yet." %}{% if not vuln_enabled %} {% trans "Set VULN_REFRESH_ENABLED=true to check against OSV.dev." %}{% endif %}
+                                                            {% elif cfg.lib_vulnerable %}
+                                                                <strong>{% blocktrans with n=cfg.lib_vulnerable|length %}Vulnerable libraries: {{ n }}{% endblocktrans %}</strong>
+                                                                {% if cfg.lib_high %} · {% blocktrans with n=cfg.lib_high %}high or critical: {{ n }}{% endblocktrans %}{% endif %}
+                                                                {% if cfg.lib_kev %} · {% blocktrans with n=cfg.lib_kev %}known exploited: {{ n }}{% endblocktrans %}{% endif %}
+                                                            {% else %}
+                                                                {% blocktrans with n=cfg.lib_checked %}No known vulnerabilities in the {{ n }} checked libraries.{% endblocktrans %}
+                                                            {% endif %}
+                                                        </p>
+                                                        {% endif %}
+                                                        {% for dep in cfg.lib_vulnerable %}
+                                                        <details class="mb-1 rounded-lg border {% if dep.vuln.max_severity == 'CRITICAL' or dep.vuln.max_severity == 'HIGH' %}border-red-200 bg-red-50{% else %}border-amber-200 bg-amber-50{% endif %}">
+                                                            <summary class="cursor-pointer px-2.5 py-1 text-xs font-mono flex items-center gap-2">
+                                                                <span class="text-slate-800">{{ dep.name }} {{ dep.version }}</span>
+                                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white border {% if dep.vuln.max_severity == 'CRITICAL' or dep.vuln.max_severity == 'HIGH' %}text-red-700 border-red-200{% else %}text-amber-700 border-amber-200{% endif %}">{{ dep.vuln.advisories|length }} · {{ dep.vuln.max_severity }}</span>
+                                                                {% if dep.vuln.has_kev %}<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white">{% trans "Known exploited" %}</span>{% endif %}
+                                                            </summary>
+                                                            <ul class="px-3 pb-2 pt-1 space-y-1 text-xs bg-white/70">
+                                                                {% for a in dep.vuln.advisories %}
+                                                                <li class="flex flex-wrap gap-x-2">
+                                                                    <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-600 hover:underline">{{ a.id }}</a>
+                                                                    <span class="font-semibold text-slate-600">{{ a.severity }}</span>
+                                                                    {% if a.kev %}<span class="font-semibold text-red-600">{% trans "Known exploited" %}</span>{% endif %}
+                                                                    <span class="text-slate-600">{{ a.summary }}</span>
+                                                                    {% if a.fixed %}<span class="text-slate-400">{% trans "Fixed in" %}: {{ a.fixed|join:", " }}</span>{% endif %}
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </details>
+                                                        {% endfor %}
+                                                        {% if cfg.lib_clean %}
+                                                        <details class="mt-1">
+                                                            <summary class="cursor-pointer text-xs text-slate-500">{% blocktrans with n=cfg.lib_clean|length %}Show {{ n }} other libraries{% endblocktrans %}</summary>
+                                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                                {% for dep in cfg.lib_clean %}
                                                                 <span class="px-2 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono text-slate-600">{{ dep.name }} {{ dep.version }}</span>
-                                                            {% endfor %}
-                                                        </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </details>
+                                                        {% endif %}
                                                     {% elif group.grouper == 'tool' %}
                                                         <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                                                             <i data-lucide="wrench" class="w-3 h-3"></i>{% trans "Tools" %}
@@ -124,6 +169,21 @@
                                         </td>
                                     </tr>
                                     {% endif %}
+
+                                    <tr>
+                                        <td colspan="4" class="px-4 pb-3 pt-0">
+                                            <form class="flex flex-wrap items-center gap-2 text-xs"
+                                                  hx-post="{% url 'dependency-import' cfg.id %}" hx-encoding="multipart/form-data"
+                                                  hx-target="#main-content" hx-swap="innerHTML">
+                                                {% csrf_token %}
+                                                <input type="file" name="lockfile" required
+                                                       accept=".txt,.json,.lock,.mod"
+                                                       class="text-xs text-slate-600 file:mr-2 file:px-2.5 file:py-1 file:rounded-lg file:border file:border-slate-200 file:bg-white file:text-slate-700">
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-medium">{% trans "Import lockfile" %}</button>
+                                                <span class="text-slate-400">requirements.txt · package-lock.json · composer.lock · Gemfile.lock · go.mod — {% trans "parsed and discarded; the file is not stored." %}</span>
+                                            </form>
+                                        </td>
+                                    </tr>
 
                                 {% endfor %}
                                 </tbody>

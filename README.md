@@ -255,6 +255,7 @@ there is no telemetry or usage analytics.
 | AWS CloudTrail (`LookupEvents`) | Clicking "Who changed this?", or the weekly drift briefing | Outbound HTTPS | Lazy, never automatic — needs the role + `cloudtrail:LookupEvents` |
 | `hooks.slack.com` | Drift detected, or the weekly drift briefing | Outbound HTTPS | Per-system Slack Webhook URL (opt-in); briefing also needs `DRIFT_DIGEST_ENABLED=true` |
 | `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
+| `api.osv.dev`, `www.cisa.gov` | Daily vulnerability check of the libraries you imported from lockfiles | Outbound HTTPS | **Off by default** — enable with `VULN_REFRESH_ENABLED=true`. Sends only (ecosystem, package name, version) |
 
 **EOL refresh detail.** End-of-life detection works offline using built-in data.
 Set `EOL_REFRESH_ENABLED=true` to enable a daily job that pulls fresh data from
@@ -265,6 +266,21 @@ You can also trigger a refresh manually:
 
 ```bash
 docker compose exec app python manage.py refresh_eol --force
+```
+
+**Vulnerability check detail.** On the *Applications & Middleware* screen, each
+environment has an *Import lockfile* button. Upload `requirements.txt`,
+`package-lock.json`, `composer.lock`, `Gemfile.lock` or `go.mod`: the file is
+parsed in memory, the libraries are recorded, and the file is discarded. With
+`VULN_REFRESH_ENABLED=true`, a daily job looks those libraries up on
+[OSV.dev](https://osv.dev/) and flags the ones also listed in CISA's
+[Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+catalog. Only the ecosystem, package name and version are sent — no
+organization, system or resource names. Libraries you typed in by hand
+(without a lockfile) are not checked. To run it manually:
+
+```bash
+docker compose exec app python manage.py refresh_vulns --force
 ```
 
 ---

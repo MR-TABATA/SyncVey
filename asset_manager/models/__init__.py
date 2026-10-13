@@ -3,7 +3,7 @@ from .org import Organization, Membership, UserProfile
 from .system import System, Environment
 from .asset import Asset
 from .scan import ScanJob
-from .application import Application, AppEnvConfig, AppDependency
+from .application import Application, AppEnvConfig, AppDependency, VulnRecord
 from .audit import AuditLog
 from .eol import EolSnapshot
 from .drift import DriftSnapshot
@@ -14,7 +14,7 @@ __all__ = [
     'System', 'Environment',
     'Asset',
     'ScanJob',
-    'Application', 'AppEnvConfig', 'AppDependency',
+    'Application', 'AppEnvConfig', 'AppDependency', 'VulnRecord',
     'AuditLog',
     'EolSnapshot',
     'DriftSnapshot',

@@ -10,6 +10,20 @@ While the major version is `0`, minor releases may change behaviour.
 
 ### Added
 
+- **Known vulnerabilities for your libraries.** On *Applications & Middleware*,
+  each environment can *Import lockfile* (`requirements.txt`,
+  `package-lock.json`, `composer.lock`, `Gemfile.lock`, `go.mod`): the file is
+  parsed in memory, the libraries are recorded, and the file is discarded.
+  With `VULN_REFRESH_ENABLED=true` (off by default) a daily job — or
+  `manage.py refresh_vulns --force` — looks them up on OSV.dev and flags those
+  also in CISA's Known Exploited Vulnerabilities catalog. Each vulnerable
+  library lists its advisories with severity, fixed versions and a link; the
+  summary shows how many are high/critical or known exploited. Only
+  (ecosystem, package, version) is sent. Hand-entered libraries are not
+  checked, and an OSV outage keeps the previous result rather than showing
+  "no vulnerabilities". Dependencies are now unique per version, so two
+  copies of one package (nested `node_modules`) are both kept.
+
 - **More plugin seams, so a separately distributed plugin app can add a
   sign-in option or routes without the core importing it:** extra apps can be
   installed with `SYNCVEY_EXTRA_APPS`, and an `AppConfig` can contribute

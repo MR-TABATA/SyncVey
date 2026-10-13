@@ -28,6 +28,7 @@ from .views import (
     # Application
     application_list_view,
     all_applications_view,
+    dependency_import_view,
     # Diagram / Drift
     diagram_view,
     drift_report_view,
@@ -70,6 +71,7 @@ urlpatterns = [
     path('systems/<int:system_id>/delete/', delete_system_view, name='system-delete'),
     path('systems/<int:system_id>/applications/', application_list_view, name='application-list'),
     path('applications/', all_applications_view, name='application-list-all'),
+    path('applications/env-configs/<int:config_id>/dependencies/import/', dependency_import_view, name='dependency-import'),
 
     # Environment
     path('systems/<int:system_id>/environments/create/', create_environment_form_view, name='environment-create-form'),

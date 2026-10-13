@@ -140,6 +140,20 @@ def start():
         )
         logger.info("EOL daily refresh job registered.")
 
+    # 日次 脆弱性取得（オプトイン: VULN_REFRESH_ENABLED=true のときだけ登録）
+    if getattr(settings, 'VULN_REFRESH_ENABLED', False):
+        _scheduler.add_job(
+            _vuln_refresh_job,
+            trigger=CronTrigger(hour=3, minute=45),   # 毎日 03:45（EOL の後）
+            id='vuln_refresh_daily',
+            name='Daily vulnerability refresh (OSV.dev)',
+            jobstore='default',
+            max_instances=1,
+            coalesce=True,
+            replace_existing=True,
+        )
+        logger.info("Vulnerability daily refresh job registered.")
+
     # Plugin-contributed jobs (discovered via the seam — core never imports the
     # plugin). A plugin whose feature is off contributes nothing.
     from .plugins import plugin_scheduled_jobs
@@ -170,6 +184,15 @@ def _eol_refresh_job():
         refresh_eol()
     except Exception:
         logger.exception("EOL refresh job failed")
+
+
+def _vuln_refresh_job():
+    """日次 脆弱性取得ジョブ（VULN_REFRESH_ENABLED=true のときだけ実通信する）。"""
+    from .vulns import refresh_vulns
+    try:
+        refresh_vulns()
+    except Exception:
+        logger.exception("Vulnerability refresh job failed")
 
 
 def stop():

@@ -229,6 +229,7 @@ SyncVey は完全セルフホスト型です。外部への送信通信は以下
 | AWS CloudTrail（`LookupEvents`） | 「Who changed this?」を押した時、または週次ブリーフィング | 送信 HTTPS | 遅延実行・自動では呼ばない。Role と `cloudtrail:LookupEvents` が必要 |
 | `hooks.slack.com` | ドリフト検出時、または週次ブリーフィング | 送信 HTTPS | システム個別の Slack Webhook URL（オプトイン）。ブリーフィングは `DRIFT_DIGEST_ENABLED=true` も必要 |
 | `endoflife.date` | EOL データの日次取得 | 送信 HTTPS | **既定OFF** — `EOL_REFRESH_ENABLED=true` で有効化 |
+| `api.osv.dev`, `www.cisa.gov` | ロックファイルから取り込んだライブラリの脆弱性の日次確認 | 送信 HTTPS | **既定OFF** — `VULN_REFRESH_ENABLED=true` で有効化。送るのは（エコシステム・パッケージ名・版）だけ |
 
 **EOL 取得について。** EOL 判定は内蔵データでオフライン動作します。
 `EOL_REFRESH_ENABLED=true` にすると、[endoflife.date](https://endoflife.date/) から最新データを
@@ -238,6 +239,18 @@ SyncVey は完全セルフホスト型です。外部への送信通信は以下
 
 ```bash
 docker compose exec app python manage.py refresh_eol --force
+```
+
+**脆弱性の確認について。** 「アプリ / ミドルウェア」画面の各環境に「ロックファイルを取り込む」ボタンがあります。
+`requirements.txt` / `package-lock.json` / `composer.lock` / `Gemfile.lock` / `go.mod` を渡すと、
+メモリ上で解析してライブラリを台帳に記録し、ファイルは捨てます。`VULN_REFRESH_ENABLED=true` にすると、
+日次ジョブがそのライブラリを [OSV.dev](https://osv.dev/) で調べ、CISA の
+[悪用が確認された脆弱性（KEV）](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+にも載っているものに印を付けます。送るのはエコシステム・パッケージ名・版だけで、組織・システム・
+リソースの名前は送りません。手で登録しただけのライブラリ（ロックファイルなし）は対象外です。手動実行:
+
+```bash
+docker compose exec app python manage.py refresh_vulns --force
 ```
 
 ---

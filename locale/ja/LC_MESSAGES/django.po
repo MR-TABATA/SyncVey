@@ -2323,3 +2323,57 @@ msgstr "サポート終了済み・終了間近のリソースだけを表示し
 
 msgid "Show all resources"
 msgstr "すべてのリソースを表示"
+
+msgid "The file is too large (limit 5 MB)."
+msgstr "ファイルが大きすぎます（上限 5 MB）。"
+
+msgid "Could not read this file. Supported: requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod."
+msgstr "このファイルは読めませんでした。対応: requirements.txt、package-lock.json、composer.lock、Gemfile.lock、go.mod。"
+
+msgid "Imported %(total)d libraries from %(name)s: %(added)d added, %(removed)d removed."
+msgstr "%(name)s から %(total)d 件のライブラリを取り込みました（追加 %(added)d・削除 %(removed)d）。"
+
+msgid "Not checked for vulnerabilities yet."
+msgstr "脆弱性は未確認です。"
+
+msgid "Set VULN_REFRESH_ENABLED=true to check against OSV.dev."
+msgstr "VULN_REFRESH_ENABLED=true にすると OSV.dev で確認します。"
+
+msgid "Vulnerable libraries: %(n)s"
+msgstr "脆弱性のあるライブラリ: %(n)s 件"
+
+msgid "high or critical: %(n)s"
+msgstr "重大度 高以上: %(n)s 件"
+
+msgid "known exploited: %(n)s"
+msgstr "悪用確認あり: %(n)s 件"
+
+msgid "No known vulnerabilities in the %(n)s checked libraries."
+msgstr "確認した %(n)s 件のライブラリに、既知の脆弱性はありません。"
+
+msgid "Show %(n)s other libraries"
+msgstr "ほかの %(n)s 件のライブラリを表示"
+
+msgid "Known exploited"
+msgstr "悪用確認あり"
+
+msgid "Fixed in"
+msgstr "修正版"
+
+msgid "Import lockfile"
+msgstr "ロックファイルを取り込む"
+
+msgid "parsed and discarded; the file is not stored."
+msgstr "解析したらファイルは捨てます（保存しません）。"
+
+msgid "Ecosystem"
+msgstr "エコシステム"
+
+msgid "Vulnerability record"
+msgstr "脆弱性の記録"
+
+msgid "Vulnerability records"
+msgstr "脆弱性の記録"
+
+msgid "or"
+msgstr "または"

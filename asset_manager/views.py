@@ -1364,16 +1364,71 @@ def application_list_view(request, system_id):
     })
 
 
-@require_GET
-@htmx_login_required
-def all_applications_view(request):
+def _render_all_applications(request, message=None, error=None):
     org = _get_user_org(request)
     base = Application.objects.filter(system__organization=org) if org else Application.objects.none()
     applications = base.select_related('system').prefetch_related(
         'env_configs__environment',
         'env_configs__dependencies',
     ).order_by('system__name', 'name')
-    return render(request, '_all_applications.html', {'applications': applications})
+
+    # ライブラリの脆弱性（OSV の取得結果）を、画面用に依存と環境ごとの集計へ載せる。
+    from .vulns import attach_vulns
+    applications = list(applications)
+    for app in applications:
+        for cfg in app.env_configs.all():
+            deps = list(cfg.dependencies.all())
+            attach_vulns(deps)
+            libs = [d for d in deps if d.dep_type == 'library']
+            for d in libs:
+                d.vuln = getattr(d, 'vuln', None)
+            vulnerable = [d for d in libs if d.vuln and d.vuln.advisories]
+            cfg.lib_total = len(libs)
+            cfg.lib_tracked = sum(1 for d in libs if d.ecosystem)             # 版まで分かる（OSV に聞ける）行
+            cfg.lib_checked = sum(1 for d in libs if d.vuln)                  # 取得済みの行
+            cfg.lib_vulnerable = sorted(vulnerable, key=lambda d: (-_SEV_RANK.get(d.vuln.max_severity, 0), d.name))
+            cfg.lib_clean = [d for d in libs if d not in vulnerable]
+            cfg.lib_high = sum(1 for d in vulnerable if d.vuln.max_severity in ('HIGH', 'CRITICAL'))
+            cfg.lib_kev = sum(1 for d in vulnerable if d.vuln.has_kev)
+    return render(request, '_all_applications.html', {
+        'applications': applications, 'import_message': message, 'import_error': error,
+        'vuln_enabled': _settings.VULN_REFRESH_ENABLED,
+    })
+
+
+_SEV_RANK = {'LOW': 1, 'MEDIUM': 2, 'HIGH': 3, 'CRITICAL': 4}
+
+
+@require_GET
+@htmx_login_required
+def all_applications_view(request):
+    return _render_all_applications(request)
+
+
+@require_POST
+@htmx_login_required
+def dependency_import_view(request, config_id):
+    """ロックファイルを解析して、その環境のライブラリを台帳へ取り込む。ファイルは保存しない。"""
+    from .lockfiles import LockfileError, MAX_BYTES
+    from .dependency_import import import_lockfile
+    org = _get_user_org(request)
+    if org is None:
+        raise Http404
+    cfg = get_object_or_404(AppEnvConfig, pk=config_id, application__system__organization=org)
+
+    upload = request.FILES.get('lockfile')
+    if upload is None:
+        return _render_all_applications(request, error=_("No file selected."))
+    if upload.size > MAX_BYTES:
+        return _render_all_applications(request, error=_("The file is too large (limit 5 MB)."))
+    try:
+        result = import_lockfile(cfg, upload.name, upload.read())
+    except LockfileError:
+        return _render_all_applications(request, error=_(
+            "Could not read this file. Supported: requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod."))
+    return _render_all_applications(request, message=_(
+        "Imported %(total)d libraries from %(name)s: %(added)d added, %(removed)d removed.") % {
+        'total': result['total'], 'name': upload.name, 'added': result['added'], 'removed': result['removed']})
 
 
 # ---------------------------------------------------------------------------

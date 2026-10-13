@@ -132,12 +132,39 @@ class AppDependency(BaseModel):
     name     = models.CharField(max_length=255, verbose_name=_("Package Name"))
     version  = models.CharField(max_length=100, verbose_name=_("Version"))
     dep_type = models.CharField(max_length=20, choices=DepType.choices, default=DepType.LIBRARY, verbose_name=_("Type"))
+    # OSV のエコシステム名（PyPI / npm / Packagist / RubyGems / Go）。ロックファイルから取り込んだ行だけ入る。
+    # 空（手で登録した行）は脆弱性の突き合わせ対象外。
+    ecosystem = models.CharField(max_length=20, blank=True, default='', verbose_name=_("Ecosystem"))
 
     class Meta:
         verbose_name        = _("Dependency")
         verbose_name_plural = _("Dependencies")
-        unique_together     = ('app_env_config', 'name')
+        # ロックファイルには同じ名前の別バージョン（node_modules の入れ子など）が並ぶので、版まで含めて一意にする
+        unique_together     = ('app_env_config', 'ecosystem', 'name', 'version')
         ordering            = ['dep_type', 'name']
 
     def __str__(self):
         return f"{self.name} {self.version}"
+
+
+class VulnRecord(BaseModel):
+    """ライブラリ 1 つ（エコシステム・名前・版）の既知の脆弱性。OSV.dev から取得した結果のキャッシュ。
+
+    advisories: [{'id', 'aliases', 'summary', 'severity', 'fixed': [...], 'kev': bool, 'url'}, ...]
+    該当が 0 件でも行を残す（「確認済みで問題なし」と「未確認」を区別するため）。
+    """
+    ecosystem    = models.CharField(max_length=20)
+    name         = models.CharField(max_length=255)
+    version      = models.CharField(max_length=100)
+    advisories   = models.JSONField(default=list)
+    max_severity = models.CharField(max_length=10, blank=True, default='')   # LOW/MEDIUM/HIGH/CRITICAL/UNKNOWN
+    has_kev      = models.BooleanField(default=False)                         # 悪用が確認されたもの（CISA KEV）を含む
+    checked_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name        = _("Vulnerability record")
+        verbose_name_plural = _("Vulnerability records")
+        unique_together     = ('ecosystem', 'name', 'version')
+
+    def __str__(self):
+        return f"{self.name} {self.version}: {len(self.advisories)}"
