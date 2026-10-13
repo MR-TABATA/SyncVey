@@ -186,6 +186,14 @@ class TestScreen:
         assert 'Fixed in' in html and '2.2.28' in html
         assert 'Show 1 other libraries' in html
 
+    def test_import_is_one_button_that_imports_as_soon_as_a_file_is_chosen(self):
+        org, cfg = _make_cfg()
+        html = _client(org).get(reverse('application-list-all')).content.decode()
+        assert 'hx-trigger="change"' in html                       # ファイルを選んだ時点で送る（2段階にしない）
+        assert 'class="hidden"' in html and 'type="submit"' not in html.split('dependencies/import/')[1].split('</form>')[0]
+        assert html.count('Import lockfile') == 1                  # 見えるのはボタン 1 つだけ
+        assert 'Import a file once (manual)' in html and 'goes stale' in html     # 手動は補助。古くなると明記
+
     def test_clean_libraries_say_so(self):
         org, cfg = _make_cfg()
         c = _client(org)

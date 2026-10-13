@@ -10,6 +10,23 @@ While the major version is `0`, minor releases may change behaviour.
 
 ### Added
 
+- **Lockfiles now follow the application's GitHub repository, every day.**
+  A lockfile uploaded by hand is stale by tomorrow — the opposite of why
+  SyncVey exists — so the way in is now a repository. Under an environment,
+  *Register and import* takes a repository URL (or `/tree/<branch>/<folder>`
+  for a monorepo, e.g. a different branch per environment) and reads the
+  lockfiles at the top level — `requirements.txt`, `package-lock.json`,
+  `composer.lock`, `Gemfile.lock`, `go.mod` — through GitHub's API. From then
+  on a daily job (03:30; `manage.py refresh_repos --force`; off with
+  `REPO_REFRESH_ENABLED=false`) re-imports them, so the library list and its
+  vulnerabilities follow the repository without anyone touching it. The screen
+  shows the last sync; a failed sync is shown as such and the last good list is
+  kept. Nothing is called until a repository is registered, and only
+  `api.github.com` is ever called: the URL is split into owner / repository /
+  folder and never fetched as typed. Private repositories need a read-only
+  token in `SYNCVEY_GITHUB_TOKEN` (read from the environment, never stored or
+  logged). Importing one file by hand remains as a folded-away fallback and says
+  it goes stale. Adds migration `0022`.
 - **Known vulnerabilities for ElastiCache Redis and Memcached.** The same
   `VULN_REFRESH_ENABLED=true` job now looks ElastiCache engine versions up in
   NVD, with the same badge, CVE list and "AWS may have already fixed some of
@@ -20,6 +37,10 @@ While the major version is `0`, minor releases may change behaviour.
 
 ### Changed
 
+- **Importing a lockfile is now one button.** The browser's own file control
+  ("Choose File / No file chosen", plus a tooltip) is gone: press *Import
+  lockfile*, pick a file, and it is imported right away — no second click, and
+  nothing left half-done after choosing. The hint under it says so.
 - **The resource list and detail no longer say "EKS supports Kubernetes 1.34
   and later".** A past or nearing end-of-life version now shows just the
   fact — the version, the stages and the dates. Whether to update is left to

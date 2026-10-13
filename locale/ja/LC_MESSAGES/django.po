@@ -2359,9 +2359,6 @@ msgstr "修正版"
 msgid "Import lockfile"
 msgstr "ロックファイルを取り込む"
 
-msgid "parsed and discarded; the file is not stored."
-msgstr "解析したらファイルは捨てます（保存しません）。"
-
 msgid "Ecosystem"
 msgstr "エコシステム"
 
@@ -2391,3 +2388,60 @@ msgstr "確認日"
 
 msgid "%(n)s known vulnerabilities · %(s)s"
 msgstr "既知の脆弱性 %(n)s 件 · %(s)s"
+
+msgid "Enter a GitHub repository URL, e.g. https://github.com/owner/repo"
+msgstr "GitHub のリポジトリの URL を入れてください（例: https://github.com/owner/repo）"
+
+msgid "No lockfile was found in that repository (looked for requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."
+msgstr "そのリポジトリにロックファイルが見つかりませんでした（直下の requirements.txt、package-lock.json、composer.lock、Gemfile.lock、go.mod を探しました）。非公開リポジトリには SYNCVEY_GITHUB_TOKEN が要ります。"
+
+msgid "GitHub refused the request. For a private repository, set a read-only token in SYNCVEY_GITHUB_TOKEN."
+msgstr "GitHub に断られました。非公開リポジトリは、読み取り専用のトークンを SYNCVEY_GITHUB_TOKEN に設定してください。"
+
+msgid "GitHub's rate limit was reached. Try again later, or set SYNCVEY_GITHUB_TOKEN."
+msgstr "GitHub の回数制限に達しました。しばらくしてからやり直すか、SYNCVEY_GITHUB_TOKEN を設定してください。"
+
+msgid "A file in that repository is too large (limit 5 MB)."
+msgstr "そのリポジトリのファイルが大きすぎます（上限 5 MB）。"
+
+msgid "Could not reach GitHub."
+msgstr "GitHub に接続できませんでした。"
+
+msgid "GitHub returned an error. Try again later."
+msgstr "GitHub がエラーを返しました。しばらくしてからやり直してください。"
+
+msgid "Sync failed"
+msgstr "同期に失敗しました"
+
+msgid "The libraries shown are from the last successful sync (%(t)s)."
+msgstr "いま出ているライブラリは、最後に成功した同期（%(t)s）のものです。"
+
+msgid "Nothing has been imported yet."
+msgstr "まだ何も取り込めていません。"
+
+msgid "Synced from the repository every day. Last sync: %(t)s"
+msgstr "リポジトリから毎日自動で同期しています。最終同期: %(t)s"
+
+msgid "Sync now"
+msgstr "今すぐ同期"
+
+msgid "Register and import"
+msgstr "登録して取り込む"
+
+msgid "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN."
+msgstr "GitHub のリポジトリ（または /tree/ブランチ/フォルダ）を登録すると、そのロックファイル（requirements.txt・package-lock.json・composer.lock・Gemfile.lock・go.mod）を毎日取り込み直します。非公開リポジトリは、読み取り専用のトークンを SYNCVEY_GITHUB_TOKEN に設定してください。"
+
+msgid "Import a file once (manual)"
+msgstr "ファイルを1回だけ取り込む（手動）"
+
+msgid "A file you import by hand is not updated again — it goes stale."
+msgstr "手で取り込んだファイルは、二度と更新されません。古くなります。"
+
+msgid "Imported from %(repo)s: %(files)s. It will be synced again every day."
+msgstr "%(repo)s から取り込みました: %(files)s。以後、毎日自動で同期します。"
+
+msgid "Last synced"
+msgstr "最終同期"
+
+msgid "Last sync error"
+msgstr "最後の同期エラー"

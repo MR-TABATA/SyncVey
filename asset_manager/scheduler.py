@@ -140,6 +140,20 @@ def start():
         )
         logger.info("EOL daily refresh job registered.")
 
+    # 日次 リポジトリ同期（登録のある環境だけ。REPO_REFRESH_ENABLED=false で止められる。脆弱性の取得より前に動かす）
+    if getattr(settings, 'REPO_REFRESH_ENABLED', True):
+        _scheduler.add_job(
+            _repo_refresh_job,
+            trigger=CronTrigger(hour=3, minute=30),   # 毎日 03:30（EOL の後・脆弱性の前）
+            id='repo_refresh_daily',
+            name='Daily lockfile sync (GitHub repositories)',
+            jobstore='default',
+            max_instances=1,
+            coalesce=True,
+            replace_existing=True,
+        )
+        logger.info("Repository daily sync job registered.")
+
     # 日次 脆弱性取得（オプトイン: VULN_REFRESH_ENABLED=true のときだけ登録）
     if getattr(settings, 'VULN_REFRESH_ENABLED', False):
         _scheduler.add_job(
@@ -184,6 +198,15 @@ def _eol_refresh_job():
         refresh_eol()
     except Exception:
         logger.exception("EOL refresh job failed")
+
+
+def _repo_refresh_job():
+    """日次 リポジトリ同期ジョブ。"""
+    from .repo_import import refresh_repos
+    try:
+        refresh_repos()
+    except Exception:
+        logger.exception("Repository sync job failed")
 
 
 def _vuln_refresh_job():

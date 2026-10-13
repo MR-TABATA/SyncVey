@@ -1390,6 +1390,7 @@ def _render_all_applications(request, message=None, error=None):
             cfg.lib_clean = [d for d in libs if d not in vulnerable]
             cfg.lib_high = sum(1 for d in vulnerable if d.vuln.max_severity in ('HIGH', 'CRITICAL'))
             cfg.lib_kev = sum(1 for d in vulnerable if d.vuln.has_kev)
+            cfg.repo_error_text = _repo_error_text(cfg.repo_sync_error) if cfg.repo_sync_error else ''
     return render(request, '_all_applications.html', {
         'applications': applications, 'import_message': message, 'import_error': error,
         'vuln_enabled': _settings.VULN_REFRESH_ENABLED,
@@ -1403,6 +1404,46 @@ _SEV_RANK = {'LOW': 1, 'MEDIUM': 2, 'HIGH': 3, 'CRITICAL': 4}
 @htmx_login_required
 def all_applications_view(request):
     return _render_all_applications(request)
+
+
+def _repo_error_text(code):
+    """GitHub から取れなかった理由（RepoError の種類）を、画面に出す文言にする。"""
+    messages_ = {
+        'url':     _("Enter a GitHub repository URL, e.g. https://github.com/owner/repo"),
+        'none':    _("No lockfile was found in that repository (looked for requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."),
+        'auth':    _("GitHub refused the request. For a private repository, set a read-only token in SYNCVEY_GITHUB_TOKEN."),
+        'rate':    _("GitHub's rate limit was reached. Try again later, or set SYNCVEY_GITHUB_TOKEN."),
+        'size':    _("A file in that repository is too large (limit 5 MB)."),
+        'network': _("Could not reach GitHub."),
+        'fetch':   _("GitHub returned an error. Try again later."),
+    }
+    return messages_.get(code, messages_['fetch'])
+
+
+@require_POST
+@htmx_login_required
+def dependency_repo_import_view(request, config_id):
+    """アプリの開発リポジトリ（GitHub）から、ロックファイルを取りに行って取り込む。成功したら URL をアプリに覚える。"""
+    from .repo_import import RepoError, import_from_repo, parse_repo_url
+    org = _get_user_org(request)
+    if org is None:
+        raise Http404
+    cfg = get_object_or_404(AppEnvConfig.objects.select_related('application'), pk=config_id,
+                            application__system__organization=org)
+    url = request.POST.get('repo_url', '').strip()
+    try:
+        parse_repo_url(url)
+        result = import_from_repo(cfg, url)
+    except RepoError as e:
+        if cfg.repo_url and cfg.repo_url == url:
+            from .repo_import import mark_failed
+            mark_failed(cfg, str(e))      # 登録済みの同期が失敗したことを、画面に残す
+        return _render_all_applications(request, error=_repo_error_text(str(e)))
+    from .repo_import import mark_synced
+    mark_synced(cfg, url)           # 登録する = 以後は毎日自動で同期する
+    done = ', '.join(f"{f['name']} ({f['total']})" for f in result['files'])
+    return _render_all_applications(request, message=_("Imported from %(repo)s: %(files)s. It will be synced again every day.") % {
+        'repo': result['repo'], 'files': done})
 
 
 @require_POST

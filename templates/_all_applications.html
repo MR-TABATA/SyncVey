@@ -171,17 +171,42 @@
                                     {% endif %}
 
                                     <tr>
-                                        <td colspan="4" class="px-4 pb-3 pt-0">
-                                            <form class="flex flex-wrap items-center gap-2 text-xs"
-                                                  hx-post="{% url 'dependency-import' cfg.id %}" hx-encoding="multipart/form-data"
-                                                  hx-target="#main-content" hx-swap="innerHTML">
+                                        <td colspan="4" class="px-4 pb-3 pt-0 text-xs">
+                                            {# 主役はリポジトリ: 一度登録すれば毎日自動で同期する（手で更新するものは陳腐化する）。 #}
+                                            {% if cfg.repo_url %}
+                                            <p class="mb-1.5 {% if cfg.repo_sync_error %}text-red-700{% else %}text-slate-500{% endif %}">
+                                                <i data-lucide="{% if cfg.repo_sync_error %}alert-triangle{% else %}refresh-cw{% endif %}" class="w-3 h-3 inline -mt-0.5"></i>
+                                                {% if cfg.repo_sync_error %}
+                                                    <strong>{% trans "Sync failed" %}</strong>: {{ cfg.repo_error_text }}
+                                                    {% if cfg.repo_synced_at %}{% blocktrans with t=cfg.repo_synced_at|date:"Y-m-d H:i T" %}The libraries shown are from the last successful sync ({{ t }}).{% endblocktrans %}{% else %}{% trans "Nothing has been imported yet." %}{% endif %}
+                                                {% else %}
+                                                    {% blocktrans with t=cfg.repo_synced_at|date:"Y-m-d H:i T" %}Synced from the repository every day. Last sync: {{ t }}{% endblocktrans %}
+                                                {% endif %}
+                                            </p>
+                                            {% endif %}
+                                            <form class="flex flex-wrap items-center gap-2"
+                                                  hx-post="{% url 'dependency-import-repo' cfg.id %}"
+                                                  hx-target="#main-content" hx-swap="innerHTML" hx-disabled-elt="find button">
                                                 {% csrf_token %}
-                                                <input type="file" name="lockfile" required
-                                                       accept=".txt,.json,.lock,.mod"
-                                                       class="text-xs text-slate-600 file:mr-2 file:px-2.5 file:py-1 file:rounded-lg file:border file:border-slate-200 file:bg-white file:text-slate-700">
-                                                <button type="submit" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-medium">{% trans "Import lockfile" %}</button>
-                                                <span class="text-slate-400">requirements.txt · package-lock.json · composer.lock · Gemfile.lock · go.mod — {% trans "parsed and discarded; the file is not stored." %}</span>
+                                                <input type="url" name="repo_url" required value="{{ cfg.repo_url|default:app.repository_url|default:'' }}"
+                                                       placeholder="https://github.com/owner/repo"
+                                                       class="flex-1 min-w-[16rem] px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-mono">
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 font-medium">{% if cfg.repo_url %}{% trans "Sync now" %}{% else %}{% trans "Register and import" %}{% endif %}</button>
                                             </form>
+                                            <p class="mt-1 text-slate-400">{% trans "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN." %}</p>
+                                            {# 補助: リポジトリに無いときだけ、手元のファイルを 1 回だけ取り込む。畳んでおく。 #}
+                                            <details class="mt-2">
+                                                <summary class="cursor-pointer text-slate-400 hover:text-slate-600">{% trans "Import a file once (manual)" %}</summary>
+                                                <form class="mt-2 flex flex-wrap items-center gap-2"
+                                                      hx-post="{% url 'dependency-import' cfg.id %}" hx-encoding="multipart/form-data"
+                                                      hx-trigger="change" hx-disabled-elt="find button"
+                                                      hx-target="#main-content" hx-swap="innerHTML">
+                                                    {% csrf_token %}
+                                                    <input type="file" name="lockfile" accept=".txt,.json,.lock,.mod" class="hidden" tabindex="-1" aria-hidden="true">
+                                                    <button type="button" onclick="this.form.elements.lockfile.click()" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 font-medium">{% trans "Import lockfile" %}</button>
+                                                    <span class="text-slate-400">{% trans "A file you import by hand is not updated again — it goes stale." %}</span>
+                                                </form>
+                                            </details>
                                         </td>
                                     </tr>
 

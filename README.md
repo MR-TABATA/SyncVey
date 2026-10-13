@@ -272,6 +272,7 @@ there is no telemetry or usage analytics.
 | `hooks.slack.com` | Drift detected, or the weekly drift briefing | Outbound HTTPS | Per-system Slack Webhook URL (opt-in); briefing also needs `DRIFT_DIGEST_ENABLED=true` |
 | `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
 | `api.osv.dev`, `www.cisa.gov` | Daily vulnerability check of the libraries you imported from lockfiles | Outbound HTTPS | **Off by default** — enable with `VULN_REFRESH_ENABLED=true`. Sends only (ecosystem, package name, version) |
+| `api.github.com` | Daily lockfile sync of the repositories **you registered** (and when you press *Sync now*) | Outbound HTTPS | Nothing is called until you register a repository; stop it with `REPO_REFRESH_ENABLED=false`. Sends the owner, repository and file name; optional `SYNCVEY_GITHUB_TOKEN` (read-only) for private repositories, never stored |
 | `services.nvd.nist.gov` | Same daily job: known vulnerabilities of your RDS PostgreSQL / MySQL engine versions | Outbound HTTPS | **Off by default** — same switch. Sends only the product and version (a CPE name); optional `NVD_API_KEY` raises NVD's rate limit |
 
 **EOL refresh detail.** End-of-life detection works offline using built-in data.
@@ -295,6 +296,23 @@ parsed in memory, the libraries are recorded, and the file is discarded. With
 catalog. Only the ecosystem, package name and version are sent — no
 organization, system or resource names. Libraries you typed in by hand
 (without a lockfile) are not checked.
+
+A lockfile you upload by hand goes stale the day after, so the way in is the
+application's **GitHub repository**: under an environment, enter the repository URL
+(or a `/tree/<branch>/<folder>` URL for a monorepo) and press *Register and
+import*. From then on SyncVey **re-imports the lockfiles every day** (03:30; also
+`manage.py refresh_repos --force`) — `requirements.txt`, `package-lock.json`,
+`composer.lock`, `Gemfile.lock`, `go.mod` at the top level — so the library list
+follows the repository without anyone touching it. The screen shows when it last
+synced, and if a sync fails it says so and keeps the last good list rather than
+going quiet. A stage environment can point at another branch. It only ever talks
+to `api.github.com`; the URL you type is split into owner / repository / folder,
+never fetched as given. A private repository needs a read-only token
+(fine-grained, *Contents: Read-only*) in `SYNCVEY_GITHUB_TOKEN`; it is read from
+the environment and is not stored. The API host is `https://api.github.com` unless an administrator sets `SYNCVEY_GITHUB_API` (for GitHub Enterprise); it can't be changed from the screen. Without a token GitHub allows about 60
+requests an hour per address (5 per environment), so set one if you register many
+environments. Importing a single file by hand is still there, folded away, for a
+repository that isn't on GitHub — it never updates again.
 
 The same job also looks up the engine versions of your **RDS PostgreSQL and
 MySQL** instances in [NVD](https://nvd.nist.gov/) (Aurora is skipped: its

@@ -241,6 +241,7 @@ SyncVey は完全セルフホスト型です。外部への送信通信は以下
 | `hooks.slack.com` | ドリフト検出時、または週次ブリーフィング | 送信 HTTPS | システム個別の Slack Webhook URL（オプトイン）。ブリーフィングは `DRIFT_DIGEST_ENABLED=true` も必要 |
 | `endoflife.date` | EOL データの日次取得 | 送信 HTTPS | **既定OFF** — `EOL_REFRESH_ENABLED=true` で有効化 |
 | `api.osv.dev`, `www.cisa.gov` | ロックファイルから取り込んだライブラリの脆弱性の日次確認 | 送信 HTTPS | **既定OFF** — `VULN_REFRESH_ENABLED=true` で有効化。送るのは（エコシステム・パッケージ名・版）だけ |
+| `api.github.com` | **登録したリポジトリ**のロックファイルの日次同期（「今すぐ同期」を押したときも） | 送信 HTTPS | リポジトリを登録するまで何も呼ばない。止めるなら `REPO_REFRESH_ENABLED=false`。送るのは owner・リポジトリ・ファイル名。非公開リポジトリ用に、任意の `SYNCVEY_GITHUB_TOKEN`（読み取り専用）。保存しない |
 | `services.nvd.nist.gov` | 同じ日次ジョブ: RDS の PostgreSQL / MySQL のエンジン版の既知の脆弱性 | 送信 HTTPS | **既定OFF** — 同じスイッチ。送るのは製品と版（CPE 名）だけ。任意の `NVD_API_KEY` で NVD の速さ制限が緩くなる |
 
 **EOL 取得について。** EOL 判定は内蔵データでオフライン動作します。
@@ -260,6 +261,17 @@ docker compose exec app python manage.py refresh_eol --force
 [悪用が確認された脆弱性（KEV）](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
 にも載っているものに印を付けます。送るのはエコシステム・パッケージ名・版だけで、組織・システム・
 リソースの名前は送りません。手で登録しただけのライブラリ（ロックファイルなし）は対象外です。
+
+手でアップロードしたロックファイルは、翌日には古くなります。だから入口は、アプリの **GitHub リポジトリ** です。環境の下で
+リポジトリの URL（モノレポなら `/tree/<ブランチ>/<フォルダ>` の URL）を入れて「登録して取り込む」を押すと、以後は
+SyncVey が **毎日（03:30）、ロックファイルを取り込み直します**（`manage.py refresh_repos --force` でも実行できます）。対象は直下の
+`requirements.txt`・`package-lock.json`・`composer.lock`・`Gemfile.lock`・`go.mod` で、人が何もしなくても、ライブラリの一覧が
+リポジトリに追従します。画面には最終同期の日時が出て、同期に失敗したときは、黙らずにそう表示し、最後に成功した一覧を残します。
+ステージング環境は、別のブランチを指せます。通信先は `api.github.com` だけで、入れた URL はそのまま取りに行かず、owner・
+リポジトリ・フォルダに分けて使います。非公開リポジトリは、読み取り専用のトークン（fine-grained の *Contents: Read-only*）を
+`SYNCVEY_GITHUB_TOKEN` に設定してください（環境変数から読むだけで、保存しません）。呼ぶ先の API は、管理者が `SYNCVEY_GITHUB_API`（GitHub Enterprise 用）を設定しない限り `https://api.github.com` で、画面からは変えられません。トークンが無いと、GitHub の回数制限は
+1アドレスあたり1時間に約60回（環境1つあたり5回）なので、環境をたくさん登録するなら設定してください。手元のファイルを1回だけ
+取り込む入口も、畳んで残してあります（GitHub に無いリポジトリ向け。二度と更新されません）。
 
 同じジョブが、**RDS の PostgreSQL / MySQL** のエンジン版も [NVD](https://nvd.nist.gov/) で調べます
 （Aurora は版が上流と一致しないので対象外）。結果は「上流のその版の既知の脆弱性」で、

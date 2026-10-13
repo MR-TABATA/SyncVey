@@ -107,6 +107,12 @@ class AppEnvConfig(BaseModel):
     branch        = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Branch"))
     deploy_method = models.CharField(max_length=20, choices=DeployMethod.choices, default=DeployMethod.EC2, verbose_name=_("Deploy Method"))
 
+    # 開発リポジトリから、ロックファイルを毎日自動で取り込む元（GitHub の URL。/tree/<ブランチ>/<フォルダ> も可）。
+    # 環境ごとに持つ: 本番は main、ステージングは別のブランチ、ということがあるため。空なら自動同期しない。
+    repo_url         = models.URLField(blank=True, default='', verbose_name=_("Repository URL"))
+    repo_synced_at   = models.DateTimeField(null=True, blank=True, verbose_name=_("Last synced"))
+    repo_sync_error  = models.CharField(max_length=20, blank=True, default='', verbose_name=_("Last sync error"))
+
     class Meta:
         verbose_name        = _("App Environment Config")
         verbose_name_plural = _("App Environment Configs")

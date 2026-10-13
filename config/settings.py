@@ -244,6 +244,17 @@ VULN_REFRESH_ENABLED = _env_bool('VULN_REFRESH_ENABLED', False)
 #   NVD_API_KEY（任意）: RDS のエンジンを調べる NVD の速さ制限が緩くなる（無くても動く。1 版あたり約 7 秒）。
 NVD_API_KEY = os.getenv('NVD_API_KEY', '').strip()
 
+# --- 開発リポジトリからの取り込み -------------------------------------------------
+#   「リポジトリから取り込む」を押したときだけ api.github.com を呼ぶ（日次ジョブには入れない）。
+#   SYNCVEY_GITHUB_TOKEN（任意）: 非公開リポジトリ用の読み取り専用トークン（Contents: Read-only）。DB には保存しない。
+SYNCVEY_GITHUB_TOKEN = os.getenv('SYNCVEY_GITHUB_TOKEN', '').strip()
+#   SYNCVEY_GITHUB_API（任意・管理者だけが決める）: 呼ぶ先の GitHub API。既定は https://api.github.com。
+#   GitHub Enterprise や、撮影・試験で手元の代役サーバーへ向けるためのもの。画面に入れた URL では変えられない。
+SYNCVEY_GITHUB_API = os.getenv('SYNCVEY_GITHUB_API', 'https://api.github.com').strip().rstrip('/')
+#   REPO_REFRESH_ENABLED（既定 ON）: リポジトリを登録した環境だけ、毎日ロックファイルを同期する。登録が無ければ何も通信しない。
+#   手で更新するものは陳腐化するので、登録したら自動で追いかける。止めたいときだけ false にする。
+REPO_REFRESH_ENABLED = _env_bool('REPO_REFRESH_ENABLED', True)
+
 # ドリフト履歴の保持件数（Environment ごと）。スキャン／取込／S3同期のたびに
 # 差分ゼロでも1行積むため、未設定だとテーブルが無限に伸びる。0 以下で無制限。
 DRIFT_SNAPSHOT_RETENTION = int(os.getenv('DRIFT_SNAPSHOT_RETENTION', '500') or '0')
