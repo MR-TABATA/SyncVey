@@ -106,8 +106,8 @@
 <p>全コミットを時系列で並べたもの。マージ済みプルリクエストだけを見ると、main へ直接積んだ変更が抜け落ちる ── 日付・行数・件数は git から取得しており、手で書いていない。</p>
 <div class="stats">
 <div class="stat"><div class="stat-value">131</div><div class="stat-label">開発日数</div></div>
-<div class="stat"><div class="stat-value">73</div><div class="stat-label">コミット</div></div>
-<div class="stat"><div class="stat-value">7</div><div class="stat-label">リリース</div></div>
+<div class="stat"><div class="stat-value">77</div><div class="stat-label">コミット</div></div>
+<div class="stat"><div class="stat-value">8</div><div class="stat-label">リリース</div></div>
 </div></div></header>
 <section><div class="container"><div class="chart-wrap">
 <div class="chart-title">週ごとのコミット数</div>
@@ -130,11 +130,39 @@
 <div class="bar-col"><div class="bar" style="height:13%"></div></div>
 <div class="bar-col"><div class="bar" style="height:7%"></div></div>
 <div class="bar-col"><div class="bar" style="height:13%"></div></div>
-<div class="bar-col"><div class="bar" style="height:47%"></div></div>
+<div class="bar-col"><div class="bar" style="height:73%"></div></div>
 </div></div></div></section>
 <section><div class="container">
 <div class="version" id="unreleased"><div class="version-head">
-<div class="version-tag">2026-10-11 – 2026-10-13</div><h2>未リリース</h2>
+<div class="version-tag">2026-10-13</div><h2>未リリース</h2>
+</div><div class="entries">
+<div class="entry">
+<div class="entry-date">2026-10-13
+</div>
+<div class="entry-text">v0.9.0 の CHANGELOG を確定し、READMEの機能表を新しい動きに合わせる</div>
+<div class="entry-diff"><span class="add">+10</span> <span class="del">-5</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-10-13
+</div>
+<div class="entry-text">ロックファイルは、GitHubのリポジトリを登録すれば毎日自動で追従する（手動アップロードは補助に下げる）</div>
+<div class="entry-diff"><span class="add">+764</span> <span class="del">-12</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-10-13
+</div>
+<div class="entry-text">ElastiCache(Redis/Memcached)のCVE照合を足し、「EKS は 1.34 以上」の一文を消す</div>
+<div class="entry-diff"><span class="add">+99</span> <span class="del">-63</span></div>
+</div>
+<div class="entry">
+<div class="entry-date">2026-10-13
+</div>
+<div class="entry-text">CVEの説明を、途中で切れない短さにする（最初の一文、または単語の切れ目に「…」）</div>
+<div class="entry-diff"><span class="add">+37</span> <span class="del">-1</span></div>
+</div>
+</div></div>
+<div class="version" id="v0.8.0"><div class="version-head">
+<div class="version-tag">2026-10-11 – 2026-10-13</div><h2>v0.8.0</h2>
 </div><div class="entries">
 <div class="entry">
 <div class="entry-date">2026-10-13
