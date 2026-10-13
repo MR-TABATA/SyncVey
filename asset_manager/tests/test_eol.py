@@ -317,3 +317,222 @@ def test_eks_card_says_where_to_go(settings):
     assert 'Kubernetes 1.24' in html and 'past end-of-life' in html
     assert 'EKS supports Kubernetes 1.31 and later' in html
     invalidate_cache()
+
+
+def _fetch_with(slug, payload):
+    resp = MagicMock()
+    resp.status = 200
+    resp.read.return_value = json.dumps(payload).encode()
+    cm = MagicMock()
+    cm.__enter__.return_value = resp
+    with patch('urllib.request.urlopen', return_value=cm):
+        return _fetch_product(slug)
+
+
+class TestAwsScheduleFetch(TestCase):
+    """AWS 自身のスケジュールは、2 段 {'warn', 'end'} で保存する。"""
+
+    def test_rds_with_extended_support(self):
+        out = _fetch_with('amazon-rds-postgresql', [
+            {'cycle': '11', 'eol': '2024-02-29', 'extendedSupport': '2027-03-31'}])
+        self.assertEqual(out, {'11': {'warn': '2024-02-29', 'end': '2027-03-31'}})
+
+    def test_no_extended_support_is_a_single_end(self):
+        out = _fetch_with('amazon-rds-mysql', [{'cycle': '5.6', 'eol': '2022-03-01', 'extendedSupport': False}])
+        self.assertEqual(out, {'5.6': {'warn': None, 'end': '2022-03-01'}})
+
+    def test_lambda_support_is_deprecation_and_eol_is_the_block(self):
+        out = _fetch_with('aws-lambda', [{'cycle': 'python3.8', 'eol': '2027-08-31', 'support': '2024-10-14'}])
+        self.assertEqual(out, {'python3.8': {'warn': '2024-10-14', 'end': '2027-08-31'}})
+
+    def test_other_products_keep_the_single_date_form(self):
+        out = _fetch_with('nginx', [{'cycle': '1.20', 'eol': '2022-04-01'}])
+        self.assertEqual(out, {'1.20': '2022-04-01'})
+
+    def test_aws_products_are_fetch_targets(self):
+        for slug in eol_data.AWS_SCHEDULE_PRODUCTS:
+            self.assertIn(slug, eol_data.base_products())
+
+
+class TestAwsScheduleJudge(TestCase):
+    """RDS / Lambda / EKS は、取得済みなら AWS 自身の日付で段階的に判定する。"""
+
+    def setUp(self):
+        invalidate_cache()
+        EolSnapshot.objects.create(data={
+            'amazon-rds-postgresql': {
+                '11':  {'warn': '2024-02-29', 'end': '2099-01-01'},   # 延長サポート中
+                '9.6': {'warn': None, 'end': '2022-04-30'},           # 延長なし・終了
+                '16':  {'warn': '2099-01-01', 'end': '2100-01-01'},   # 標準サポート中
+            },
+            'amazon-rds-mysql': {'8.0': {'warn': '2024-02-29', 'end': '2099-01-01'}},
+            'aws-lambda': {
+                'python3.8':  {'warn': '2024-10-14', 'end': '2099-08-31'},   # 非推奨（まだ動く）
+                'nodejs12.x': {'warn': '2023-03-31', 'end': '2023-04-30'},   # 終了
+                'python3.13': {'warn': '2099-01-01', 'end': '2100-01-01'},
+            },
+            'amazon-eks': {'1.24': {'warn': '2024-01-31', 'end': '2025-01-31'}},
+        })
+        invalidate_cache()
+
+    def tearDown(self):
+        invalidate_cache()
+
+    def _info(self, t, raw):
+        return eol_data.asset_eol_info(t, raw)
+
+    def test_rds_extended_support_is_a_warning_not_eol(self):
+        i = self._info('RDS', {'engine': 'postgres', 'engine_version': '11.22'})
+        self.assertEqual((i['status'], i['stage']), ('warning', 'extended'))
+        self.assertEqual(i['schedule'], 'aws')
+        self.assertEqual(str(i['end_date']), '2099-01-01')
+
+    def test_rds_without_extension_is_eol_once_standard_ends(self):
+        i = self._info('RDS', {'engine': 'postgres', 'engine_version': '9.6.24'})
+        self.assertEqual((i['status'], i['stage']), ('eol', 'ended'))
+
+    def test_rds_standard_support_is_ok(self):
+        i = self._info('RDS', {'engine': 'postgres', 'engine_version': '16.2'})
+        self.assertEqual((i['status'], i['stage']), ('ok', 'standard'))
+
+    def test_rds_mysql_matches_major_minor(self):
+        i = self._info('RDS', {'engine': 'mysql', 'engine_version': '8.0.35'})
+        self.assertEqual((i['product'], i['stage']), ('amazon-rds-mysql', 'extended'))
+
+    def test_aurora_keeps_the_upstream_approximation(self):
+        i = self._info('RDS', {'engine': 'aurora-postgresql', 'engine_version': '11.9'})
+        self.assertEqual((i['product'], i['schedule']), ('postgresql', 'upstream'))
+
+    def test_lambda_deprecated_runtime_still_runs(self):
+        i = self._info('LAMBDA', {'runtime': 'python3.8'})
+        self.assertEqual((i['status'], i['stage']), ('warning', 'deprecated'))
+        self.assertEqual((i['label'], i['version']), ('Python', '3.8'))
+        self.assertEqual(str(i['warn_date']), '2024-10-14')
+
+    def test_lambda_past_the_block_date_is_eol(self):
+        i = self._info('LAMBDA', {'runtime': 'nodejs12.x'})
+        self.assertEqual((i['status'], i['stage']), ('eol', 'ended'))
+        self.assertEqual((i['label'], i['version']), ('Node.js', '12'))
+
+    def test_lambda_runtime_not_in_the_aws_list_falls_back(self):
+        self.assertEqual(eol_data.get_asset_eol_status('LAMBDA', {'runtime': 'python3.7'}), 'eol')
+
+    def test_eks_extended_support(self):
+        i = self._info('EKS', {'version': '1.24'})
+        self.assertEqual((i['status'], i['stage']), ('eol', 'ended'))
+
+    def test_eks_floor_uses_the_standard_support_end(self):
+        EolSnapshot.objects.create(data={'amazon-eks': {
+            '1.24': {'warn': '2024-01-31', 'end': '2025-01-31'},
+            '1.31': {'warn': '2099-01-01', 'end': '2100-01-01'}}})
+        invalidate_cache()
+        self.assertEqual(eol_data.eks_supported_floor(), '1.31')
+
+    def test_legacy_single_date_snapshots_still_work(self):
+        EolSnapshot.objects.create(data={'amazon-eks': {'1.24': '2025-01-31'}})
+        invalidate_cache()
+        i = self._info('EKS', {'version': '1.24'})
+        self.assertEqual((i['status'], i['stage']), ('eol', 'ended'))
+
+
+@pytest.mark.django_db
+def test_badge_and_panel_say_extended_and_deprecated():
+    from django.test import Client
+    from django.urls import reverse
+    from django.contrib.auth import get_user_model
+    from asset_manager.models import Asset, Environment, Membership, Organization, System
+    EolSnapshot.objects.create(data={
+        'amazon-rds-postgresql': {'11': {'warn': '2024-02-29', 'end': '2099-01-01'}},
+        'aws-lambda': {'python3.8': {'warn': '2024-10-14', 'end': '2099-08-31'}}})
+    invalidate_cache()
+    org = Organization.objects.create(name='o', slug='o')
+    system = System.objects.create(name='s', code='s', organization=org)
+    env = Environment.objects.create(system=system, name='prod', env_type='PROD')
+    db = Asset.objects.create(environment=env, name='db', provider='AWS', asset_type='RDS', asset_category='DATABASE',
+                              cloud_id='db', raw_data={'instance_class': 'db.t3.micro', 'engine': 'postgres', 'engine_version': '11.22'})
+    fn = Asset.objects.create(environment=env, name='fn', provider='AWS', asset_type='LAMBDA', asset_category='COMPUTE',
+                              cloud_id='fn', raw_data={'runtime': 'python3.8'})
+    user = get_user_model().objects.create_user(username='u', password='pw')
+    Membership.objects.create(user=user, organization=org, role=Membership.Role.OWNER)
+    c = Client()
+    c.force_login(user)
+    try:
+        listing = c.get(reverse('asset-list')).content.decode()
+        assert 'extended support (paid)' in listing and 'deprecated' in listing
+        assert 'past end-of-life' not in listing
+        detail = c.get(reverse('asset-detail', args=[db.id])).content.decode()
+        assert 'Standard support ends' in detail and '2024-02-29' in detail
+        assert 'Extended support ends (paid)' in detail and '2099-01-01' in detail
+        assert 'AWS extended support applies, at an additional charge.' in detail
+        assert 'https://aws.amazon.com/rds/postgresql/pricing/' in detail and 'noopener' in detail
+        assert "AWS&#x27;s own support schedule" in detail or "AWS's own support schedule" in detail
+        detail = c.get(reverse('asset-detail', args=[fn.id])).content.decode()
+        assert 'Deprecated from' in detail and 'Updates blocked from' in detail
+        assert 'AWS no longer applies security patches' in detail
+        assert 'docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html' in detail
+    finally:
+        invalidate_cache()
+
+
+@pytest.mark.django_db
+class TestEolCardLinksMatchWhatItCounts:
+    """ダッシュボードの EOL カード: 数えたものの飛び先へリンクする。
+    以前は資産（RDS/Lambda/EKS）も数えるのに、リンクは依存関係の画面（空）へ飛んでいた。"""
+
+    def _setup(self, raw_assets, deps=()):
+        from django.test import Client
+        from django.contrib.auth import get_user_model
+        from asset_manager.models import (Application, AppDependency, AppEnvConfig, Asset, Environment,
+                                          Membership, Organization, System)
+        org = Organization.objects.create(name='o', slug='o')
+        system = System.objects.create(name='s', code='s', organization=org)
+        env = Environment.objects.create(system=system, name='prod', env_type='PROD')
+        for i, (t, raw) in enumerate(raw_assets):
+            Asset.objects.create(environment=env, name=f'a{i}', provider='AWS', asset_type=t,
+                                 asset_category='DATABASE', cloud_id=f'a{i}', raw_data=raw)
+        if deps:
+            app = Application.objects.create(system=system, name='app')
+            cfg = AppEnvConfig.objects.create(application=app, environment=env)
+            for name, ver in deps:
+                AppDependency.objects.create(app_env_config=cfg, name=name, version=ver)
+        user = get_user_model().objects.create_user(username='u', password='pw')
+        Membership.objects.create(user=user, organization=org, role=Membership.Role.OWNER)
+        c = Client()
+        c.force_login(user)
+        return c, org
+
+    def test_signals_split_dependencies_and_resources(self):
+        from asset_manager.views import _get_dashboard_signals
+        c, org = self._setup([('RDS', {'engine': 'postgres', 'engine_version': '9.6.24'}),
+                              ('RDS', {'engine': 'postgres', 'engine_version': '16.2'})],
+                             deps=[('nginx', '1.20')])
+        sig = _get_dashboard_signals(org)
+        assert (sig['eol_asset_total'], sig['eol_dep_total']) == (1, 1)
+        assert sig['eol_overdue'] == 2
+
+    def test_resources_only_links_to_the_filtered_asset_list(self):
+        from django.template.loader import render_to_string
+        from asset_manager.views import _get_dashboard_signals
+        c, org = self._setup([('RDS', {'engine': 'postgres', 'engine_version': '9.6.24'})])
+        html = render_to_string('_dashboard_hero.html', {'signals': _get_dashboard_signals(org)})
+        from django.urls import reverse
+        assert reverse('asset-list') + '?eol=1' in html
+        assert reverse('application-list-all') not in html        # 依存は 0 件なので、空の画面へは送らない
+
+    def test_asset_list_eol_filter_shows_only_flagged_resources(self):
+        from django.urls import reverse
+        c, _ = self._setup([('RDS', {'engine': 'postgres', 'engine_version': '9.6.24'}),
+                            ('RDS', {'engine': 'postgres', 'engine_version': '16.2'}),
+                            ('EC2', {'instance_type': 't3.micro'})])
+        html = c.get(reverse('asset-list'), {'eol': '1'}).content.decode()
+        assert 'a0' in html and 'a1' not in html and 'a2' not in html
+        assert 'Showing only resources past or nearing end-of-life.' in html
+        assert 'name="eol" value="1"' in html            # 検索しても絞り込みが外れない
+        assert 'a1' in c.get(reverse('asset-list')).content.decode()
+
+    def test_nothing_flagged_still_has_a_link(self):
+        from django.template.loader import render_to_string
+        from asset_manager.views import _get_dashboard_signals
+        c, org = self._setup([('RDS', {'engine': 'postgres', 'engine_version': '16.2'})])
+        html = render_to_string('_dashboard_hero.html', {'signals': _get_dashboard_signals(org)})
+        assert 'Review dependencies' in html or '依存関係を確認' in html

@@ -20,6 +20,12 @@ if apps.is_installed('syncvey_drift_risk'):
 if apps.is_installed('syncvey_blast_radius'):
     urlpatterns += [path('', include('syncvey_blast_radius.urls'))]
 
+# Extra plugin apps (see SYNCVEY_EXTRA_APPS) contribute their own routes by
+# naming a `urls_module` on their AppConfig; the core never imports them by name.
+from asset_manager.plugins import plugin_url_modules  # noqa: E402
+for _urls in plugin_url_modules():
+    urlpatterns += [path('', include(_urls))]
+
 if settings.DEBUG:
     urlpatterns = [
         path('__debug__/', include('debug_toolbar.urls')),

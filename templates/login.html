@@ -74,6 +74,18 @@
                     {% trans "Sign in" %}
                 </button>
             </form>
+
+            {% if login_buttons %}
+            <div class="flex items-center gap-3 my-5 text-xs text-slate-400">
+                <span class="h-px flex-1 bg-slate-200"></span>{% trans "or" %}<span class="h-px flex-1 bg-slate-200"></span>
+            </div>
+            {% for b in login_buttons %}
+            <a href="{{ b.url }}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+               class="block w-full py-2.5 mb-2 text-center border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl transition-colors">
+                {{ b.label }}
+            </a>
+            {% endfor %}
+            {% endif %}
         </div>
 
         <p class="text-center text-xs text-slate-500 mt-6">

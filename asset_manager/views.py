@@ -302,7 +302,7 @@ def _get_dashboard_stats(org=None):
 _EMPTY_SIGNALS = {
     'drift_current': 0, 'drift_delta': None, 'drift_top_env_id': None,
     'drift_history_env_id': None,
-    'eol_overdue': 0, 'eol_soon': 0,
+    'eol_overdue': 0, 'eol_soon': 0, 'eol_dep_total': 0, 'eol_asset_total': 0,
     'last_scan': None, 'last_scan_ago': None, 'last_scan_stale': True,
     'scanned_systems': 0, 'total_systems': 0, 'has_history': False,
 }
@@ -365,6 +365,7 @@ def _get_dashboard_signals(org=None):
 
         # ── EOL: 追跡中の依存のうち終了済み / 期限間近を数える ──
         eol_overdue = eol_soon = 0
+        eol_dep_total = eol_asset_total = 0     # 数えたものの内訳（カードのリンク先を分けるため）
         deps = (
             AppDependency.objects
             .filter(app_env_config__application__system__organization=org)
@@ -374,8 +375,10 @@ def _get_dashboard_signals(org=None):
             status = get_eol_status(name, version)
             if status == 'eol':
                 eol_overdue += 1
+                eol_dep_total += 1
             elif status == 'warning':
                 eol_soon += 1
+                eol_dep_total += 1
 
         # 資産そのもの（RDS のエンジン・Lambda のランタイム・EKS のバージョン）にも期限がある。
         # 消えた資産（missing_since）は数えない。
@@ -390,8 +393,10 @@ def _get_dashboard_signals(org=None):
             status = get_asset_eol_status(asset_type, raw)
             if status == 'eol':
                 eol_overdue += 1
+                eol_asset_total += 1
             elif status == 'warning':
                 eol_soon += 1
+                eol_asset_total += 1
 
         # ── Freshness: 直近で完了したスキャン時刻 ──
         last_scan = (
@@ -424,6 +429,8 @@ def _get_dashboard_signals(org=None):
             'drift_history_env_id': drift_history_env_id,
             'eol_overdue':      eol_overdue,
             'eol_soon':         eol_soon,
+            'eol_dep_total':    eol_dep_total,
+            'eol_asset_total':  eol_asset_total,
             'last_scan':        last_scan,
             'last_scan_ago':    last_scan_ago,
             'last_scan_stale':  last_scan_stale,
@@ -653,6 +660,15 @@ def asset_list_view(request):
     if asset_type_filter and asset_type_filter != 'ALL':
         assets = assets.filter(asset_type=asset_type_filter)
 
+    # ?eol=1: サポート終了・期限間近のリソースだけ（ダッシュボードの EOL カードの件数と同じ基準）。
+    eol_only = request.GET.get('eol') == '1'
+    if eol_only:
+        from .eol_data import get_asset_eol_status
+        flagged = [pk for pk, t, raw in assets.filter(asset_type__in=('RDS', 'LAMBDA', 'EKS'))
+                   .values_list('pk', 'asset_type', 'raw_data')
+                   if get_asset_eol_status(t, raw) in ('eol', 'warning')]
+        assets = assets.filter(pk__in=flagged)
+
     # 伏せる前に件数を数えて「N 件が消えています」と出せるようにする。
     # 黙って減らすと台帳が壊れたように見えるため。
     missing_count = assets.filter(missing_since__isnull=False).count()
@@ -673,6 +689,7 @@ def asset_list_view(request):
         'active_asset_type':    asset_type_filter,
         'missing_count':        missing_count,
         'show_missing':         show_missing,
+        'eol_only':             eol_only,
         'toggle_query':         toggle_query,
     })
 
@@ -1712,6 +1729,7 @@ def drift_snapshot_detail_view(request, environment_id, snapshot_id):
 # ---------------------------------------------------------------------------
 
 def login_view(request):
+    from .plugins import plugin_login_buttons
     if request.user.is_authenticated:
         return redirect('/')
     if request.method == 'POST':
@@ -1731,8 +1749,9 @@ def login_view(request):
         return render(request, 'login.html', {
             'error': _('Incorrect username or password.'),
             'username': username,
+            'login_buttons': plugin_login_buttons(request),
         })
-    return render(request, 'login.html')
+    return render(request, 'login.html', {'login_buttons': plugin_login_buttons(request)})
 
 
 def totp_verify_view(request):

@@ -111,7 +111,11 @@ _EOL: dict[str, dict[str, date | None]] = {
     },
     # EKS は Kubernetes のバージョンごとにサポート期限が決まっている。日付は内蔵せず、
     # endoflife.date から取得したスナップショットだけで判定する（未取得なら 'unknown'）。
+    # AWS 自身のスケジュール（取得したときだけ入る。値は {'warn': 日付, 'end': 日付} の 2 段）
     'amazon-eks': {},
+    'aws-lambda': {},
+    'amazon-rds-postgresql': {},
+    'amazon-rds-mysql': {},
     'go': {
         '1.19': date(2023, 9, 5),
         '1.20': date(2024, 2, 6),
@@ -221,33 +225,71 @@ def _effective() -> dict:
     return eff
 
 
-def _judge(name: str, version: str):
-    """(status, eol_date) — status は 'eol' | 'warning' | 'ok' | 'unknown'。日付が無い/不明なら None。"""
-    canon = canonical(name)
-    if canon is None:
-        return 'unknown', None
-    cycles = _effective().get(canon)
-    if not cycles:
-        return 'unknown', None
+# AWS 自身のスケジュールを持つ product。値は {'warn': 日付|None, 'end': 日付|None} の 2 段:
+#   RDS / EKS : warn=標準サポートの終わり（ここから有償の延長サポート）, end=延長サポートの終わり
+#   Lambda    : warn=標準サポートの終わり（非推奨になる日）,              end=更新もできなくなる日
+# 延長サポートが無い版は warn=None, end=標準サポートの終わり。
+AWS_SCHEDULE_PRODUCTS = ('aws-lambda', 'amazon-rds-postgresql', 'amazon-rds-mysql', 'amazon-eks')
 
-    today   = date.today()
+
+def _milestones(value):
+    """cycle の値 -> (warn, end)。従来の『日付 1 つ / None』は (None, 日付) として読む。"""
+    if isinstance(value, dict):
+        return _parse_date(value.get('warn')), _parse_date(value.get('end'))
+    return None, _parse_date(value)
+
+
+def _find_cycle(cycles: dict, version: str):
+    """version に合う cycle のキー。完全一致 -> major.minor -> major の順。無ければ None。"""
     version = version.strip()
-
-    # Try longest match first (major.minor), then major only
+    if version in cycles:
+        return version
     for n_parts in (2, 1):
         cycle = _major_minor(version, n_parts)
-        if cycle not in cycles:
-            continue
-        eol_date = _parse_date(cycles[cycle])
-        if eol_date is None:
-            return 'ok', None
-        if eol_date < today:
-            return 'eol', eol_date
-        if eol_date < today + timedelta(days=_WARNING_DAYS):
-            return 'warning', eol_date
-        return 'ok', eol_date
+        if cycle in cycles:
+            return cycle
+    return None
 
-    return 'unknown', None
+
+def _judge_full(name: str, version: str) -> dict:
+    """判定の全体: {'status', 'stage', 'date', 'warn', 'end'}。
+
+    status: 'eol' | 'warning' | 'ok' | 'unknown'（バッジの色と、ダッシュボードの件数はこれ）
+    stage : 'standard' | 'nearing' | 'extended'（RDS/EKS: 有償の延長サポート中）
+            | 'deprecated'（Lambda: 非推奨）| 'ended' | None（unknown）
+    date  : 画面に出す日付。次の節目、または終わった日。無ければ None
+    """
+    unknown = {'status': 'unknown', 'stage': None, 'date': None, 'warn': None, 'end': None}
+    canon = canonical(name)
+    if canon is None:
+        return unknown
+    cycles = _effective().get(canon)
+    if not cycles:
+        return unknown
+    cycle = _find_cycle(cycles, version)
+    if cycle is None:
+        return unknown
+
+    warn, end = _milestones(cycles[cycle])
+    today = date.today()
+    out = {'warn': warn, 'end': end}
+    if end is not None and end < today:
+        return {**out, 'status': 'eol', 'stage': 'ended', 'date': end}
+    if warn is not None and warn < today:
+        stage = 'deprecated' if canon == 'aws-lambda' else 'extended'
+        return {**out, 'status': 'warning', 'stage': stage, 'date': end}
+    upcoming = warn or end
+    if upcoming is None:
+        return {**out, 'status': 'ok', 'stage': 'standard', 'date': None}
+    if upcoming < today + timedelta(days=_WARNING_DAYS):
+        return {**out, 'status': 'warning', 'stage': 'nearing', 'date': upcoming}
+    return {**out, 'status': 'ok', 'stage': 'standard', 'date': upcoming}
+
+
+def _judge(name: str, version: str):
+    """(status, date) — status は 'eol' | 'warning' | 'ok' | 'unknown'。日付が無い/不明なら None。"""
+    j = _judge_full(name, version)
+    return j['status'], j['date']
 
 
 def get_eol_status(name: str, version: str) -> str:
@@ -280,16 +322,28 @@ _LAMBDA_RUNTIMES = {
     'java':   'java',
 }
 
+# 延長サポート（追加料金）／非推奨の説明から飛ぶ AWS 公式ページ。金額は変わるので画面に書かず、ここへ送る。
+_AWS_HELP_URLS = {
+    'amazon-rds-postgresql': 'https://aws.amazon.com/rds/postgresql/pricing/',
+    'amazon-rds-mysql':      'https://aws.amazon.com/rds/mysql/pricing/',
+    'amazon-eks':            'https://aws.amazon.com/eks/pricing/',
+    'aws-lambda':            'https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html',
+}
+
 # 画面に出す名前。「LAMBDA（サービス）」ではなく「Python 3.7（ミドルウェア）」の期限だと分かるように、
 # バッジと詳細にはサービス名でなく、この名前と版を出す。
 _PRODUCT_LABELS = {
     'python': 'Python', 'nodejs': 'Node.js', 'ruby': 'Ruby', 'java': 'Java',
     'postgresql': 'PostgreSQL', 'mysql': 'MySQL', 'amazon-eks': 'Kubernetes',
+    'amazon-rds-postgresql': 'PostgreSQL', 'amazon-rds-mysql': 'MySQL',
 }
 # 資産の種別 -> 何の版か（詳細画面の補足）
 _ASSET_KIND = {'RDS': 'engine', 'LAMBDA': 'runtime', 'EKS': 'kubernetes'}
 # 3 種類の「サポート終了」を見分けるアイコン（lucide）: ランタイム / DB エンジン / Kubernetes
 _KIND_ICONS = {'runtime': 'terminal', 'engine': 'database', 'kubernetes': 'ship-wheel'}
+
+# Aurora でない RDS のエンジン -> AWS 自身のスケジュールの product
+_AWS_RDS_PRODUCTS = {'postgres': 'amazon-rds-postgresql', 'mysql': 'amazon-rds-mysql'}
 
 _LEADING_VERSION = re.compile(r'^(\d+(?:\.\d+)*)')
 _LAMBDA_RUNTIME  = re.compile(r'^([a-z]+)(\d+(?:\.\d+)?)')
@@ -300,11 +354,21 @@ def asset_eol_target(asset_type: str, raw: dict | None):
     raw = raw or {}
     kind = (asset_type or '').upper()
     if kind == 'RDS':
-        product = _RDS_ENGINES.get(str(raw.get('engine', '')).lower())
+        engine = str(raw.get('engine', '')).lower()
+        product = _RDS_ENGINES.get(engine)
         m = _LEADING_VERSION.match(str(raw.get('engine_version', '')).strip())
-        return (product, m.group(1)) if product and m else None
+        if not (product and m):
+            return None
+        # RDS が止める日（取得済みなら）。Aurora は独自の予定なので、元の DB の期限で近似する。
+        aws = _AWS_RDS_PRODUCTS.get(engine)
+        if aws and _find_cycle(_effective().get(aws) or {}, m.group(1)):
+            return (aws, m.group(1))
+        return (product, m.group(1))
     if kind == 'LAMBDA':
-        m = _LAMBDA_RUNTIME.match(str(raw.get('runtime', '')).lower())
+        runtime = str(raw.get('runtime', '')).strip().lower()
+        if runtime in (_effective().get('aws-lambda') or {}):
+            return ('aws-lambda', runtime)
+        m = _LAMBDA_RUNTIME.match(runtime)
         product = _LAMBDA_RUNTIMES.get(m.group(1)) if m else None
         return (product, m.group(2)) if product else None
     if kind == 'EKS':
@@ -335,8 +399,9 @@ def eks_supported_floor():
     cycles = _effective().get('amazon-eks') or {}
     today = date.today()
     alive = []
-    for cycle, eol in cycles.items():
-        d = _parse_date(eol)
+    for cycle, value in cycles.items():
+        warn, end = _milestones(value)
+        d = warn or end          # 標準サポートの終わり（延長サポートに入る日）
         if (d is None or d >= today) and _version_key(cycle):
             alive.append(cycle)
     return min(alive, key=_version_key) if alive else None
@@ -354,7 +419,8 @@ def asset_eol_info(asset_type: str, raw: dict | None):
     status = get_eol_status(*target)
     if status == 'unknown':
         return None
-    date_ = _judge(*target)[1]
+    j = _judge_full(*target)
+    date_ = j['date']
     product = target[0]
     kind = _ASSET_KIND.get((asset_type or '').upper(), '')
     raw = raw or {}
@@ -366,14 +432,25 @@ def asset_eol_info(asset_type: str, raw: dict | None):
         shown = str(raw.get('runtime', ''))
     else:
         shown = f"Kubernetes {target[1]}"
+    label, version = _PRODUCT_LABELS.get(product, product), target[1]
+    if product == 'aws-lambda':
+        # 'python3.12' -> 'Python' + '3.12'。言語名に分けられないもの（provided.al2 など）は名前のまま。
+        m = _LAMBDA_RUNTIME.match(target[1])
+        lang = _LAMBDA_RUNTIMES.get(m.group(1)) if m else None
+        label, version = (_PRODUCT_LABELS.get(lang, lang), m.group(2)) if lang else (target[1], '')
     return {
         'status':  status,
+        'stage':   j['stage'],
+        'schedule': 'aws' if product in AWS_SCHEDULE_PRODUCTS else 'upstream',
+        'help_url': _AWS_HELP_URLS.get(product) if j['stage'] in ('extended', 'deprecated') else None,
+        'warn_date': j['warn'],
+        'end_date':  j['end'],
         'product': product,
-        'label':   _PRODUCT_LABELS.get(product, product),
+        'label':   label,
         'kind':    kind,
         'icon':    _KIND_ICONS.get(kind, 'circle'),
         'shown':   shown,
         'floor':   eks_supported_floor() if kind == 'kubernetes' else None,
-        'version': target[1],
+        'version': version,
         'date':    date_,
     }

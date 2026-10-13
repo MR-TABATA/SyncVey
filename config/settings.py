@@ -71,6 +71,10 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
+# 追加の Django アプリ（別配布のプラグイン）。カンマ区切りの AppConfig パス。
+# 例: SYNCVEY_EXTRA_APPS=my_plugin.apps.MyPluginConfig
+INSTALLED_APPS_EXTRA = [a.strip() for a in os.getenv('SYNCVEY_EXTRA_APPS', '').split(',') if a.strip()]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -90,6 +94,7 @@ INSTALLED_APPS = [
     'syncvey_cli.apps.SyncveyCliConfig',
     'django_apscheduler',
 ]
+INSTALLED_APPS += INSTALLED_APPS_EXTRA
 
 APSCHEDULER_DATETIME_FORMAT = "Y-m-d H:i:s"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25

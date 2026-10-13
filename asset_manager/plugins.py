@@ -93,6 +93,33 @@ def plugin_nav_items(request=None) -> list:
     return items
 
 
+def plugin_login_buttons(request=None) -> list:
+    """
+    Collect extra sign-in buttons (e.g. SSO) contributed by installed plugin
+    apps. An AppConfig opts in with `login_buttons(request)` returning
+    [{label, url}]. A failing plugin is skipped.
+    """
+    buttons = []
+    for cfg in _plugin_app_configs():
+        getter = getattr(cfg, 'login_buttons', None)
+        if not callable(getter):
+            continue
+        try:
+            buttons.extend(getter(request) or [])
+        except Exception:  # noqa: BLE001 - a broken plugin must not break login
+            continue
+    return buttons
+
+
+def plugin_url_modules() -> list:
+    """
+    URLconf modules contributed by installed plugin apps. An AppConfig opts in
+    with `urls_module = 'my_plugin.urls'`; the project urls.py includes each at
+    the site root, so a plugin can add routes without the core naming it.
+    """
+    return [cfg.urls_module for cfg in _plugin_app_configs() if getattr(cfg, 'urls_module', None)]
+
+
 def plugin_scheduled_jobs() -> list:
     """
     Collect background-job specs contributed by installed plugin apps, so a

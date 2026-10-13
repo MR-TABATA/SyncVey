@@ -8,6 +8,40 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- **More plugin seams, so a separately distributed plugin app can add a
+  sign-in option or routes without the core importing it:** extra apps can be
+  installed with `SYNCVEY_EXTRA_APPS`, and an `AppConfig` can contribute
+  `login_buttons(request)` (shown on the sign-in page) and `urls_module`.
+
+### Fixed
+
+- **The dashboard's end-of-life card now links to what it counted.** Since
+  0.7.0 it counts RDS / Lambda / EKS resources as well as declared
+  dependencies, but "Review runtimes" always opened the (often empty)
+  applications screen. It now offers "Review resources (N)" — the asset list
+  filtered to resources past or nearing end-of-life (`?eol=1`, with a banner
+  and a way back) — and "Review dependencies (N)", each shown only when it
+  has something to open.
+
+### Changed
+
+- **RDS, Lambda and EKS are now judged against AWS's own support schedule,
+  in stages, once EOL data has been fetched** (`EOL_REFRESH_ENABLED=true`).
+  What matters operationally is the day AWS stops supporting a version, not
+  the upstream project's. An RDS PostgreSQL/MySQL version or EKS cluster
+  past standard support is shown as **extended support (paid)** and counted
+  as nearing end-of-life; it is *past end-of-life* only once extended
+  support ends too. A Lambda runtime past its deprecation date is shown as
+  **deprecated**, and *past end-of-life* once AWS blocks updates. The
+  asset's detail panel lists both dates and names its basis. Aurora keeps
+  the upstream approximation (it has its own schedule), as does anything
+  not covered by the fetched data, and offline installs behave as before.
+  For extended support the panel says it carries an additional charge and
+  links to AWS's pricing page (amounts change, so none are shown); for a
+  deprecated Lambda runtime it links to AWS's runtime support policy.
+
 ## [0.7.0] — 2026-10-08
 
 End-of-life is now judged for RDS, Lambda and EKS resources too, the ledger can be exported, and CI finally runs the plugins' tests.

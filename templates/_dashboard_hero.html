@@ -63,17 +63,32 @@
         {% if signals.eol_overdue > 0 and signals.eol_soon > 0 %}
           +{{ signals.eol_soon }} {% trans "nearing end-of-life" %}
         {% elif signals.eol_overdue == 0 and signals.eol_soon == 0 %}
-          {% trans "No tracked dependency is past EOL" %}
+          {% trans "No tracked dependency or resource is past EOL" %}
         {% endif %}
       </div>
-      <button type="button"
-              hx-get="{% url 'application-list-all' %}"
-              hx-target="#main-content"
-              hx-swap="innerHTML"
-              hx-on::after-request="setSidebarActive('apps')"
-              class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
-        {% trans "Review runtimes" %} <i data-lucide="arrow-right" class="w-4 h-4"></i>
-      </button>
+      {# 数えたものの飛び先に合わせてリンクを分ける: 資産（RDS/Lambda/EKS）は台帳、依存はアプリ画面 #}
+      <div class="mt-auto pt-3 flex flex-col items-start gap-1">
+        {% if signals.eol_asset_total > 0 %}
+        <button type="button"
+                hx-get="{% url 'asset-list' %}?eol=1"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="setSidebarActive('assets')"
+                class="inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
+          {% trans "Review resources" %} ({{ signals.eol_asset_total }}) <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        {% endif %}
+        {% if signals.eol_dep_total > 0 or signals.eol_asset_total == 0 %}
+        <button type="button"
+                hx-get="{% url 'application-list-all' %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="setSidebarActive('apps')"
+                class="inline-flex items-center gap-1 text-sm font-medium text-[#5641C4] hover:underline">
+          {% trans "Review dependencies" %}{% if signals.eol_dep_total > 0 %} ({{ signals.eol_dep_total }}){% endif %} <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+        {% endif %}
+      </div>
     </div>
 
     {# ── 3. Freshness（データの鮮度） ──────────────────────────── #}

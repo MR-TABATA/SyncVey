@@ -1622,8 +1622,8 @@ msgid "past end-of-life"
 msgstr "サポート終了"
 
 #: templates/_dashboard_hero.html:66
-msgid "No tracked dependency is past EOL"
-msgstr "追跡中の依存関係にサポート終了済みのものはありません"
+msgid "No tracked dependency or resource is past EOL"
+msgstr "追跡中の依存関係・リソースにサポート終了済みのものはありません"
 
 #: templates/_dashboard_hero.html:75
 msgid "Review runtimes"
@@ -2278,3 +2278,48 @@ msgstr ""
 #, python-format
 msgid "EKS supports Kubernetes %(v)s and later"
 msgstr "EKS は Kubernetes %(v)s 以上をサポート"
+
+msgid "extended support (paid)"
+msgstr "延長サポート中（有償）"
+
+msgid "deprecated"
+msgstr "非推奨"
+
+msgid "Standard support ends"
+msgstr "標準サポート終了"
+
+msgid "Extended support ends (paid)"
+msgstr "延長サポート終了（有償）"
+
+msgid "Deprecated from"
+msgstr "非推奨になる日"
+
+msgid "Updates blocked from"
+msgstr "更新できなくなる日"
+
+msgid "Basis: AWS's own support schedule for this service (endoflife.date)."
+msgstr "判定の基準: AWS 自身のサポートスケジュール（endoflife.date）。"
+
+msgid "AWS extended support applies, at an additional charge."
+msgstr "AWS の延長サポート（追加料金）が適用されます。"
+
+msgid "AWS no longer applies security patches to this runtime."
+msgstr "AWS はこのランタイムにセキュリティ修正を適用しなくなっています。"
+
+msgid "See AWS pricing"
+msgstr "AWS の料金を確認"
+
+msgid "See AWS runtime support policy"
+msgstr "AWS のランタイムサポート方針を確認"
+
+msgid "Review resources"
+msgstr "リソースを確認"
+
+msgid "Review dependencies"
+msgstr "依存関係を確認"
+
+msgid "Showing only resources past or nearing end-of-life."
+msgstr "サポート終了済み・終了間近のリソースだけを表示しています。"
+
+msgid "Show all resources"
+msgstr "すべてのリソースを表示"

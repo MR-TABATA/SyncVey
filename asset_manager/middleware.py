@@ -63,7 +63,7 @@ class OrgRequiredMiddleware:
     superuser/staff は Django admin へ、それ以外はログアウトさせる。
     """
 
-    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/static', '/__debug__')
+    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/oidc', '/static', '/__debug__')
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -96,7 +96,7 @@ class ShellFallbackMiddleware:
     htmx リクエスト(HX-Request)・API 的な取得・ダウンロードは対象外。
     """
 
-    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/static', '/__debug__')
+    EXEMPT_PREFIXES = ('/admin', '/login', '/logout', '/totp-verify', '/oidc', '/static', '/__debug__')
 
     def __init__(self, get_response):
         self.get_response = get_response

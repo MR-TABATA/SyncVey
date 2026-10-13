@@ -17,7 +17,7 @@ import urllib.error
 
 from django.conf import settings
 
-from .eol_data import base_products, canonical, invalidate_cache
+from .eol_data import AWS_SCHEDULE_PRODUCTS, base_products, canonical, invalidate_cache
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +81,23 @@ def _fetch_product(slug: str) -> dict | None:
     out = {}
     for c in cycles:
         if isinstance(c, dict) and 'cycle' in c:
-            out[str(c['cycle'])] = _normalize_eol(c.get('eol'))
+            if slug in AWS_SCHEDULE_PRODUCTS:
+                out[str(c['cycle'])] = _aws_stages(slug, c)
+            else:
+                out[str(c['cycle'])] = _normalize_eol(c.get('eol'))
     return out or None
+
+
+def _aws_stages(slug: str, c: dict) -> dict:
+    """AWS 自身のスケジュールを 2 段 {'warn', 'end'} にする（意味は eol_data.AWS_SCHEDULE_PRODUCTS）。"""
+    if slug == 'aws-lambda':
+        # support=標準サポートの終わり（非推奨になる日）, eol=更新もできなくなる日
+        return {'warn': _normalize_eol(c.get('support')), 'end': _normalize_eol(c.get('eol'))}
+    standard = _normalize_eol(c.get('eol'))
+    extended = _normalize_eol(c.get('extendedSupport'))   # False（延長なし）は None
+    if extended is None:
+        return {'warn': None, 'end': standard}
+    return {'warn': standard, 'end': extended}
 
 
 def refresh_eol(force: bool = False) -> dict:
