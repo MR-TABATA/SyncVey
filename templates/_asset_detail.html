@@ -76,7 +76,6 @@
     {% if eol.warn_date and eol.end_date %}<p class="text-xs text-slate-500 mt-0.5 font-mono">{% if eol.product == 'aws-lambda' %}{% trans "Updates blocked from" %}{% else %}{% trans "Extended support ends (paid)" %}{% endif %}: {{ eol.end_date|date:"Y-m-d" }}</p>
     {% elif eol.date %}<p class="text-xs text-slate-500 mt-0.5 font-mono">{% trans "Support end date" %}: {{ eol.date|date:"Y-m-d" }}</p>{% endif %}
     {% if eol.help_url %}<p class="text-xs text-slate-600 mt-1">{% if eol.stage == 'extended' %}{% trans "AWS extended support applies, at an additional charge." %}{% else %}{% trans "AWS no longer applies security patches to this runtime." %}{% endif %} <a href="{{ eol.help_url }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">{% if eol.stage == 'extended' %}{% trans "See AWS pricing" %}{% else %}{% trans "See AWS runtime support policy" %}{% endif %} &rarr;</a></p>{% endif %}
-    {% if eol.floor and eol.status != 'ok' %}<p class="text-xs text-slate-600 mt-1">{% blocktrans with v=eol.floor %}EKS supports Kubernetes {{ v }} and later{% endblocktrans %}</p>{% endif %}
     <p class="text-[11px] text-slate-400 mt-2">{% if eol.schedule == 'aws' %}{% trans "Basis: AWS's own support schedule for this service (endoflife.date)." %}{% else %}{% trans "Basis: the upstream project's own support end date (endoflife.date). AWS's schedule for this service can differ." %}{% endif %}</p>
 </div>
 {% endif %}
@@ -102,7 +101,7 @@
         </ul>
     </details>
     {% endif %}
-    <p class="text-[11px] text-slate-400 mt-2">{% trans "Matched against the upstream version in NVD. AWS may have already fixed some of these in RDS." %} {% trans "Checked" %}: {{ v.checked_at|date:"Y-m-d" }}</p>
+    <p class="text-[11px] text-slate-400 mt-2">{% trans "Matched against the upstream version in NVD. AWS may have already fixed some of these in the managed service." %} {% trans "Checked" %}: {{ v.checked_at|date:"Y-m-d" }}</p>
 </div>
 {% endif %}{% endwith %}
 

@@ -2275,10 +2275,6 @@ msgstr ""
 "判定の基準: 元のソフトウェア自身のサポート終了日（endoflife.date）。この AWS サービス"
 "独自のスケジュールとは異なることがあります。"
 
-#, python-format
-msgid "EKS supports Kubernetes %(v)s and later"
-msgstr "EKS は Kubernetes %(v)s 以上をサポート"
-
 msgid "extended support (paid)"
 msgstr "延長サポート中（有償）"
 
@@ -2387,8 +2383,8 @@ msgstr "既知のものなし"
 msgid "Show the list"
 msgstr "一覧を表示"
 
-msgid "Matched against the upstream version in NVD. AWS may have already fixed some of these in RDS."
-msgstr "NVD で、上流のこの版に対して照合した結果です。RDS 側で AWS がすでに直しているものも含まれることがあります。"
+msgid "Matched against the upstream version in NVD. AWS may have already fixed some of these in the managed service."
+msgstr "NVD で、上流のこの版に対して照合した結果です。マネージドサービス側で AWS がすでに直しているものも含まれることがあります。"
 
 msgid "Checked"
 msgstr "確認日"

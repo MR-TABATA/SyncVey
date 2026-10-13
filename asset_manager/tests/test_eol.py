@@ -158,18 +158,6 @@ class TestAssetEol(TestCase):
         self.assertEqual(get_asset_eol_status('EKS', {'version': '1.99'}), 'ok')
         self.assertEqual(get_asset_eol_status('EKS', {}), 'unknown')
 
-    def test_eks_floor_is_the_oldest_version_still_in_standard_support(self):
-        from asset_manager.eol_data import eks_supported_floor
-        self.assertIsNone(eks_supported_floor())          # データが無ければ言わない
-        EolSnapshot.objects.create(data={'amazon-eks': {
-            '1.24': '2025-01-31', '1.30': '2024-07-23', '1.9': '2099-01-01',
-            '1.31': '2099-06-01', '1.32': None, '1.100': '2100-01-01'}})
-        invalidate_cache()
-        # 文字列順なら '1.100' < '1.31' になる。数として比べる。期限切れ（1.24, 1.30）は除く
-        self.assertEqual(eks_supported_floor(), '1.9')
-        EolSnapshot.objects.create(data={'amazon-eks': {'1.9': '2000-01-01'}})
-        invalidate_cache()
-
     def test_eks_is_a_fetch_target(self):
         from asset_manager.eol_data import base_products
         self.assertIn('amazon-eks', base_products())
@@ -295,8 +283,8 @@ class TestAssetDetailShowsAttributesAndEol:
 
 
 @pytest.mark.django_db
-def test_eks_card_says_where_to_go(settings):
-    """EKS の期限切れには、「Kubernetes 1.24 はサポート終了」に続けて「EKS は 1.31 以上をサポート」を出す。"""
+def test_eks_card_does_not_tell_you_what_to_do(settings):
+    """EKS の期限切れは「Kubernetes 1.24 はサポート終了」と事実だけを出す。「1.31 以上へ」のような行き先は書かない。"""
     from django.test import Client
     from django.urls import reverse
     from django.contrib.auth import get_user_model
@@ -315,7 +303,7 @@ def test_eks_card_says_where_to_go(settings):
     c.force_login(user)
     html = c.get(reverse('asset-list')).content.decode()
     assert 'Kubernetes 1.24' in html and 'past end-of-life' in html
-    assert 'EKS supports Kubernetes 1.31 and later' in html
+    assert 'EKS supports Kubernetes' not in html
     invalidate_cache()
 
 
@@ -420,13 +408,6 @@ class TestAwsScheduleJudge(TestCase):
     def test_eks_extended_support(self):
         i = self._info('EKS', {'version': '1.24'})
         self.assertEqual((i['status'], i['stage']), ('eol', 'ended'))
-
-    def test_eks_floor_uses_the_standard_support_end(self):
-        EolSnapshot.objects.create(data={'amazon-eks': {
-            '1.24': {'warn': '2024-01-31', 'end': '2025-01-31'},
-            '1.31': {'warn': '2099-01-01', 'end': '2100-01-01'}}})
-        invalidate_cache()
-        self.assertEqual(eol_data.eks_supported_floor(), '1.31')
 
     def test_legacy_single_date_snapshots_still_work(self):
         EolSnapshot.objects.create(data={'amazon-eks': {'1.24': '2025-01-31'}})

@@ -26,7 +26,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Checked {result['packages']} libraries: {result['vulnerable']} with known vulnerabilities"
             + (f", {result['failed']} failed" if result['failed'] else "")
-            + f". Checked {result['engines']} RDS engine versions: {result['engines_vulnerable']} with known vulnerabilities"
+            + f". Checked {result['engines']} database engine versions (RDS / ElastiCache): {result['engines_vulnerable']} with known vulnerabilities"
             + (f", {result['engines_failed']} failed" if result['engines_failed'] else "")
             + "."
         ))

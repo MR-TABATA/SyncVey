@@ -6,8 +6,10 @@ vulns.py
 - 既定では無効（settings.VULN_REFRESH_ENABLED=false）。明示的に有効化したときだけ外部通信する。
 - 送るのは (エコシステム, パッケージ名, 版) だけ。組織名・システム名・資産は送らない。
 - OSV に問い合わせるのは「版まで分かっているライブラリ」だけ。手で登録した行（ecosystem 空）は対象外。
-- RDS（PostgreSQL / MySQL）のエンジンは NVD で調べる。送るのは製品と版（CPE）だけ。結果は上流のその版に対する
-  CVE であり、AWS が独自に直した分は拾えない（画面にもそう書く）。Aurora は版が上流と一致しないので対象外。
+- RDS（PostgreSQL / MySQL）と ElastiCache（Redis / Memcached）のエンジンは NVD で調べる。送るのは製品と版（CPE）だけ。
+  結果は上流のその版に対する CVE であり、AWS が独自に直した分は拾えない（画面にもそう書く）。
+  Aurora は版が上流と一致しないので対象外。ElastiCache は 7.1 のようにパッチ番号のない版を AWS が裏で更新するため、
+  パッチ番号まで分かる版（5.0.6 など）だけを調べる（でないと、すでに直った CVE を拾って誤検知になる）。Valkey は NVD に無い。
 - 悪用の確認（CISA KEV）は印として添える。取得に失敗しても、脆弱性の取得は止めない。
 - 事実だけを保存する（重大度・修正版・リンク）。「どうしろ」は持たない。
 """
@@ -35,8 +37,13 @@ _MAX_PAGES = 5            # 1 パッケージの脆弱性が多すぎるとき�
 NVD_API   = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 NVD_PAGE  = "https://nvd.nist.gov/vuln/detail/"
 NVD_ECOSYSTEM = "NVD"
-# RDS の Engine -> NVD の (vendor, product)。Aurora は含めない（版が上流と一致しない）。
-_NVD_ENGINES = {'postgres': ('postgresql', 'postgresql'), 'mysql': ('oracle', 'mysql')}
+# 資産の種別 -> {Engine: NVD の (vendor, product)}。Aurora は含めない（版が上流と一致しない）。
+_NVD_ENGINES = {
+    'RDS': {'postgres': ('postgresql', 'postgresql'), 'mysql': ('oracle', 'mysql')},
+    'ELASTICACHE': {'redis': ('redis', 'redis'), 'memcached': ('memcached', 'memcached')},
+}
+# 照合に必要な版の細かさ（数字の個数）。ElastiCache はパッチ番号まで要る。
+_NVD_MIN_PARTS = {'RDS': 2, 'ELASTICACHE': 3}
 _LEADING_VERSION = re.compile(r'^(\d+(?:\.\d+)*)')
 _NVD_PAGE_SIZE = 2000
 
@@ -134,16 +141,20 @@ def build_record(eco, name, version, vulns, kev_ids) -> dict:
 # --- NVD（RDS のエンジン）-------------------------------------------------------
 
 def asset_cve_target(asset_type, raw):
-    """資産 -> (ecosystem, name, version)。NVD で調べられないもの（Aurora など）は None。
+    """資産 -> (ecosystem, name, version)。NVD で調べられないもの（Aurora・パッチ番号のない版など）は None。
 
     name は 'vendor:product'（NVD の CPE の一部）。VulnRecord の (ecosystem, name, version) に使う。
     """
-    if (asset_type or '').upper() != 'RDS':
+    kind = (asset_type or '').upper()
+    engines = _NVD_ENGINES.get(kind)
+    if not engines:
         return None
     raw = raw or {}
-    vp = _NVD_ENGINES.get(str(raw.get('engine', '')).lower())
+    vp = engines.get(str(raw.get('engine', '')).lower())
     m = _LEADING_VERSION.match(str(raw.get('engine_version', '')).strip())
-    return (NVD_ECOSYSTEM, f"{vp[0]}:{vp[1]}", m.group(1)) if vp and m else None
+    if not (vp and m) or len(m.group(1).split('.')) < _NVD_MIN_PARTS[kind]:
+        return None
+    return (NVD_ECOSYSTEM, f"{vp[0]}:{vp[1]}", m.group(1))
 
 
 def _nvd_request(url):
@@ -216,7 +227,7 @@ def _cve_advisory(cve, kev_ids) -> dict:
 def _nvd_targets():
     from .models import Asset
     found = set()
-    for t, raw in (Asset.objects.filter(asset_type='RDS', missing_since__isnull=True)
+    for t, raw in (Asset.objects.filter(asset_type__in=tuple(_NVD_ENGINES), missing_since__isnull=True)
                    .values_list('asset_type', 'raw_data')):
         target = asset_cve_target(t, raw)
         if target:
@@ -263,7 +274,7 @@ def _refresh_osv(pairs, kev_ids_loader):
 
 
 def _refresh_nvd(targets, kev_ids_loader):
-    """RDS のエンジンを NVD で照合して保存。Returns (ok, vulnerable, failed)。"""
+    """RDS・ElastiCache のエンジンを NVD で照合して保存。Returns (ok, vulnerable, failed)。"""
     if not targets:
         return True, 0, 0
     kev_ids = kev_ids_loader()
@@ -323,7 +334,7 @@ def refresh_vulns(force: bool = False) -> dict:
 
 
 def asset_vuln(asset):
-    """資産の VulnRecord（RDS のエンジン）。対象外・未取得なら None。表示用。"""
+    """資産の VulnRecord（RDS・ElastiCache のエンジン）。対象外・未取得なら None。表示用。"""
     target = asset_cve_target(asset.asset_type, asset.raw_data)
     if target is None:
         return None

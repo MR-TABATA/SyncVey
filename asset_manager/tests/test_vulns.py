@@ -269,6 +269,19 @@ class TestAssetCveTarget:
         assert t('RDS', None) is None
 
 
+    def test_elasticache_needs_the_patch_number(self):
+        t = vulns.asset_cve_target
+        assert t('ELASTICACHE', {'engine': 'redis', 'engine_version': '5.0.6'}) == ('NVD', 'redis:redis', '5.0.6')
+        assert t('ELASTICACHE', {'engine': 'memcached', 'engine_version': '1.6.6'}) == ('NVD', 'memcached:memcached', '1.6.6')
+        # 7.1 のようにパッチ番号がない版は、AWS が裏で更新する。当てると直った CVE を拾うので調べない。
+        assert t('ELASTICACHE', {'engine': 'redis', 'engine_version': '7.1'}) is None
+        assert t('ELASTICACHE', {'engine': 'memcached', 'engine_version': '1.6'}) is None
+        # Valkey は NVD に無い。RDS の種別には ElastiCache のエンジンを混ぜない。
+        assert t('ELASTICACHE', {'engine': 'valkey', 'engine_version': '7.2.4'}) is None
+        assert t('RDS', {'engine': 'redis', 'engine_version': '5.0.6'}) is None
+        assert t('ELASTICACHE', {'engine': 'postgres', 'engine_version': '11.22'}) is None
+
+
 class TestRefreshNvd:
     def _run(self, pages_by_version, kev=()):
         sent = []
@@ -403,6 +416,42 @@ class TestRefreshNvd:
             settings.NVD_API_KEY = 'k'
             vulns._nvd_pause()
         assert [c.args[0] for c in sleep.call_args_list] == [6.5, 0.7]
+
+
+class TestElastiCacheRefresh:
+    def test_redis_cluster_is_looked_up_by_its_cpe(self):
+        from asset_manager.models import Asset
+        _, env = _env()
+        Asset.objects.create(environment=env, name='cache', provider='AWS', asset_type='ELASTICACHE',
+                             asset_category='DATABASE', cloud_id='cache',
+                             raw_data={'engine': 'redis', 'engine_version': '5.0.6'})
+        Asset.objects.create(environment=env, name='cache2', provider='AWS', asset_type='ELASTICACHE',
+                             asset_category='DATABASE', cloud_id='cache2',
+                             raw_data={'engine': 'redis', 'engine_version': '7.1'})   # パッチ番号なし -> 調べない
+        sent = []
+        def nvd(url):
+            sent.append(urllib.parse.unquote(url))
+            return _nvd_page([_cve('CVE-2026-77', 7.5, desc='Redis flaw. More.')])
+        with mock.patch('asset_manager.vulns._nvd_request', side_effect=nvd), \
+                mock.patch('asset_manager.vulns._nvd_pause'), \
+                mock.patch('asset_manager.vulns._request', return_value={'vulnerabilities': []}):
+            result = vulns.refresh_vulns(force=True)
+        assert (result['engines'], result['engines_vulnerable']) == (1, 1)
+        assert len(sent) == 1 and 'cpe:2.3:a:redis:redis:5.0.6:' in sent[0]
+        rec = VulnRecord.objects.get(ecosystem='NVD', name='redis:redis')
+        assert (rec.version, rec.max_severity, rec.advisories[0]['summary']) == ('5.0.6', 'HIGH', 'Redis flaw.')
+
+    def test_detail_panel_for_a_cluster(self):
+        from asset_manager.models import Asset
+        org, env = _env()
+        a = Asset.objects.create(environment=env, name='cache', provider='AWS', asset_type='ELASTICACHE',
+                                 asset_category='DATABASE', cloud_id='cache',
+                                 raw_data={'engine': 'redis', 'engine_version': '5.0.6'})
+        VulnRecord.objects.create(ecosystem='NVD', name='redis:redis', version='5.0.6', max_severity='HIGH',
+                                  advisories=[{'id': 'CVE-2026-77', 'severity': 'HIGH', 'summary': 'x', 'kev': False,
+                                               'url': 'https://nvd.nist.gov/vuln/detail/CVE-2026-77', 'fixed': [], 'aliases': []}])
+        html = _client(org).get(reverse('asset-detail', args=[a.id])).content.decode()
+        assert 'Known vulnerabilities' in html and 'in the managed service' in html
 
 
 class TestRdsScreen:

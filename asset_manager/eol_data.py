@@ -389,24 +389,6 @@ def _version_key(v: str):
     return tuple(int(x) for x in re.findall(r'\d+', v))
 
 
-def eks_supported_floor():
-    """いま EKS の標準サポート中の、いちばん古い Kubernetes バージョン（'1.31' など）。
-
-    取得済みの amazon-eks のスケジュールから計算する。データが無い・全部期限切れなら None。
-    「Kubernetes 1.24 はサポート終了」とだけ言わず、「EKS は 1.31 以上をサポート」と、行き先を
-    示すために使う。
-    """
-    cycles = _effective().get('amazon-eks') or {}
-    today = date.today()
-    alive = []
-    for cycle, value in cycles.items():
-        warn, end = _milestones(value)
-        d = warn or end          # 標準サポートの終わり（延長サポートに入る日）
-        if (d is None or d >= today) and _version_key(cycle):
-            alive.append(cycle)
-    return min(alive, key=_version_key) if alive else None
-
-
 def asset_eol_info(asset_type: str, raw: dict | None):
     """資産の詳細画面用: {'status', 'product', 'version', 'date'}。判定対象外・不明なら None。
 
@@ -450,7 +432,6 @@ def asset_eol_info(asset_type: str, raw: dict | None):
         'kind':    kind,
         'icon':    _KIND_ICONS.get(kind, 'circle'),
         'shown':   shown,
-        'floor':   eks_supported_floor() if kind == 'kubernetes' else None,
         'version': version,
         'date':    date_,
     }

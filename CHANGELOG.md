@@ -8,6 +8,25 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- **Known vulnerabilities for ElastiCache Redis and Memcached.** The same
+  `VULN_REFRESH_ENABLED=true` job now looks ElastiCache engine versions up in
+  NVD, with the same badge, CVE list and "AWS may have already fixed some of
+  these" note as RDS. Only versions that carry a patch number (`5.0.6`,
+  `1.6.6`) are checked: ElastiCache updates `7.1`-style versions behind the
+  scenes, so matching those would report CVEs that are already fixed.
+  Valkey isn't in NVD and is skipped.
+
+### Changed
+
+- **The resource list and detail no longer say "EKS supports Kubernetes 1.34
+  and later".** A past or nearing end-of-life version now shows just the
+  fact — the version, the stages and the dates. Whether to update is left to
+  you.
+- **CVE descriptions from NVD are shown as the first sentence** (or cut at a
+  word with "…"), instead of a 300-character cut that could end mid-word.
+
 ## [0.8.0] — 2026-10-13
 
 End-of-life is now judged on AWS's own support schedule, known vulnerabilities appear next to it — for your libraries (from lockfiles) and for RDS engines — and the dashboard's EOL card links to what it counted. This release adds migration `0021` (applied by `migrate`, as in the setup steps).
