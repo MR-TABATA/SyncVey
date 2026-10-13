@@ -132,6 +132,16 @@ infrastructure.
 
 - Docker and Docker Compose
 
+### Get the code
+
+```bash
+git clone https://github.com/MR-TABATA/SyncVey
+cd SyncVey
+```
+
+The commands below run in this folder: it holds `docker-compose.yml`, `.env.example` and the IAM policy
+(`iam/iam-policy.json`). The image itself comes from Docker Hub, so there is nothing to build.
+
 ### 1. Configure environment variables
 
 ```bash

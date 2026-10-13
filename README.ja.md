@@ -102,6 +102,16 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 
 - Docker / Docker Compose
 
+### コードを取得する
+
+```bash
+git clone https://github.com/MR-TABATA/SyncVey
+cd SyncVey
+```
+
+以降のコマンドは、このフォルダで実行します。`docker-compose.yml`、`.env.example`、IAM ポリシー（`iam/iam-policy.json`）が入っています。
+イメージは Docker Hub から取得するので、ビルドは要りません。
+
 ### 1. 環境変数の設定
 
 ```bash
