@@ -8,6 +8,10 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-10-13
+
+End-of-life is now judged on AWS's own support schedule, known vulnerabilities appear next to it — for your libraries (from lockfiles) and for RDS engines — and the dashboard's EOL card links to what it counted. This release adds migration `0021` (applied by `migrate`, as in the setup steps).
+
 ### Added
 
 - **Known vulnerabilities for your libraries.** On *Applications & Middleware*,
@@ -33,21 +37,10 @@ While the major version is `0`, minor releases may change behaviour.
   it inside RDS. Aurora is skipped, since its versions don't match upstream.
   The OSV and NVD lookups are independent: one being down keeps the other's
   results and the previous records.
-
 - **More plugin seams, so a separately distributed plugin app can add a
   sign-in option or routes without the core importing it:** extra apps can be
   installed with `SYNCVEY_EXTRA_APPS`, and an `AppConfig` can contribute
   `login_buttons(request)` (shown on the sign-in page) and `urls_module`.
-
-### Fixed
-
-- **The dashboard's end-of-life card now links to what it counted.** Since
-  0.7.0 it counts RDS / Lambda / EKS resources as well as declared
-  dependencies, but "Review runtimes" always opened the (often empty)
-  applications screen. It now offers "Review resources (N)" — the asset list
-  filtered to resources past or nearing end-of-life (`?eol=1`, with a banner
-  and a way back) — and "Review dependencies (N)", each shown only when it
-  has something to open.
 
 ### Changed
 
@@ -65,6 +58,16 @@ While the major version is `0`, minor releases may change behaviour.
   For extended support the panel says it carries an additional charge and
   links to AWS's pricing page (amounts change, so none are shown); for a
   deprecated Lambda runtime it links to AWS's runtime support policy.
+
+### Fixed
+
+- **The dashboard's end-of-life card now links to what it counted.** Since
+  0.7.0 it counts RDS / Lambda / EKS resources as well as declared
+  dependencies, but "Review runtimes" always opened the (often empty)
+  applications screen. It now offers "Review resources (N)" — the asset list
+  filtered to resources past or nearing end-of-life (`?eol=1`, with a banner
+  and a way back) — and "Review dependencies (N)", each shown only when it
+  has something to open.
 
 ## [0.7.0] — 2026-10-08
 
@@ -412,7 +415,8 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.4.0...v0.5.0
