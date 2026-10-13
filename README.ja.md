@@ -112,6 +112,17 @@ cd SyncVey
 以降のコマンドは、このフォルダで実行します。`docker-compose.yml`、`.env.example`、IAM ポリシー（`iam/iam-policy.json`）が入っています。
 イメージは Docker Hub から取得するので、ビルドは要りません。
 
+**clone したくないとき**: compose ファイルは、リポジトリの他のファイルを読まないので、2つのファイルだけで足ります。
+
+```bash
+mkdir syncvey && cd syncvey
+curl -O https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/.env.example
+```
+
+そのあと、下の手順 1 に進みます。（`docker pull jiniie/syncvey` だけでは動きません。イメージには起動コマンドが無く、
+PostgreSQL も要るためです。PostgreSQL は compose が用意します。[Docker Hub のページ](https://hub.docker.com/r/jiniie/syncvey)にも、そう書いてあります。）
+
 ### 1. 環境変数の設定
 
 ```bash

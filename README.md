@@ -142,6 +142,18 @@ cd SyncVey
 The commands below run in this folder: it holds `docker-compose.yml`, `.env.example` and the IAM policy
 (`iam/iam-policy.json`). The image itself comes from Docker Hub, so there is nothing to build.
 
+**Don't want to clone?** The compose file reads nothing else from the repository, so two files are enough:
+
+```bash
+mkdir syncvey && cd syncvey
+curl -O https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docker-compose.yml
+curl -o .env https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/.env.example
+```
+
+then continue with step 1 below. (`docker pull jiniie/syncvey` alone is not enough: the image has no start
+command and needs PostgreSQL, which the compose file provides. The [Docker Hub page](https://hub.docker.com/r/jiniie/syncvey)
+says so too.)
+
 ### 1. Configure environment variables
 
 ```bash
