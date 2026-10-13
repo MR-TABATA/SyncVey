@@ -434,3 +434,24 @@ class TestRdsScreen:
     def test_nothing_shown_until_checked(self):
         c, db, _ = self._page(asset_vulns=False)
         assert 'Known vulnerabilities' not in c.get(reverse('asset-detail', args=[db.id])).content.decode()
+
+
+class TestShortSummary:
+    def test_first_sentence(self):
+        assert vulns._short('Integer wraparound in X. This may execute code. More.') == 'Integer wraparound in X.'
+
+    def test_long_text_is_cut_at_a_word_with_an_ellipsis(self):
+        out = vulns._short('word ' * 80)
+        assert out.endswith('…') and len(out) <= 201 and not out.endswith(' …') and 'wor…' not in out
+
+    def test_short_text_is_untouched_and_whitespace_is_folded(self):
+        assert vulns._short('  A   short\nflaw  ') == 'A short flaw'
+
+    def test_cve_summary_uses_it(self):
+        a = vulns._cve_advisory(_cve('CVE-1', 5, desc='Bad thing happens. Then more detail follows. ' + 'x ' * 400), set())
+        assert a['summary'] == 'Bad thing happens.'
+
+    def test_abbreviations_do_not_end_a_sentence(self):
+        text = 'Symlink following allows an origin superuser to overwrite local files, e.g. /var/lib/x, that hijack the account. More text.'
+        assert vulns._short(text) == 'Symlink following allows an origin superuser to overwrite local files, e.g. /var/lib/x, that hijack the account.'
+        assert vulns._short('Use X, i.e. the old one, to Y. Then Z.') == 'Use X, i.e. the old one, to Y.'

@@ -188,10 +188,25 @@ def _cvss_label(cve) -> str:
     return 'CRITICAL' if top >= 9 else 'HIGH' if top >= 7 else 'MEDIUM' if top >= 4 else 'LOW'
 
 
+_SENTENCE_END = re.compile(r'(?<!\be\.g)(?<!\bi\.e)(?<!\betc)(?<!\bvs)\.\s+(?=[A-Z])')
+
+
+def _short(text: str, limit: int = 200) -> str:
+    """NVD の説明は段落ごと長いので、最初の一文（長すぎれば単語の切れ目で切って「…」）にする。"""
+    text = ' '.join(text.split())
+    # 文の終わり = 「. 」の次が大文字。e.g. / i.e. のような略語では切らない。
+    m = _SENTENCE_END.search(text)
+    if m and 0 < m.start() < limit:
+        return text[:m.start() + 1]
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(' ', 1)[0].rstrip(',;:') + '…'
+
+
 def _cve_advisory(cve, kev_ids) -> dict:
     desc = next((d['value'] for d in cve.get('descriptions', []) if d.get('lang') == 'en'), '')
     return {
-        'id': cve['id'], 'aliases': [], 'summary': desc[:300],
+        'id': cve['id'], 'aliases': [], 'summary': _short(desc),
         'severity': _cvss_label(cve), 'fixed': [],
         'kev': bool(cve.get('cisaExploitAdd')) or cve['id'] in kev_ids,
         'url': NVD_PAGE + cve['id'],
