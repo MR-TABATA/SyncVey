@@ -1,6 +1,7 @@
 from django import template
 from asset_manager.eol_data import asset_eol_info, get_eol_status
 from asset_manager.resource_registry import PROVIDER_LABELS, get_icon
+from asset_manager.vulns import asset_vuln as _asset_vuln
 
 register = template.Library()
 
@@ -18,6 +19,12 @@ def asset_eol(asset):
     {'status', 'label', 'version', ...} or None when it cannot be judged.
     """
     return asset_eol_info(asset.asset_type, asset.raw_data)
+
+
+@register.filter
+def asset_vuln(asset):
+    """Known vulnerabilities (a VulnRecord) of the database engine an RDS Asset runs, or None."""
+    return _asset_vuln(asset)
 
 
 @register.filter

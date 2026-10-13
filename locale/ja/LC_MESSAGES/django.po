@@ -2377,3 +2377,21 @@ msgstr "脆弱性の記録"
 
 msgid "or"
 msgstr "または"
+
+msgid "Known vulnerabilities"
+msgstr "既知の脆弱性"
+
+msgid "None known"
+msgstr "既知のものなし"
+
+msgid "Show the list"
+msgstr "一覧を表示"
+
+msgid "Matched against the upstream version in NVD. AWS may have already fixed some of these in RDS."
+msgstr "NVD で、上流のこの版に対して照合した結果です。RDS 側で AWS がすでに直しているものも含まれることがあります。"
+
+msgid "Checked"
+msgstr "確認日"
+
+msgid "%(n)s known vulnerabilities · %(s)s"
+msgstr "既知の脆弱性 %(n)s 件 · %(s)s"

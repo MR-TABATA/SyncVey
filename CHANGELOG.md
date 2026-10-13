@@ -23,6 +23,16 @@ While the major version is `0`, minor releases may change behaviour.
   checked, and an OSV outage keeps the previous result rather than showing
   "no vulnerabilities". Dependencies are now unique per version, so two
   copies of one package (nested `node_modules`) are both kept.
+- **Known vulnerabilities for RDS PostgreSQL and MySQL engines.** The same
+  `VULN_REFRESH_ENABLED=true` job looks each engine version up in NVD (only the
+  product and version are sent; an optional `NVD_API_KEY` lifts NVD's rate
+  limit, otherwise it takes about 7 seconds per version). An instance shows a
+  badge in the resource list and a collapsible CVE list in its detail panel,
+  with severity, a link to NVD and a "known exploited" mark. The result is for
+  the upstream version, and the panel says AWS may already have fixed some of
+  it inside RDS. Aurora is skipped, since its versions don't match upstream.
+  The OSV and NVD lookups are independent: one being down keeps the other's
+  results and the previous records.
 
 - **More plugin seams, so a separately distributed plugin app can add a
   sign-in option or routes without the core importing it:** extra apps can be

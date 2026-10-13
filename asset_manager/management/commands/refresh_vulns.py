@@ -21,10 +21,12 @@ class Command(BaseCommand):
             ))
             return
         if not result['ok']:
-            self.stdout.write(self.style.ERROR("Failed: could not reach OSV.dev."))
+            self.stdout.write(self.style.ERROR("Failed: could not reach OSV.dev or NVD."))
             return
         self.stdout.write(self.style.SUCCESS(
             f"Checked {result['packages']} libraries: {result['vulnerable']} with known vulnerabilities"
             + (f", {result['failed']} failed" if result['failed'] else "")
+            + f". Checked {result['engines']} RDS engine versions: {result['engines_vulnerable']} with known vulnerabilities"
+            + (f", {result['engines_failed']} failed" if result['engines_failed'] else "")
             + "."
         ))

@@ -241,6 +241,8 @@ EOL_REFRESH_DYNAMIC = _env_bool('EOL_REFRESH_DYNAMIC', True)
 #   VULN_REFRESH_ENABLED=true で日次取得を有効化（オプトイン。既定は外部通信なし）。
 #   送るのはライブラリの (エコシステム, 名前, 版) だけ。
 VULN_REFRESH_ENABLED = _env_bool('VULN_REFRESH_ENABLED', False)
+#   NVD_API_KEY（任意）: RDS のエンジンを調べる NVD の速さ制限が緩くなる（無くても動く。1 版あたり約 7 秒）。
+NVD_API_KEY = os.getenv('NVD_API_KEY', '').strip()
 
 # ドリフト履歴の保持件数（Environment ごと）。スキャン／取込／S3同期のたびに
 # 差分ゼロでも1行積むため、未設定だとテーブルが無限に伸びる。0 以下で無制限。

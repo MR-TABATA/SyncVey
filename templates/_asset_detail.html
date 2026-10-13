@@ -81,6 +81,31 @@
 </div>
 {% endif %}
 
+{% with v=asset|asset_vuln %}{% if v %}
+<div class="rounded-xl border px-4 py-3 mb-5 {% if v.advisories %}{% if v.max_severity == 'CRITICAL' or v.max_severity == 'HIGH' %}bg-red-50 border-red-200{% else %}bg-amber-50 border-amber-200{% endif %}{% else %}bg-emerald-50 border-emerald-200{% endif %}">
+    <div class="flex items-center justify-between gap-3">
+        <p class="text-xs font-semibold flex items-center gap-1.5 {% if v.advisories %}{% if v.max_severity == 'CRITICAL' or v.max_severity == 'HIGH' %}text-red-700{% else %}text-amber-700{% endif %}{% else %}text-emerald-700{% endif %}"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>{% trans "Known vulnerabilities" %}</p>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-white {% if v.advisories %}{% if v.max_severity == 'CRITICAL' or v.max_severity == 'HIGH' %}text-red-700 border-red-200{% else %}text-amber-700 border-amber-200{% endif %}{% else %}text-emerald-700 border-emerald-200{% endif %}">{% if v.advisories %}{{ v.advisories|length }} · {{ v.max_severity }}{% else %}{% trans "None known" %}{% endif %}{% if v.has_kev %} · {% trans "Known exploited" %}{% endif %}</span>
+    </div>
+    {% if v.advisories %}
+    <details class="mt-2">
+        <summary class="cursor-pointer text-xs text-slate-600">{% trans "Show the list" %}</summary>
+        <ul class="mt-1 space-y-1 text-xs">
+            {% for a in v.advisories %}
+            <li class="flex flex-wrap gap-x-2">
+                <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-600 hover:underline">{{ a.id }}</a>
+                <span class="font-semibold text-slate-600">{{ a.severity }}</span>
+                {% if a.kev %}<span class="font-semibold text-red-600">{% trans "Known exploited" %}</span>{% endif %}
+                <span class="text-slate-600">{{ a.summary }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+    <p class="text-[11px] text-slate-400 mt-2">{% trans "Matched against the upstream version in NVD. AWS may have already fixed some of these in RDS." %} {% trans "Checked" %}: {{ v.checked_at|date:"Y-m-d" }}</p>
+</div>
+{% endif %}{% endwith %}
+
 {% if attrs %}
 <div class="mb-5">
     <p class="text-xs font-semibold text-slate-500 mb-2">{% trans "Attributes" %}</p>

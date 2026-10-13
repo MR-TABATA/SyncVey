@@ -230,6 +230,7 @@ SyncVey は完全セルフホスト型です。外部への送信通信は以下
 | `hooks.slack.com` | ドリフト検出時、または週次ブリーフィング | 送信 HTTPS | システム個別の Slack Webhook URL（オプトイン）。ブリーフィングは `DRIFT_DIGEST_ENABLED=true` も必要 |
 | `endoflife.date` | EOL データの日次取得 | 送信 HTTPS | **既定OFF** — `EOL_REFRESH_ENABLED=true` で有効化 |
 | `api.osv.dev`, `www.cisa.gov` | ロックファイルから取り込んだライブラリの脆弱性の日次確認 | 送信 HTTPS | **既定OFF** — `VULN_REFRESH_ENABLED=true` で有効化。送るのは（エコシステム・パッケージ名・版）だけ |
+| `services.nvd.nist.gov` | 同じ日次ジョブ: RDS の PostgreSQL / MySQL のエンジン版の既知の脆弱性 | 送信 HTTPS | **既定OFF** — 同じスイッチ。送るのは製品と版（CPE 名）だけ。任意の `NVD_API_KEY` で NVD の速さ制限が緩くなる |
 
 **EOL 取得について。** EOL 判定は内蔵データでオフライン動作します。
 `EOL_REFRESH_ENABLED=true` にすると、[endoflife.date](https://endoflife.date/) から最新データを
@@ -247,7 +248,12 @@ docker compose exec app python manage.py refresh_eol --force
 日次ジョブがそのライブラリを [OSV.dev](https://osv.dev/) で調べ、CISA の
 [悪用が確認された脆弱性（KEV）](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
 にも載っているものに印を付けます。送るのはエコシステム・パッケージ名・版だけで、組織・システム・
-リソースの名前は送りません。手で登録しただけのライブラリ（ロックファイルなし）は対象外です。手動実行:
+リソースの名前は送りません。手で登録しただけのライブラリ（ロックファイルなし）は対象外です。
+
+同じジョブが、**RDS の PostgreSQL / MySQL** のエンジン版も [NVD](https://nvd.nist.gov/) で調べます
+（Aurora は版が上流と一致しないので対象外）。結果は「上流のその版の既知の脆弱性」で、
+AWS が RDS 側ですでに直しているものも含まれることがあります（画面にもそう書いてあります）。
+`NVD_API_KEY` が無いと NVD は 30 秒に 5 回までなので、エンジン版 1 つあたり約 7 秒かかります。手動実行:
 
 ```bash
 docker compose exec app python manage.py refresh_vulns --force

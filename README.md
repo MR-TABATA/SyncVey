@@ -256,6 +256,7 @@ there is no telemetry or usage analytics.
 | `hooks.slack.com` | Drift detected, or the weekly drift briefing | Outbound HTTPS | Per-system Slack Webhook URL (opt-in); briefing also needs `DRIFT_DIGEST_ENABLED=true` |
 | `endoflife.date` | Daily EOL data refresh | Outbound HTTPS | **Off by default** — enable with `EOL_REFRESH_ENABLED=true` |
 | `api.osv.dev`, `www.cisa.gov` | Daily vulnerability check of the libraries you imported from lockfiles | Outbound HTTPS | **Off by default** — enable with `VULN_REFRESH_ENABLED=true`. Sends only (ecosystem, package name, version) |
+| `services.nvd.nist.gov` | Same daily job: known vulnerabilities of your RDS PostgreSQL / MySQL engine versions | Outbound HTTPS | **Off by default** — same switch. Sends only the product and version (a CPE name); optional `NVD_API_KEY` raises NVD's rate limit |
 
 **EOL refresh detail.** End-of-life detection works offline using built-in data.
 Set `EOL_REFRESH_ENABLED=true` to enable a daily job that pulls fresh data from
@@ -277,7 +278,14 @@ parsed in memory, the libraries are recorded, and the file is discarded. With
 [Known Exploited Vulnerabilities](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
 catalog. Only the ecosystem, package name and version are sent — no
 organization, system or resource names. Libraries you typed in by hand
-(without a lockfile) are not checked. To run it manually:
+(without a lockfile) are not checked.
+
+The same job also looks up the engine versions of your **RDS PostgreSQL and
+MySQL** instances in [NVD](https://nvd.nist.gov/) (Aurora is skipped: its
+versions don't match upstream). The result is "known vulnerabilities of the
+upstream version" — AWS may already have fixed some of them inside RDS, and the
+screen says so. Without an `NVD_API_KEY` NVD allows about 5 requests per 30
+seconds, so each engine version takes roughly 7 seconds. To run it manually:
 
 ```bash
 docker compose exec app python manage.py refresh_vulns --force
