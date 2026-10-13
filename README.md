@@ -41,12 +41,14 @@ I watched those spreadsheets rot.
 One day I asked the obvious question: we have tfstate, we have boto3 — why are we
 still doing this by hand?
 
-The other thing nagging at me was middleware EOL. We had a list of things to watch,
-but no alerts, no dashboard, nothing that pointed to a next action —
-just another spreadsheet quietly going stale.
+The other thing nagging at me was what runs *on* the infrastructure: middleware
+nearing end-of-life, and libraries with publicly known vulnerabilities. We had lists
+to watch, but no alerts, no dashboard, nothing tied to a specific system or
+environment — just more spreadsheets quietly going stale.
 
-So I built the tool I'd always wanted. Scheduled scans, drift detection, EOL alerts —
-in one place, self-hosted, with your data staying inside your own infrastructure.
+So I built the tool I'd always wanted. Scheduled scans, drift detection, EOL dates and
+known vulnerabilities — in one place, self-hosted, with your data staying inside your
+own infrastructure.
 
 ---
 
@@ -61,10 +63,14 @@ about reacting to rules, not giving you a browsable inventory. SyncVey sits in t
 as a self-hosted **web app**: a persistent **asset ledger** with a UI, **attribute-level
 drift** between your tfstate and live AWS — including resources created by hand in the
 console that `terraform plan` never sees — plus a layer none of the others touch:
-**per-environment application & middleware tracking with EOL alerts**. One
-`docker compose up`, and your data stays in your own infrastructure.
+**per-environment application & middleware tracking, with end-of-life dates and
+publicly known vulnerabilities side by side**. SyncVey is not a vulnerability
+scanner — it doesn't look inside your servers or containers. It reads what you tell it
+(a lockfile, a tfstate, your AWS account) and shows what is already publicly known
+about those versions. One `docker compose up`, and your data stays in your own
+infrastructure.
 
-| | tfstate drift | Detects console-made resources | Ledger + UI | App/middleware + EOL | Form factor |
+| | tfstate drift | Detects console-made resources | Ledger + UI | App/middleware + EOL + known vulns | Form factor |
 |---|:---:|:---:|:---:|:---:|---|
 | driftctl | ✅ | ✅ | ❌ | ❌ | CLI |
 | Steampipe | ⚠️ DIY | ✅ (query) | ⚠️ build it | ❌ | CLI + SQL |
@@ -89,10 +95,20 @@ console that `terraform plan` never sees — plus a layer none of the others tou
 | **Secret rotation drift** | Flag Secrets Manager secrets that *should* have rotated but didn't — rotation disabled, never run, or past the `SECRET_ROTATION_MAX_AGE_DAYS` limit (default 90). Graded on current state, so it surfaces even when nothing changed between two scans. Metadata only: the secret value is never read or stored |
 | **Drift briefing** | Optional weekly Slack rollup per system — severity counts, week-over-week trend, and the top risky changes with who made them (opt-in via `DRIFT_DIGEST_ENABLED`) |
 | **Command line** *(optional plugin)* | Drive scan, drift and export from a terminal or CI with `manage.py syncvey scan / drift / status / export` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
-| **Application tracking** | Record language, framework, deployment method, and dependencies per environment |
-| **EOL alerts** | Flag end-of-life middleware/runtimes (offline by default; optional daily refresh) |
+| **Application tracking** | Record language, framework, deployment method, and dependencies per environment — typed in, or imported from a lockfile |
+| **EOL alerts** | Flag end-of-life middleware and runtimes. RDS, EKS and Lambda are judged against **AWS's own support schedule**, in stages — *extended support (paid)* or *deprecated* before *past end-of-life*. Offline by default; optional daily refresh |
+| **Known vulnerabilities** | Import a lockfile (`requirements.txt`, `package-lock.json`, `composer.lock`, `Gemfile.lock`, `go.mod`) and see each library's publicly known vulnerabilities ([OSV.dev](https://osv.dev/)), marked when CISA lists them as exploited. RDS PostgreSQL/MySQL engine versions are matched in [NVD](https://nvd.nist.gov/). Severity, fixed versions and links — facts only. Off by default; only the package name and version leave your network |
 | **Architecture diagram** | Visualize resource relationships within an environment |
 | **Multi-account** | Register an IAM Role ARN per system to manage multiple AWS accounts |
+
+### What SyncVey does not do
+
+- It does not scan inside your servers or containers.
+- A lockfile is what you *meant* to deploy, which can differ from what runs.
+- RDS results are for the upstream version; AWS may have already patched some of it inside RDS.
+- It only knows *publicly known* vulnerabilities. "None known" is not "safe".
+- Configuration checks (public databases, encryption, open security groups) are a separate
+  matter, only partly covered by drift risk grading.
 
 ---
 
