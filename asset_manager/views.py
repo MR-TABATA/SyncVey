@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from functools import wraps
+from pathlib import Path
 
 from django.conf import settings as _settings
 from django.shortcuts import render, get_object_or_404, redirect
@@ -10,19 +11,24 @@ from django.db.utils import OperationalError, ProgrammingError
 from django.utils.text import slugify
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.utils.translation import gettext as _, gettext_lazy
-from django.http import HttpResponseBadRequest, HttpResponse, Http404
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+)
 from django.views.decorators.http import require_POST, require_GET
 from django.db import transaction
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
-from django.http import HttpResponseForbidden
 from django.utils import timezone
 from django.utils.timesince import timesince
 
 from .models import (
     Asset, System, Environment,
     Application, AppEnvConfig, AppDependency,
-    Organization, Membership, UserProfile, AuditLog,
+    Membership, UserProfile, AuditLog,
 )
 from .resource_registry import (
     PRIMARY_ASSET_TYPES,
@@ -1577,7 +1583,8 @@ def _create_aws_node(asset_type, label):
 
 
 def _generate_diagram_svg(env, assets):
-    import tempfile, base64
+    import base64
+    import tempfile
     from diagrams import Diagram, Cluster
 
     # スキップ対象・描画対象だけに絞る
@@ -1597,9 +1604,6 @@ def _generate_diagram_svg(env, assets):
     managed = [a for a in drawable if a.asset_type in _MANAGED_TYPES]
     ebss    = by_type.get('EBS', [])
     ec2s    = by_type.get('EC2', [])
-    others  = [a for a in drawable
-               if a.asset_type not in _VPC_TYPES | _LB_TYPES | _COMPUTE_TYPES
-               | _DB_TYPES | _MANAGED_TYPES | {'EBS'}]
 
     vpc_members: dict[int, list] = {}
     in_vpc: set[int] = set()
@@ -1954,12 +1958,16 @@ def password_change_view(request):
 @require_GET
 @htmx_login_required
 def totp_setup_view(request):
-    import pyotp, qrcode, io, base64
+    import base64
+    import io
+    import pyotp
+    import qrcode
+
     secret = pyotp.random_base32()
     request.session['totp_pending_secret'] = secret
 
     name   = request.user.email or request.user.username
-    uri    = pyotp.TOTP(secret).provisioning_uri(name=name, issuer_name='Cloud Asset Manager')
+    uri    = pyotp.TOTP(secret).provisioning_uri(name=name, issuer_name='SyncVey')
     buf    = io.BytesIO()
     qrcode.make(uri).save(buf, format='PNG')
     qr_b64 = base64.b64encode(buf.getvalue()).decode()
@@ -2041,10 +2049,13 @@ def account_delete_view(request):
 @require_POST
 @htmx_login_required
 def membership_update_view(request, membership_id):
-    target = get_object_or_404(Membership, pk=membership_id)
+    org = _get_user_org(request)
+    if org is None:
+        raise Http404
+    target = get_object_or_404(Membership, pk=membership_id, organization=org)
 
     try:
-        requester = Membership.objects.get(user=request.user, organization=target.organization)
+        requester = Membership.objects.get(user=request.user, organization=org)
     except Membership.DoesNotExist:
         return HttpResponseForbidden()
     if requester.role != Membership.Role.OWNER:
@@ -2230,11 +2241,7 @@ def sync_s3_state_view(request, environment_id):
 # Sample tfstate ライブラリ
 # ---------------------------------------------------------------------------
 
-from pathlib import Path
-from django.conf import settings as _dj_settings
-from django.http import FileResponse, Http404
-
-_SAMPLES_DIR = Path(_dj_settings.BASE_DIR) / 'fixtures' / 'tfstates' / 'aws'
+_SAMPLES_DIR = Path(_settings.BASE_DIR) / 'fixtures' / 'tfstates' / 'aws'
 
 # ファイル名 → (ja表示名, en表示名, 環境タイプ)
 # NOTE: サンプルは「seed に無いシステムを後から足す」用途。

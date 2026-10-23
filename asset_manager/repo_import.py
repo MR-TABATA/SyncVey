@@ -10,7 +10,6 @@
   トークンは api.github.com にしか送らず、エラー文にも出さない。
 - 見に行くファイルは、リポジトリ直下（または指定ディレクトリ）の、既知のロックファイルだけ。
 """
-import json
 import logging
 import re
 import urllib.error

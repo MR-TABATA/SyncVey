@@ -268,7 +268,13 @@ def _refresh_osv(pairs, kev_ids_loader):
                 logger.warning("OSV detail fetch failed for %s %s", name, version)
                 failed += 1
                 continue                      # 前回の結果を残す（空で上書きして「問題なし」にしない）
-        _store(eco, name, version, vulns, lambda v: build_record(eco, name, version, v, kev_ids))
+        _store(
+            eco,
+            name,
+            version,
+            vulns,
+            lambda v, e=eco, n=name, ver=version: build_record(e, n, ver, v, kev_ids),
+        )
         vulnerable += 1 if vulns else 0
     return True, vulnerable, failed
 

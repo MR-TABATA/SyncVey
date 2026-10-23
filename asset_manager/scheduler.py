@@ -10,7 +10,6 @@ django-apscheduler を使った定期 Boto3 スキャン。
 """
 
 import logging
-import os
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger

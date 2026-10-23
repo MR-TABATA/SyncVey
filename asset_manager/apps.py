@@ -7,7 +7,6 @@ class AssetManagerConfig(AppConfig):
     verbose_name = 'SyncVey'
 
     def ready(self):
-        import os
         from django.db.models.signals import pre_save, post_save, post_delete
         from .signals import handle_pre_save, handle_post_save, handle_post_delete
         from .models import Asset, System, Environment, Application, AppEnvConfig, AppDependency
