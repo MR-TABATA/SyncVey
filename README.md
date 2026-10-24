@@ -85,7 +85,7 @@ infrastructure.
 |---------|-------------|
 | **Asset ledger** | Inventory and search EC2, ECS, Lambda, RDS, DynamoDB, ElastiCache, EFS, EKS, S3, ALB, VPC, EBS, SNS, SQS, API Gateway, Secrets Manager, CloudFront, Route 53 resources — and more |
 | **AWS scan** | Auto-discover 18 resource types — compute, database, storage, network, messaging — in target accounts via AssumeRole |
-| **Terraform integration** | Import assets by uploading a tfstate file |
+| **Terraform / OpenTofu integration** | Import assets by uploading a tfstate file. OpenTofu state files use the same format and import the same way (encrypted OpenTofu state can't be read and is reported as such) |
 | **Drift detection** | Spot attribute-level differences between tfstate and live AWS state |
 | **Auto Scaling-aware drift** | Instances an Auto Scaling group launched or terminated are churn, not drift. SyncVey reads the `aws:autoscaling:groupName` tag it already scans — no extra API call or IAM — and keeps scale-out/in out of the drift count, shown transparently in their own section. Attribute changes on a persistent instance are still real drift. Toggle with `DRIFT_SUPPRESS_AUTOSCALING` |
 | **Deleted-resource detection** | A resource that vanishes from AWS is flagged in the ledger and reported as *removed* drift — the row is kept, not deleted, so you can still see what was there and when it went. Marking only happens for the regions and resource types that scanned cleanly, so a throttled API call or an expired credential can never be mistaken for a mass deletion. If the resource comes back, the flag clears itself. Auto Scaling scale-in counts as churn, not drift |

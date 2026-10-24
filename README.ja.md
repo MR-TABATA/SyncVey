@@ -55,7 +55,7 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 |------|------|
 | **資産台帳** | EC2 / ECS / Lambda / RDS / DynamoDB / ElastiCache / EFS / EKS / S3 / ALB / VPC / EBS / SNS / SQS / API Gateway / Secrets Manager / CloudFront / Route 53 ほかを一覧・検索 |
 | **AWSスキャン** | AssumeRole で対象アカウントの 18 種のリソース（コンピュート・DB・ストレージ・ネットワーク・メッセージング）を自動検出 |
-| **Terraform連携** | tfstate をアップロードして資産をインポート |
+| **Terraform / OpenTofu連携** | tfstate をアップロードして資産をインポート。OpenTofu の state も同じ形式で、同じように取り込める（暗号化した OpenTofu の state は読めないので、その旨を表示する） |
 | **ドリフト検知** | tfstate と AWS 実態の属性レベルの差分を検出 |
 | **Auto Scaling を考慮したドリフト** | Auto Scaling が起動/終了したインスタンスは「ドリフト」ではなく churn（増減）。既にスキャン済みの `aws:autoscaling:groupName` タグを読むだけ（追加のAPI呼び出しもIAMも不要）で、スケールアウト/インをドリフト件数から除外し、専用セクションに透過表示。永続インスタンスの属性変更は従来どおり本物のドリフト。`DRIFT_SUPPRESS_AUTOSCALING` で切替 |
 | **削除リソースの検出** | AWS から消えたリソースを台帳上で印付けし、*removed* ドリフトとして報告。行は削除せず残すので「何があって、いつ消えたか」を後から追える。判定はエラー無くスキャンできたリージョン・リソース種別に限定するため、API のスロットリングや資格情報切れを大量削除と取り違えることがない。再び現れれば印は自動的に外れる。Auto Scaling のスケールインは churn 扱いでドリフトに数えない |
