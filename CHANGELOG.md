@@ -8,6 +8,10 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-09
+
+SyncVey now reads `poetry.lock` and `yarn.lock` too, and a long list of known vulnerabilities folds instead of filling the screen. No migration.
+
 ### Added
 
 - **`poetry.lock` and `yarn.lock` (v1 and Berry) are read too.** They work
@@ -497,7 +501,8 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/MR-TABATA/SyncVey/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.7.0...v0.8.0
