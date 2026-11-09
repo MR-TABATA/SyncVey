@@ -67,7 +67,7 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 | **コマンドライン** *(オプションのプラグイン)* | `manage.py syncvey scan / drift / status / export` で、ターミナルや CI からスキャン・ドリフト確認・台帳の書き出しを実行 — ダッシュボードと同じエンジンを駆動。`drift --exit-code` はドリフトがあればビルドを失敗させ、`--format json` はパイプラインに渡せる。着脱可能で、アプリを外せばコマンドも消える |
 | **アプリ管理** | 言語・フレームワーク・デプロイ方式・依存パッケージを環境別に記録 — 手入力、または **アプリの GitHub リポジトリから毎日自動で追従**（ロックファイル） |
 | **EOLアラート** | サポート終了のミドルウェア/ランタイムを警告。RDS・EKS・Lambda は **AWS 自身のサポートスケジュール** で段階的に判定 — 「サポート終了」の前に「延長サポート中（有償）」「非推奨」を出す。既定オフライン・任意で日次更新 |
-| **既知の脆弱性** | アプリの GitHub リポジトリを一度登録すると、ロックファイル（`requirements.txt`・`package-lock.json`・`composer.lock`・`Gemfile.lock`・`go.mod`）を毎日取り込み直し、ライブラリごとの公開済みの脆弱性（[OSV.dev](https://osv.dev/)）を表示。CISA が悪用を確認したものには印が付く。RDS の PostgreSQL / MySQL と ElastiCache の Redis / Memcached は、エンジン版を [NVD](https://nvd.nist.gov/) で照合。重大度・修正版・リンク——事実だけを出す。既定オフで、外に出るのはパッケージ名と版だけ |
+| **既知の脆弱性** | アプリの GitHub リポジトリを一度登録すると、ロックファイル（`requirements.txt`・`poetry.lock`・`package-lock.json`・`yarn.lock`・`composer.lock`・`Gemfile.lock`・`go.mod`）を毎日取り込み直し、ライブラリごとの公開済みの脆弱性（[OSV.dev](https://osv.dev/)）を表示。CISA が悪用を確認したものには印が付く。RDS の PostgreSQL / MySQL と ElastiCache の Redis / Memcached は、エンジン版を [NVD](https://nvd.nist.gov/) で照合。重大度・修正版・リンク——事実だけを出す。既定オフで、外に出るのはパッケージ名と版だけ |
 | **構成図** | 環境内のリソース関係を可視化 |
 | **マルチアカウント** | システムごとに IAM Role ARN を登録し複数 AWS アカウントを管理 |
 
@@ -276,7 +276,7 @@ docker compose exec app python manage.py refresh_eol --force
 ```
 
 **脆弱性の確認について。** 「アプリ / ミドルウェア」画面の各環境に「ロックファイルを取り込む」ボタンがあります。
-`requirements.txt` / `package-lock.json` / `composer.lock` / `Gemfile.lock` / `go.mod` を渡すと、
+`requirements.txt` / `poetry.lock` / `package-lock.json` / `yarn.lock` / `composer.lock` / `Gemfile.lock` / `go.mod` を渡すと、
 メモリ上で解析してライブラリを台帳に記録し、ファイルは捨てます。`VULN_REFRESH_ENABLED=true` にすると、
 日次ジョブがそのライブラリを [OSV.dev](https://osv.dev/) で調べ、CISA の
 [悪用が確認された脆弱性（KEV）](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
@@ -286,7 +286,7 @@ docker compose exec app python manage.py refresh_eol --force
 手でアップロードしたロックファイルは、翌日には古くなります。だから入口は、アプリの **GitHub リポジトリ** です。環境の下で
 リポジトリの URL（モノレポなら `/tree/<ブランチ>/<フォルダ>` の URL）を入れて「登録して取り込む」を押すと、以後は
 SyncVey が **毎日（03:30）、ロックファイルを取り込み直します**（`manage.py refresh_repos --force` でも実行できます）。対象は直下の
-`requirements.txt`・`package-lock.json`・`composer.lock`・`Gemfile.lock`・`go.mod` で、人が何もしなくても、ライブラリの一覧が
+`requirements.txt`・`poetry.lock`・`package-lock.json`・`yarn.lock`・`composer.lock`・`Gemfile.lock`・`go.mod` で、人が何もしなくても、ライブラリの一覧が
 リポジトリに追従します。画面には最終同期の日時が出て、同期に失敗したときは、黙らずにそう表示し、最後に成功した一覧を残します。
 ステージング環境は、別のブランチを指せます。通信先は `api.github.com` だけで、入れた URL はそのまま取りに行かず、owner・
 リポジトリ・フォルダに分けて使います。非公開リポジトリは、読み取り専用のトークン（fine-grained の *Contents: Read-only*）を

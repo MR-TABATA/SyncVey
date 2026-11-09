@@ -8,6 +8,27 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+### Added
+
+- **`poetry.lock` and `yarn.lock` (v1 and Berry) are read too.** They work
+  everywhere the other lockfiles do: *Import lockfile*, the daily repository
+  sync (top-level files), and the known-vulnerability check. `poetry.lock` is
+  checked as PyPI, `yarn.lock` as npm — the same OSV ecosystems as before, so
+  nothing new is sent. Only packages that came from a registry are read:
+  git, file, link, GitHub-shorthand, workspace and patched entries in
+  `yarn.lock`, and `poetry.lock` packages with a `[package.source]` (git, a
+  path, a URL or a non-PyPI index), are skipped and counted, because their
+  version need not match the registry's and would give false matches. An
+  aliased npm dependency is counted under the real package it resolves to.
+
+### Fixed
+
+- **A fetched file that starts with `[` is no longer dropped as a directory
+  listing unless it really is one.** The repository sync treated any body
+  starting with `[` as GitHub's directory listing (a JSON array); a
+  `poetry.lock` that begins with `[[package]]` (TOML) would have been silently
+  skipped. It now checks that the body parses as a JSON array.
+
 ## [0.9.1] — 2026-10-23
 
 Internal code health, security hardening, and branding consistency updates.

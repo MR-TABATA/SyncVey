@@ -82,6 +82,31 @@ def _client(org, username='u'):
     return c
 
 
+class TestFetchDirectoryListingGuess:
+    """本文が `[` で始まるとき: JSON の配列（ディレクトリの一覧）だけを「無い」と見なす。"""
+
+    @staticmethod
+    def _fetch(body):
+        urlopen, _ = _repo({'poetry.lock': body})
+        with mock.patch('urllib.request.urlopen', urlopen):
+            return repo_import._fetch('o', 'r', None, 'poetry.lock')
+
+    def test_a_json_array_is_a_directory_listing(self):
+        assert self._fetch(b'[{"name": "x"}]') is None
+        assert self._fetch(b'  \n[]') is None                     # 先頭の空白と、空の配列
+
+    def test_toml_that_starts_with_a_bracket_is_the_file(self):
+        body = b'[[package]]\nname = "a"\nversion = "1"\n'
+        assert self._fetch(body) == body
+
+    def test_broken_json_is_returned_to_the_parser(self):
+        assert self._fetch(b'[{"name":') == b'[{"name":'
+
+    def test_deeply_nested_input_does_not_raise_a_recursion_error(self):
+        deep = b'[' * 100000 + b']' * 100000
+        assert self._fetch(deep) == deep
+
+
 class TestImportFromRepo:
     def test_imports_every_lockfile_found_at_the_top_level(self):
         _, cfg = _make_cfg()
@@ -93,7 +118,17 @@ class TestImportFromRepo:
         assert [(f['name'], f['ecosystem'], f['total']) for f in result['files']] == [
             ('requirements.txt', 'PyPI', 2), ('go.mod', 'Go', 1)]
         assert set(cfg.dependencies.values_list('ecosystem', flat=True)) == {'PyPI', 'Go'}
-        assert len(seen) == 5                                       # 5 種類の名前を、1 回ずつ見に行く
+        assert len(seen) == 7                                       # 7 種類の名前を、1 回ずつ見に行く
+
+    def test_poetry_and_yarn_lockfiles_are_imported_too(self):
+        _, cfg = _make_cfg()
+        poetry = b'[[package]]\nname = "example-lib"\nversion = "1.2.3"\n'
+        yarn = b'# yarn lockfile v1\n\n\nexample-core@^1.0.0:\n  version "1.0.7"\n'
+        urlopen, _seen = _repo({'poetry.lock': poetry, 'yarn.lock': yarn})
+        with mock.patch('urllib.request.urlopen', urlopen):
+            result = import_from_repo(cfg, 'https://github.com/o/r')
+        assert [(f['name'], f['ecosystem'], f['total']) for f in result['files']] == [
+            ('poetry.lock', 'PyPI', 1), ('yarn.lock', 'npm', 1)]
 
     def test_only_the_github_api_is_called_and_only_with_owner_repo_path(self):
         _, cfg = _make_cfg()

@@ -1416,7 +1416,7 @@ def _repo_error_text(code):
     """GitHub から取れなかった理由（RepoError の種類）を、画面に出す文言にする。"""
     messages_ = {
         'url':     _("Enter a GitHub repository URL, e.g. https://github.com/owner/repo"),
-        'none':    _("No lockfile was found in that repository (looked for requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."),
+        'none':    _("No lockfile was found in that repository (looked for requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."),
         'auth':    _("GitHub refused the request. For a private repository, set a read-only token in SYNCVEY_GITHUB_TOKEN."),
         'rate':    _("GitHub's rate limit was reached. Try again later, or set SYNCVEY_GITHUB_TOKEN."),
         'size':    _("A file in that repository is too large (limit 5 MB)."),
@@ -1472,7 +1472,7 @@ def dependency_import_view(request, config_id):
         result = import_lockfile(cfg, upload.name, upload.read())
     except LockfileError:
         return _render_all_applications(request, error=_(
-            "Could not read this file. Supported: requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod."))
+            "Could not read this file. Supported: requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod."))
     return _render_all_applications(request, message=_(
         "Imported %(total)d libraries from %(name)s: %(added)d added, %(removed)d removed.") % {
         'total': result['total'], 'name': upload.name, 'added': result['added'], 'removed': result['removed']})

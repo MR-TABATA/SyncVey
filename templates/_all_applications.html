@@ -193,7 +193,7 @@
                                                        class="flex-1 min-w-[16rem] px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 font-mono">
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 font-medium">{% if cfg.repo_url %}{% trans "Sync now" %}{% else %}{% trans "Register and import" %}{% endif %}</button>
                                             </form>
-                                            <p class="mt-1 text-slate-400">{% trans "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN." %}</p>
+                                            <p class="mt-1 text-slate-400">{% trans "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN." %}</p>
                                             {# 補助: リポジトリに無いときだけ、手元のファイルを 1 回だけ取り込む。畳んでおく。 #}
                                             <details class="mt-2">
                                                 <summary class="cursor-pointer text-slate-400 hover:text-slate-600">{% trans "Import a file once (manual)" %}</summary>

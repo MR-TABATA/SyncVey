@@ -2323,8 +2323,8 @@ msgstr "すべてのリソースを表示"
 msgid "The file is too large (limit 5 MB)."
 msgstr "ファイルが大きすぎます（上限 5 MB）。"
 
-msgid "Could not read this file. Supported: requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod."
-msgstr "このファイルは読めませんでした。対応: requirements.txt、package-lock.json、composer.lock、Gemfile.lock、go.mod。"
+msgid "Could not read this file. Supported: requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod."
+msgstr "このファイルは読めませんでした。対応: requirements.txt、poetry.lock、package-lock.json、yarn.lock、composer.lock、Gemfile.lock、go.mod。"
 
 msgid "Imported %(total)d libraries from %(name)s: %(added)d added, %(removed)d removed."
 msgstr "%(name)s から %(total)d 件のライブラリを取り込みました（追加 %(added)d・削除 %(removed)d）。"
@@ -2392,8 +2392,8 @@ msgstr "既知の脆弱性 %(n)s 件 · %(s)s"
 msgid "Enter a GitHub repository URL, e.g. https://github.com/owner/repo"
 msgstr "GitHub のリポジトリの URL を入れてください（例: https://github.com/owner/repo）"
 
-msgid "No lockfile was found in that repository (looked for requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."
-msgstr "そのリポジトリにロックファイルが見つかりませんでした（直下の requirements.txt、package-lock.json、composer.lock、Gemfile.lock、go.mod を探しました）。非公開リポジトリには SYNCVEY_GITHUB_TOKEN が要ります。"
+msgid "No lockfile was found in that repository (looked for requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod at the top level). For a private repository, SYNCVEY_GITHUB_TOKEN is needed."
+msgstr "そのリポジトリにロックファイルが見つかりませんでした（直下の requirements.txt、poetry.lock、package-lock.json、yarn.lock、composer.lock、Gemfile.lock、go.mod を探しました）。非公開リポジトリには SYNCVEY_GITHUB_TOKEN が要ります。"
 
 msgid "GitHub refused the request. For a private repository, set a read-only token in SYNCVEY_GITHUB_TOKEN."
 msgstr "GitHub に断られました。非公開リポジトリは、読み取り専用のトークンを SYNCVEY_GITHUB_TOKEN に設定してください。"
@@ -2428,8 +2428,8 @@ msgstr "今すぐ同期"
 msgid "Register and import"
 msgstr "登録して取り込む"
 
-msgid "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, package-lock.json, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN."
-msgstr "GitHub のリポジトリ（または /tree/ブランチ/フォルダ）を登録すると、そのロックファイル（requirements.txt・package-lock.json・composer.lock・Gemfile.lock・go.mod）を毎日取り込み直します。非公開リポジトリは、読み取り専用のトークンを SYNCVEY_GITHUB_TOKEN に設定してください。"
+msgid "Register a GitHub repository (or a /tree/branch/folder) and its lockfiles — requirements.txt, poetry.lock, package-lock.json, yarn.lock, composer.lock, Gemfile.lock, go.mod — are re-imported every day. Private repositories need a read-only token in SYNCVEY_GITHUB_TOKEN."
+msgstr "GitHub のリポジトリ（または /tree/ブランチ/フォルダ）を登録すると、そのロックファイル（requirements.txt・poetry.lock・package-lock.json・yarn.lock・composer.lock・Gemfile.lock・go.mod）を毎日取り込み直します。非公開リポジトリは、読み取り専用のトークンを SYNCVEY_GITHUB_TOKEN に設定してください。"
 
 msgid "Import a file once (manual)"
 msgstr "ファイルを1回だけ取り込む（手動）"

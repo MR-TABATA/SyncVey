@@ -10,6 +10,7 @@
   トークンは api.github.com にしか送らず、エラー文にも出さない。
 - 見に行くファイルは、リポジトリ直下（または指定ディレクトリ）の、既知のロックファイルだけ。
 """
+import json
 import logging
 import re
 import urllib.error
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = 15
 _USER_AGENT = "SyncVey-RepoImport/1.0 (+https://github.com/MR-TABATA/SyncVey)"
 # リポジトリ直下で探すロックファイル（lockfiles.parse が読めるもの）
-LOCKFILE_NAMES = ('requirements.txt', 'package-lock.json', 'composer.lock', 'Gemfile.lock', 'go.mod')
+LOCKFILE_NAMES = ('requirements.txt', 'poetry.lock', 'package-lock.json', 'yarn.lock', 'composer.lock', 'Gemfile.lock', 'go.mod')
 
 _NAME = r'[A-Za-z0-9_.-]+'
 _URL = re.compile(
@@ -82,8 +83,12 @@ def _fetch(owner, repo, ref, path):
         raise RepoError('network')
     if len(body) > MAX_BYTES:
         raise RepoError('size')
-    if body.lstrip()[:1] == b'[':          # 同じ名前のディレクトリだった（一覧が返る）
-        return None
+    if body.lstrip()[:1] == b'[':          # 同じ名前のディレクトリだった（JSON の配列＝一覧が返る）
+        try:
+            if isinstance(json.loads(body), list):
+                return None
+        except (ValueError, RecursionError):
+            pass                           # poetry.lock のように `[[package]]` で始まる TOML は、ロックファイル。深くネストした入力は RecursionError
     return body
 
 

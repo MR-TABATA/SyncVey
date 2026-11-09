@@ -97,7 +97,7 @@ infrastructure.
 | **Command line** *(optional plugin)* | Drive scan, drift and export from a terminal or CI with `manage.py syncvey scan / drift / status / export` — the same engine the dashboard uses. `drift --exit-code` fails the build on any drift; `--format json` feeds a pipeline. Detachable — remove the app and the command disappears |
 | **Application tracking** | Record language, framework, deployment method, and dependencies per environment — typed in, or **followed daily from the application's GitHub repository** (lockfiles) |
 | **EOL alerts** | Flag end-of-life middleware and runtimes. RDS, EKS and Lambda are judged against **AWS's own support schedule**, in stages — *extended support (paid)* or *deprecated* before *past end-of-life*. Offline by default; optional daily refresh |
-| **Known vulnerabilities** | Register the application's GitHub repository once and its lockfiles (`requirements.txt`, `package-lock.json`, `composer.lock`, `Gemfile.lock`, `go.mod`) are re-imported every day; each library's publicly known vulnerabilities ([OSV.dev](https://osv.dev/)) are shown, marked when CISA lists them as exploited. RDS PostgreSQL/MySQL and ElastiCache Redis/Memcached engine versions are matched in [NVD](https://nvd.nist.gov/). Severity, fixed versions and links — facts only. Off by default; only the package name and version leave your network |
+| **Known vulnerabilities** | Register the application's GitHub repository once and its lockfiles (`requirements.txt`, `poetry.lock`, `package-lock.json`, `yarn.lock`, `composer.lock`, `Gemfile.lock`, `go.mod`) are re-imported every day; each library's publicly known vulnerabilities ([OSV.dev](https://osv.dev/)) are shown, marked when CISA lists them as exploited. RDS PostgreSQL/MySQL and ElastiCache Redis/Memcached engine versions are matched in [NVD](https://nvd.nist.gov/). Severity, fixed versions and links — facts only. Off by default; only the package name and version leave your network |
 | **Architecture diagram** | Visualize resource relationships within an environment |
 | **Multi-account** | Register an IAM Role ARN per system to manage multiple AWS accounts |
 
@@ -310,7 +310,7 @@ docker compose exec app python manage.py refresh_eol --force
 
 **Vulnerability check detail.** On the *Applications & Middleware* screen, each
 environment has an *Import lockfile* button. Upload `requirements.txt`,
-`package-lock.json`, `composer.lock`, `Gemfile.lock` or `go.mod`: the file is
+`poetry.lock`, `package-lock.json`, `yarn.lock`, `composer.lock`, `Gemfile.lock` or `go.mod`: the file is
 parsed in memory, the libraries are recorded, and the file is discarded. With
 `VULN_REFRESH_ENABLED=true`, a daily job looks those libraries up on
 [OSV.dev](https://osv.dev/) and flags the ones also listed in CISA's
@@ -323,8 +323,8 @@ A lockfile you upload by hand goes stale the day after, so the way in is the
 application's **GitHub repository**: under an environment, enter the repository URL
 (or a `/tree/<branch>/<folder>` URL for a monorepo) and press *Register and
 import*. From then on SyncVey **re-imports the lockfiles every day** (03:30; also
-`manage.py refresh_repos --force`) — `requirements.txt`, `package-lock.json`,
-`composer.lock`, `Gemfile.lock`, `go.mod` at the top level — so the library list
+`manage.py refresh_repos --force`) — `requirements.txt`, `poetry.lock`, `package-lock.json`,
+`yarn.lock`, `composer.lock`, `Gemfile.lock`, `go.mod` at the top level — so the library list
 follows the repository without anyone touching it. The screen shows when it last
 synced, and if a sync fails it says so and keeps the last good list rather than
 going quiet. A stage environment can point at another branch. It only ever talks
