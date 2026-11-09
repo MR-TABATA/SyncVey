@@ -21,6 +21,12 @@ While the major version is `0`, minor releases may change behaviour.
   version need not match the registry's and would give false matches. An
   aliased npm dependency is counted under the real package it resolves to.
 
+- **A long list of advisories folds instead of filling the screen.** A
+  library with many known vulnerabilities (an old Django: 66) listed every
+  advisory when opened. Now the five most severe are shown and the rest sit
+  behind "Show N more (lower severity)". Lists of eight or fewer are shown in
+  full. The same on an RDS / ElastiCache engine's detail page.
+
 ### Fixed
 
 - **A fetched file that starts with `[` is no longer dropped as a directory

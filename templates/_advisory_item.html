@@ -1,0 +1,7 @@
+{% load i18n %}<li class="flex flex-wrap gap-x-2">
+    <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-600 hover:underline">{{ a.id }}</a>
+    <span class="font-semibold text-slate-600">{{ a.severity }}</span>
+    {% if a.kev %}<span class="font-semibold text-red-600">{% trans "Known exploited" %}</span>{% endif %}
+    <span class="text-slate-600">{{ a.summary }}</span>
+    {% if show_fixed and a.fixed %}<span class="text-slate-400">{% trans "Fixed in" %}: {{ a.fixed|join:", " }}</span>{% endif %}
+</li>

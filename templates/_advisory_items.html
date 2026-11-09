@@ -1,0 +1,14 @@
+{% load i18n %}{% comment %}
+アドバイザリの <li> を並べる（呼び出し側の <ul> の中に置く）。重大度の高い順に並んだ advisories を受け取る。
+8 件を超えるときは、上位 5 件だけ見せ、残りは「ほか N 件」に畳む（古い Django の 66 件など、長い一覧が画面を埋めないように）。
+8 件以下は、畳まずに全件。show_fixed を渡すと「修正版」も出す。
+{% endcomment %}{% with total=advisories|length %}{% if total > 8 %}{% for a in advisories|slice:":5" %}{% include "_advisory_item.html" %}{% endfor %}
+<li>
+    <details>
+        <summary class="cursor-pointer text-slate-500">{% blocktrans with n=total|add:"-5" %}Show {{ n }} more (lower severity){% endblocktrans %}</summary>
+        <ul class="mt-1 space-y-1">
+            {% for a in advisories|slice:"5:" %}{% include "_advisory_item.html" %}{% endfor %}
+        </ul>
+    </details>
+</li>
+{% else %}{% for a in advisories %}{% include "_advisory_item.html" %}{% endfor %}{% endif %}{% endwith %}

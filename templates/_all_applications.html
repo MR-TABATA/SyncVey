@@ -131,15 +131,7 @@
                                                                 {% if dep.vuln.has_kev %}<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white">{% trans "Known exploited" %}</span>{% endif %}
                                                             </summary>
                                                             <ul class="px-3 pb-2 pt-1 space-y-1 text-xs bg-white/70">
-                                                                {% for a in dep.vuln.advisories %}
-                                                                <li class="flex flex-wrap gap-x-2">
-                                                                    <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-600 hover:underline">{{ a.id }}</a>
-                                                                    <span class="font-semibold text-slate-600">{{ a.severity }}</span>
-                                                                    {% if a.kev %}<span class="font-semibold text-red-600">{% trans "Known exploited" %}</span>{% endif %}
-                                                                    <span class="text-slate-600">{{ a.summary }}</span>
-                                                                    {% if a.fixed %}<span class="text-slate-400">{% trans "Fixed in" %}: {{ a.fixed|join:", " }}</span>{% endif %}
-                                                                </li>
-                                                                {% endfor %}
+                                                                {% include "_advisory_items.html" with advisories=dep.vuln.advisories show_fixed=True %}
                                                             </ul>
                                                         </details>
                                                         {% endfor %}

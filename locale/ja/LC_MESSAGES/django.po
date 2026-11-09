@@ -2445,3 +2445,8 @@ msgstr "最終同期"
 
 msgid "Last sync error"
 msgstr "最後の同期エラー"
+
+#: templates/_advisory_items.html
+#, python-format
+msgid "Show %(n)s more (lower severity)"
+msgstr "ほか %(n)s 件を表示（重大度の低いもの）"
