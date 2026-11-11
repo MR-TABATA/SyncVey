@@ -77,6 +77,7 @@ class TestCliStandalone(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             key_file = Path(td) / "test_secret.key"
             with mock.patch.dict(os.environ, {"SYNCVEY_SECRET_KEY_FILE": str(key_file)}, clear=False):
+                os.environ.pop("SECRET_KEY", None)
                 # First call generates key file with 0600
                 k1 = _get_django_secret_key()
                 self.assertTrue(key_file.exists())
