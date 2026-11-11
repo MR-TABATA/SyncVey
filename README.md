@@ -18,17 +18,17 @@ Spin it up with a single `docker compose up`.
 **Dashboard** — a hero-signal row answers what's happening (drift / EOL),
 whether it's urgent (trend vs the last scan, freshness), and what to do next
 
-![SyncVey Dashboard](docs/screenshots/dashboard-hero-en.png)
+![SyncVey Dashboard](https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docs/screenshots/dashboard-hero-en.png)
 
 **Drift report** — attribute-level diff between tfstate and actual AWS state
 
-![SyncVey Drift report](docs/screenshots/drift-en.png)
+![SyncVey Drift report](https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docs/screenshots/drift-en.png)
 
 **Drift history** — drift trend over time, with the field-level diff for each snapshot
 
-![SyncVey Drift history](docs/screenshots/drift-history-en.png)
+![SyncVey Drift history](https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docs/screenshots/drift-history-en.png)
 
-![SyncVey Drift snapshot detail](docs/screenshots/drift-snapshot-en.png)
+![SyncVey Drift snapshot detail](https://raw.githubusercontent.com/MR-TABATA/SyncVey/main/docs/screenshots/drift-snapshot-en.png)
 
 ---
 
