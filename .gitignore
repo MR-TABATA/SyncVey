@@ -14,6 +14,7 @@ build/
 # Django
 *.log
 db.sqlite3
+secret.key
 media/
 
 # ========================

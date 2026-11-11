@@ -98,11 +98,35 @@ SyncVey は AWS リソースを **システム → 環境 → 資産** の階層
 
 ## セットアップ
 
-### 前提条件
+### uv / pipx で即座に起動（Docker 不要）
+
+[uv](https://docs.astral.sh/uv/) がある場合（推奨）:
+
+```bash
+uvx syncvey
+```
+
+または `pipx`:
+
+```bash
+pipx run syncvey
+```
+
+ローカルで SyncVey が起動し、データベースのマイグレーションと初期デモデータのシードが行われ、ブラウザで `http://127.0.0.1:8000/` が開きます。OS のアプリデータフォルダ内に隔離された SQLite データベースを自動作成するため、Docker や外部データベースの準備は一切不要です。
+
+ログイン情報:
+- **アプリ（資産台帳）:** `tabata_hiroshi` / `Passw0rd!`
+- **Django 管理画面:** `admin` / `admin`（`/admin/`）
+
+---
+
+### Docker Compose で起動
+
+#### 前提条件
 
 - Docker / Docker Compose
 
-### コードを取得する
+#### コードを取得する
 
 ```bash
 git clone https://github.com/MR-TABATA/SyncVey
@@ -338,10 +362,28 @@ SyncVey は JSON REST API ではなく、htmx ベースのサーバーサイド�
 
 ## コマンドライン *(オプションのプラグイン)*
 
-`syncvey_cli` プラグインは `syncvey` 管理コマンドを追加し、オペレーターや CI
+`syncvey_cli` プラグインは `syncvey` コマンドを追加し、オペレーターや CI
 パイプラインが Web UI を開かずにスキャン実行とドリフト確認をできるようにする。
 駆動するのはダッシュボードと同じスキャン/ドリフトのエンジンなので、「何をドリフト
 とみなすか」で両者が食い違うことはない。
+
+`uvx` で直接実行できます（Docker もリポジトリ clone も不要）:
+
+```bash
+# 現在のドリフトを表示。ドリフトがあればビルドを失敗させる（CI ゲート）
+uvx syncvey drift --exit-code
+
+# パイプライン向けの JSON 出力
+uvx syncvey drift --format json
+
+# システム / 環境一覧を表示
+uvx syncvey status
+
+# 資産台帳を JSON でエクスポート
+uvx syncvey export --format json -o ledger.json
+```
+
+または起動中の Docker Compose コンテナ内から実行:
 
 ```bash
 # ライブ AWS スキャンを実行しドリフトのスナップショットを記録（全システム or 1つ）

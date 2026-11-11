@@ -7,3 +7,4 @@ pyotp
 qrcode[pil]
 boto3
 django-apscheduler
+cryptography

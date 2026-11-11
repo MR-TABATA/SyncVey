@@ -128,11 +128,35 @@ infrastructure.
 
 ## Getting started
 
-### Prerequisites
+### Instant start with uv / pipx (No Docker required)
+
+If you have [uv](https://docs.astral.sh/uv/) (recommended):
+
+```bash
+uvx syncvey
+```
+
+Or with `pipx`:
+
+```bash
+pipx run syncvey
+```
+
+This starts SyncVey locally, applies database migrations, seeds initial demo data, and opens your browser at `http://127.0.0.1:8000/`. It stores data in an isolated SQLite database in your OS application data directory — zero Docker or external database required.
+
+Log in with:
+- **App (asset ledger):** `tabata_hiroshi` / `Passw0rd!`
+- **Django Admin:** `admin` / `admin` (at `/admin/`)
+
+---
+
+### With Docker Compose
+
+#### Prerequisites
 
 - Docker and Docker Compose
 
-### Get the code
+#### Get the code
 
 ```bash
 git clone https://github.com/MR-TABATA/SyncVey
@@ -382,10 +406,28 @@ Full route list: [asset_manager/urls.py](asset_manager/urls.py)
 
 ## Command line *(optional plugin)*
 
-The `syncvey_cli` plugin adds a `syncvey` management command so an operator — or
+The `syncvey_cli` plugin adds a `syncvey` command so an operator — or
 a CI pipeline — can trigger a scan and read drift without opening the web UI. It
 drives the same scan/drift engine the dashboard does, so it can never disagree
 about what counts as drift.
+
+You can run it directly via `uvx` (no Docker or clone required):
+
+```bash
+# Print current drift; --exit-code fails the build on any drift (CI gate)
+uvx syncvey drift --exit-code
+
+# Machine-readable output for pipelines
+uvx syncvey drift --format json
+
+# List systems and environments
+uvx syncvey status
+
+# Export the asset ledger
+uvx syncvey export --format json -o ledger.json
+```
+
+Or from inside a running Docker Compose container:
 
 ```bash
 # Run a live AWS scan and record a drift snapshot (all systems, or one)

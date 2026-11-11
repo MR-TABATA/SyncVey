@@ -8,6 +8,19 @@ While the major version is `0`, minor releases may change behaviour.
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-11-11
+
+SyncVey can now be run directly via `uvx syncvey` / `pipx run syncvey` with zero Docker or PostgreSQL setup, in addition to supporting standalone CLI scans, drift checks, and exports.
+
+### Added
+
+- **Standalone CLI & Web UI execution via `uvx syncvey` / `pipx run syncvey`**:
+  - Run SyncVey without Docker or PostgreSQL using a single command (`uvx syncvey`).
+  - Automatically creates and manages isolated SQLite storage and secret keys in the standard OS application data directory (`~/Library/Application Support/syncvey` on macOS, `$XDG_DATA_HOME/syncvey` on Linux, `%APPDATA%/syncvey` on Windows).
+  - Automatically applies migrations and seeds initial sample systems, environments, and users on first run, opening the browser automatically.
+  - Supports both web server launch and direct CLI commands (`uvx syncvey scan / drift / status / export`) with CI-ready exit codes.
+  - Added PEP 621 `pyproject.toml` packaging all core apps, plugins, templates, static assets, and locale catalogs under the `syncvey` package.
+
 ## [0.10.0] — 2026-11-09
 
 SyncVey now reads `poetry.lock` and `yarn.lock` too, and a long list of known vulnerabilities folds instead of filling the screen. No migration.
@@ -501,7 +514,8 @@ where the surface is stable enough to pin a version to.
   (#20)
 - Configuration-driven documentation consistency checker (#19)
 
-[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/MR-TABATA/SyncVey/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/MR-TABATA/SyncVey/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/MR-TABATA/SyncVey/compare/v0.8.0...v0.9.0

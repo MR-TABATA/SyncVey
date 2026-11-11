@@ -19,6 +19,12 @@ from django.core.exceptions import ImproperlyConfigured
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# wheel パッケージ内マッピングとリポジトリ開発環境の両方で templates / locale / static を解決
+_PKG_DIR = BASE_DIR
+_TEMPLATES_DIR = _PKG_DIR / 'templates' if (_PKG_DIR / 'templates').exists() else BASE_DIR / 'templates'
+_LOCALE_DIR = _PKG_DIR / 'locale' if (_PKG_DIR / 'locale').exists() else BASE_DIR / 'locale'
+_STATIC_DIR = _PKG_DIR / 'static' if (_PKG_DIR / 'static').exists() else BASE_DIR / 'static'
+
 
 def _env_bool(key, default=False):
     return os.getenv(key, str(default)).strip().lower() in ('1', 'true', 'yes', 'on')
@@ -36,7 +42,71 @@ DEBUG = _env_bool('DEBUG', False)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 _INSECURE_SECRET_KEY = 'django-insecure-change-me-in-production'  # nosec B105 - 意図的プレースホルダ（本番では起動拒否）
-SECRET_KEY = os.getenv('SECRET_KEY', _INSECURE_SECRET_KEY)
+
+
+def _get_django_secret_key() -> str:
+    """Load or generate a secret key from environment or secret.key file."""
+    if 'SECRET_KEY' in os.environ:
+        return os.environ['SECRET_KEY']
+
+    # 本番（DEBUG=False）で SYNCVEY_SECRET_KEY_FILE が明示されていない場合、
+    # コンテナ内の一時ファイルに頼らず環境変数 SECRET_KEY の設定を必須とする
+    if not DEBUG and not _is_testing and 'SYNCVEY_SECRET_KEY_FILE' not in os.environ:
+        return _INSECURE_SECRET_KEY
+
+    key_path_str = os.environ.get('SYNCVEY_SECRET_KEY_FILE')
+    if not key_path_str:
+        db_path_str = os.environ.get('SYNCVEY_DB_PATH')
+        if db_path_str and not str(db_path_str).startswith(':memory:'):
+            key_path_str = str(Path(db_path_str).parent / 'secret.key')
+        else:
+            key_path_str = str(BASE_DIR / 'secret.key')
+
+    key_path = Path(key_path_str)
+    if key_path.is_file():
+        # Enforce 0600 permission on POSIX systems
+        if os.name == 'posix':
+            try:
+                mode = os.stat(key_path).st_mode & 0o777
+                if mode & 0o077:
+                    os.chmod(key_path, 0o600)
+            except OSError:
+                pass
+        for line in key_path.read_text(encoding='utf-8').splitlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                return f"django-managed-secure-key-{line}"
+        # ファイルが存在するのに有効なキー行がない場合はエラー
+        raise ImproperlyConfigured(
+            f"Secret key file '{key_path}' exists but contains no valid secret key. "
+            "Remove the empty or corrupted file to let SyncVey regenerate it."
+        )
+
+    # If the file does not exist, create it with secure permissions (0600) atomically
+    try:
+        from cryptography.fernet import Fernet
+    except ImportError as exc:
+        raise ImproperlyConfigured(
+            f"Failed to generate secret key: 'cryptography' package is required: {exc}"
+        )
+
+    try:
+        key_path.parent.mkdir(parents=True, exist_ok=True)
+        new_fernet_key = Fernet.generate_key().decode('ascii')
+        tmp_path = key_path.with_name(f".{key_path.name}.tmp")
+        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as h:
+            h.write("# SyncVey secret key. Back this up apart from the database.\n")
+            h.write(new_fernet_key + "\n")
+        os.replace(tmp_path, key_path)
+        return f"django-managed-secure-key-{new_fernet_key}"
+    except OSError as exc:
+        raise ImproperlyConfigured(
+            f"Failed to write secret key file at '{key_path}': {exc}"
+        )
+
+
+SECRET_KEY = _get_django_secret_key()
 if not DEBUG and not _is_testing and SECRET_KEY == _INSECURE_SECRET_KEY:
     raise ImproperlyConfigured(
         "SECRET_KEY must be set to a unique secret value when DEBUG=False. "
@@ -45,6 +115,8 @@ if not DEBUG and not _is_testing and SECRET_KEY == _INSECURE_SECRET_KEY:
 
 # 本番は ALLOWED_HOSTS を環境変数で明示（カンマ区切り）。DEBUG時のみワイルドカード許可。
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
+_extra_hosts = [h.strip() for h in os.getenv('SYNCVEY_EXTRA_ALLOWED_HOSTS', '').split(',') if h.strip()]
+ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS + _extra_hosts))
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 elif not ALLOWED_HOSTS:
@@ -52,6 +124,8 @@ elif not ALLOWED_HOSTS:
 
 # HTTPS 配下でフォーム POST する場合に必要（例: https://syncvey.example.com）
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+_extra_csrf = [o.strip() for o in os.getenv('SYNCVEY_EXTRA_CSRF_ORIGINS', '').split(',') if o.strip()]
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS + _extra_csrf))
 
 # --- セキュリティ・ハードニング（HTTPS終端の背後で運用する場合に各env で有効化）---
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -139,7 +213,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [_TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -159,8 +233,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-# 環境変数 DATABASE_URL からデータベース設定を読み込む
+# 環境変数 DATABASE_URL からデータベース設定を読み込む（未設定時は SQLite にフォールバック）
 DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    db_path = os.getenv('SYNCVEY_DB_PATH', str(BASE_DIR / 'db.sqlite3'))
+    DATABASE_URL = f"sqlite:///{db_path}"
 DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
 
 
@@ -195,7 +272,7 @@ LANGUAGES = [
     ('ja', '日本語'),
 ]
 
-LOCALE_PATHS = [BASE_DIR / 'locale']
+LOCALE_PATHS = [_LOCALE_DIR]
 
 # **画面に出す時刻のタイムゾーン。**
 #
@@ -220,7 +297,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [_STATIC_DIR]
 
 # AWS Settings (AssumeRole用 中央アカウント)
 AWS_ACCOUNT_ID    = os.getenv('AWS_ACCOUNT_ID', '')
